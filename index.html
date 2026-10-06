@@ -8,54 +8,54 @@
   :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#d9d9e0; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; }
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
-  main { max-width:920px; margin:0 auto; padding:16px; }
-  h1 { font-size:1.3rem; margin:0 0 4px; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.3 -apple-system, system-ui, sans-serif; }
+  main { max-width:920px; margin:0 auto; padding:10px 12px; }
+  h1 { font-size:1.3rem; margin:0 0 2px; }
   h1 small { font-size:.7rem; font-weight:400; color:var(--muted); margin-left:6px; white-space:nowrap; }
-  .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
-  .banner { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:10px; margin:10px 0; font-size:.92rem; }
+  .small { color:var(--muted); font-size:.85rem; margin-bottom:6px; }
+  .banner { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:10px; margin:6px 0; font-size:.92rem; }
   .banner.warn { background:var(--warn-bg); color:var(--warn-fg); }
   .banner.ok { background:var(--ok-bg); color:var(--ok-fg); }
   .banner.err { background:#fde2e2; color:#7a1212; }
-  button { font:inherit; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button { font:inherit; padding:6px 12px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
   button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   button.danger { color:#c62828; }
-  button.mini { padding:4px 9px; font-size:.82rem; }
+  button.mini { padding:2px 7px; font-size:.82rem; }
   button:disabled { opacity:.5; }
-  input, select { font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
+  input, select { font:inherit; padding:6px 9px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }   /* no up/down spinner arrows */
   input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
+  .card { background:var(--card); border-radius:12px; padding:9px 12px; margin:8px 0; }
   details.card summary { cursor:pointer; font-weight:600; }
-  .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
-  .tabs { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 2px; align-items:center; }
-  .tab { border-radius:999px; padding:6px 14px; }
+  .filebar { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .tabs { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 2px; align-items:center; }
+  .tab { border-radius:999px; padding:4px 12px; }
   .tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
-  form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:end; margin-top:10px; }
+  form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; align-items:end; margin-top:6px; }
   form.entry .desc { grid-column:span 2; }
   form.entry .full { grid-column:1 / -1; }
   form.entry .addbtn button { width:100%; }
-  form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
+  form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:1px; }
   .desc, #eTextWrap { position:relative; }
   .suggest { position:absolute; left:0; right:0; top:100%; z-index:30; background:var(--bg); border:1px solid var(--line); border-radius:9px; margin:2px 0 0; padding:0; list-style:none; max-height:230px; overflow:auto; box-shadow:0 4px 14px rgba(0,0,0,.2); }
   .suggest li { padding:8px 10px; cursor:pointer; font-size:.92rem; display:flex; justify-content:space-between; gap:8px; }
   .suggest li.on, .suggest li:hover { background:var(--card); }
   .suggest li small { color:var(--muted); white-space:nowrap; }
-  .summary { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
-  .stat { flex:1 1 150px; background:var(--card); border-radius:10px; padding:8px 12px; }
+  .summary { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .stat { flex:1 1 150px; background:var(--card); border-radius:10px; padding:4px 10px; }
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
-  .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:.9rem; flex-wrap:wrap; }
-  .rule.sub { border-top:none; padding:2px 0 2px 16px; color:var(--muted); font-size:.85rem; }
+  .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:4px 0; border-top:1px solid var(--line); font-size:.9rem; flex-wrap:wrap; }
+  .rule.sub { border-top:none; padding:1px 0 1px 16px; color:var(--muted); font-size:.85rem; }
   .rule .btns { white-space:nowrap; }
   .rule .btns button + button { margin-left:4px; }
-  .horizon { display:flex; align-items:center; gap:8px; margin:10px 0 0; }
+  .horizon { display:flex; align-items:center; gap:8px; margin:6px 0 0; }
   .horizon select { width:auto; }
-  .tablewrap { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:10px; }
+  .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
   table { border-collapse:collapse; width:100%; min-width:720px; }
   #repTable { min-width:0; }
-  th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th, td { padding:3px 8px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
   th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); position:sticky; top:0; z-index:2; box-shadow:0 1px 0 var(--line); }
   tr:last-child td { border-bottom:none; }
   td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -78,18 +78,21 @@
   tr.proj td.neg { color:#c62828; }
   td.act { white-space:nowrap; text-align:right; }
   td.act button + button { margin-left:4px; }
-  .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:8px; margin-top:10px; }
-  #reconList { max-height:40vh; overflow:auto; margin:8px 0; }
-  .ritem { display:grid; grid-template-columns:auto 8.5em 1fr auto 3.6em; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
+  .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:6px; margin-top:6px; }
+  #reconList { max-height:40vh; overflow:auto; margin:5px 0; }
+  .ritem { display:grid; grid-template-columns:auto 8.5em 1fr auto 3.6em; gap:8px; align-items:center; padding:2px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
   .ritem input { width:auto; }
   .ritem .a { font-variant-numeric:tabular-nums; font-weight:700; }
   .ritem .d { color:var(--muted); }
-  .rsum div { display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-variant-numeric:tabular-nums; font-size:.92rem; }
+  .rsum div { display:flex; justify-content:space-between; gap:10px; padding:1px 0; font-variant-numeric:tabular-nums; font-size:.92rem; }
   .rsum .total { border-top:1px solid var(--line); font-weight:700; margin-top:3px; padding-top:6px; }
   .rsum .good { color:var(--ok-fg); } .rsum .bad { color:#c62828; }
-  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:16px; width:min(420px, calc(100% - 32px)); overflow:visible; }
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:12px; width:min(420px, calc(100% - 32px)); overflow:visible; }
   dialog::backdrop { background:rgba(0,0,0,.4); }
   dialog h3 { margin:0; }
+  .moneywrap { display:flex; gap:4px; align-items:stretch; }
+  .moneywrap input { text-align:right; min-width:0; }
+  .moneywrap button { padding:0 10px; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -134,7 +137,7 @@
         </div>
         <div>
           <label for="amount" id="amountLbl">Amount (− = out)</label>
-          <input id="amount" type="number" step="0.01" inputmode="decimal" required>
+          <input id="amount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
         </div>
         <div class="desc">
           <label for="text">Description</label>
@@ -160,14 +163,25 @@
       <summary>Recurring items</summary>
       <form id="recurForm" class="entry">
         <div>
-          <label for="rAmount">Estimated amount (− = out)</label>
-          <input id="rAmount" type="number" step="0.01" inputmode="decimal" required>
+          <label for="rType">Type</label>
+          <select id="rType">
+            <option value="regular">Payment or deposit</option>
+            <option value="transfer">Transfer to another account</option>
+          </select>
+        </div>
+        <div id="rToWrap" hidden>
+          <label for="rTo">To account</label>
+          <select id="rTo"></select>
+        </div>
+        <div>
+          <label for="rAmount" id="rAmountLbl">Estimated amount (− = out)</label>
+          <input id="rAmount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
         </div>
         <div class="desc">
           <label for="rText">Description</label>
           <input id="rText" type="text" maxlength="60" autocomplete="off" required>
         </div>
-        <div>
+        <div id="rCatWrap">
           <label for="rCat">Category</label>
           <select id="rCat"></select>
         </div>
@@ -200,7 +214,7 @@
       <div id="reconWork">
         <div class="recon-top">
           <div><label class="lbl" for="cMonth">Statement month</label><select id="cMonth"></select></div>
-          <div><label class="lbl" for="cStmt">Statement closing balance</label><input id="cStmt" type="number" step="0.01" inputmode="decimal" placeholder="From your bank statement"></div>
+          <div><label class="lbl" for="cStmt">Statement closing balance</label><input id="cStmt" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="From your bank statement"></div>
         </div>
         <p class="small" style="margin:8px 0 0">Tick each item that appears on the statement. Items not ticked can be edited here and carry over to the next month if they stay unticked.</p>
         <div class="filebar" style="margin:6px 0 0"><button class="mini" id="cTick" type="button">Tick all</button><button class="mini" id="cUntick" type="button">Untick all</button><button class="mini" id="cAdd" type="button">Add missed item</button></div>
@@ -266,7 +280,7 @@
     </div>
     <div>
       <label for="eAmount">Amount</label>
-      <input id="eAmount" type="number" step="0.01" inputmode="decimal" required>
+      <input id="eAmount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
     </div>
     <div class="full" id="eTextWrap">
       <label for="eText">Description</label>
@@ -306,7 +320,7 @@
     </div>
     <div>
       <label for="aBal">Opening balance</label>
-      <input id="aBal" type="number" step="0.01" inputmode="decimal" required>
+      <input id="aBal" class="money" type="text" inputmode="numeric" autocomplete="off" required>
     </div>
     <div>
       <label for="aOpen">Balance as of</label>
@@ -337,8 +351,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.0';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 15:42';
+const APP_VERSION = '4.1';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 16:25';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -412,12 +426,24 @@ function fileProblem(d) {
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const cents = x => Math.round(x * 100);
 const fmt = c => (c / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+// a recurring transfer is stored as money out of its own account; the receiving account sees the same amount as money in
+const ruleAmt = (u, accId, amt) => u.transferTo ? (u.accountId === accId ? -Math.abs(amt) : Math.abs(amt)) : amt;
 const ruleById = id => state.data.recurring.find(x => x.id === id);
 const acctById = id => state.data.accounts.find(a => a.id === id);
 const last4 = n => { const s = String(n || '').replace(/\D/g, ''); return s ? '…' + s.slice(-4) : ''; };
 const acctLabel = a => a.name || [a.institution, a.type].filter(Boolean).join(' ') || 'Account';
 const acctSub = a => [a.institution, a.type, last4(a.number)].filter(Boolean).join(' · ');
-const balanceOf = a => cents(a.startingBalance) + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
+// Where the running balance starts. Until a month is reconciled it is the opening balance; afterwards it is the latest
+// statement closing balance, less what that statement already contained (each entry remembers its reconciled amount).
+function anchorOf(a) {
+  let last = null;
+  for (const v of Object.values(state.data.reconciliations)) if (v.accountId === a.id && (!last || v.month > last.month)) last = v;
+  if (!last) return { base:cents(a.startingBalance), month:null };
+  let inStmt = 0;
+  for (const r of state.data.records) if (r.accountId === a.id && typeof r.reconAmt === 'number') inStmt += r.reconAmt;
+  return { base:cents(last.statementBalance) - inStmt, month:last.month };
+}
+const balanceOf = a => anchorOf(a).base + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
 const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[] });
 
 function ensureAccount() {
@@ -450,6 +476,7 @@ function migrate(d) {                 // upgrades older files in memory; saved a
     if (!r.accountId) r.accountId = first;
     if (!r.date) r.date = localDate(r.createdAt || nowIso);
     if (r.category === undefined) r.category = '';
+    if (r.reconciled && typeof r.reconAmt !== 'number') r.reconAmt = cents(r.amount);
   }
   for (const k of Object.keys(d.reconciliations)) {
     const v = d.reconciliations[k];
@@ -488,7 +515,7 @@ function estimateFor(u, date) {       // the estimate in force on a date, after 
 function computeActual() {
   const a = acct();
   const recs = state.data.records.filter(r => r.accountId === a.id).sort(cmp);
-  let bal = cents(a.startingBalance);
+  let bal = anchorOf(a).base;
   const rows = [];
   for (const r of recs) {
     if (!r.deleted) bal += cents(r.amount);   // deleted records no longer affect later balances
@@ -509,7 +536,7 @@ function computeProjected(startCents) {
   const limit = addMonths(today, d.settings.horizonMonths || 3);
   const done = handledSet(), items = [];
   for (const u of d.recurring) {
-    if (u.deleted || u.accountId !== a.id) continue;
+    if (u.deleted || (u.accountId !== a.id && u.transferTo !== a.id)) continue;
     const end = (u.endDate && u.endDate < limit) ? u.endDate : limit;
     for (let n = 0; n < 5000; n++) {
       const orig = nth(u, n);
@@ -517,7 +544,7 @@ function computeProjected(startCents) {
       if (done.has(u.id + '|' + orig)) continue;
       const ov = u.overrides ? u.overrides[orig] : null;     // confirmed by the biller
       const date = (ov && ov.date) || orig;
-      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, category:u.category || '', amount: ov ? ov.amount : estimateFor(u, orig), confirmed: !!ov, due: date <= today });
+      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, category:u.category || '', amount: ruleAmt(u, a.id, ov ? ov.amount : estimateFor(u, orig)), confirmed: !!ov, due: date <= today, xfer: !!u.transferTo });
     }
   }
   items.sort(cmp);
@@ -705,6 +732,35 @@ function onCatChange(sel) {
 }
 const catValue = sel => (sel.value === NEWCAT ? '' : sel.value);
 
+/* ---------- Amount boxes: digits only, decimal point fixed (typing 1 2 5 0 gives 12.50; use ± for negative) ---------- */
+function moneyFormat(raw) {
+  raw = String(raw == null ? '' : raw);
+  const neg = ((raw.match(/[-\u2212]/g) || []).length % 2) === 1;     // each minus typed flips the sign
+  const digits = raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 12);
+  if (!digits) return neg ? '-' : '';
+  const p = digits.padStart(3, '0');
+  return (neg ? '-' : '') + p.slice(0, -2) + '.' + p.slice(-2);
+}
+function setMoney(el, v) {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  el.value = isFinite(n) ? (n < 0 ? '-' : '') + Math.abs(n).toFixed(2) : '';
+}
+function attachMoney(el) {
+  el.addEventListener('input', () => {
+    const f = moneyFormat(el.value);
+    if (el.value !== f) el.value = f;
+    try { el.setSelectionRange(f.length, f.length); } catch (e) { /* ignore */ }
+  });
+  const wrap = document.createElement('div'); wrap.className = 'moneywrap';
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = '\u00b1'; b.title = 'Switch between money in (+) and out (\u2212)'; b.tabIndex = -1;
+  b.addEventListener('click', () => {
+    el.value = el.value.startsWith('-') ? el.value.slice(1) : '-' + el.value;
+    el.dispatchEvent(new Event('input', { bubbles:true })); el.focus();
+  });
+  el.parentNode.insertBefore(wrap, el); wrap.appendChild(el); wrap.appendChild(b);
+}
+document.querySelectorAll('input.money').forEach(attachMoney);
+
 /* ---------- Suggestions while typing a description ---------- */
 function suggestFor(q) {
   q = q.trim().toLowerCase();
@@ -875,7 +931,17 @@ function renderEntry() {
   if (opt) opt.disabled = accts.length < 2;
   if (accts.length < 2 && $('type').value === 'transfer') $('type').value = 'regular';
   applyTypeUI();
+  const sel = $('rTo'), others = accts.filter(a => a.id !== state.accountId), okey = others.map(a => a.id + acctLabel(a)).join('|');
+  if (sel.dataset.key !== okey) { sel.innerHTML = ''; for (const a of others) { const o = document.createElement('option'); o.value = a.id; o.textContent = acctLabel(a); sel.appendChild(o); } sel.dataset.key = okey; }
+  const ro = $('rType').querySelector('option[value=transfer]'); if (ro) ro.disabled = !others.length;
+  if (!others.length) $('rType').value = 'regular';
+  applyRTypeUI();
   if (!$('date').value) $('date').value = todayStr();
+}
+function applyRTypeUI() {
+  const t = $('rType').value === 'transfer';
+  $('rToWrap').hidden = !t; $('rCatWrap').hidden = t;
+  $('rAmountLbl').textContent = t ? 'Estimated amount to move' : 'Estimated amount (− = out)';
 }
 function applyTypeUI() {
   const t = $('type').value === 'transfer';
@@ -902,10 +968,10 @@ function renderTable(A, P) {
   let anchor = null;                    // the latest real transaction before today
   const start = document.createElement('tr'); start.className = 'start';
   addCell(start, fmtDate(a.openedOn || localDate(a.createdAt || new Date().toISOString())), 'time');
-  addCell(start, 'Opening balance');
+  addCell(start, anchorOf(a).month ? 'Starting point (from the ' + monthLabel(anchorOf(a).month) + ' statement)' : 'Opening balance');
   addCell(start, '', 'cat');
   addCell(start, '', 'num');
-  addCell(start, fmt(cents(a.startingBalance)), 'num');
+  addCell(start, fmt(anchorOf(a).base), 'num');
   addCell(start, '');
   tb.appendChild(start);
 
@@ -946,6 +1012,7 @@ function renderTable(A, P) {
       addCell(tr, fmtDate(it.date), 'time');
       const t = addCell(tr, it.text, 'text');
       tag(t, '↻');
+      if (it.xfer) tag(t, '⇄', '', 'Transfer between accounts');
       if (!it.confirmed) tag(t, 'est.', '', 'Estimated amount: press Edit to confirm the biller\'s amount');
       if (it.due) tag(t, 'due', 'due');
       addCell(tr, it.category, 'cat');
@@ -975,12 +1042,12 @@ function renderTable(A, P) {
 function renderRules() {
   const box = $('ruleList'); box.innerHTML = '';
   const a = acct();
-  const act = state.data.recurring.filter(u => !u.deleted && u.accountId === a.id);
+  const act = state.data.recurring.filter(u => !u.deleted && (u.accountId === a.id || u.transferTo === a.id));
   if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items for this account yet.'; box.appendChild(p); return; }
   for (const u of act) {
     const row = document.createElement('div'); row.className = 'rule';
     const s = document.createElement('span');
-    s.textContent = u.text + ' · est. ' + fmt(cents(u.amount)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' · ' + u.category : '');
+    s.textContent = u.text + (u.transferTo ? ' · transfer ' + acctLabel(acctById(u.accountId)) + ' → ' + acctLabel(acctById(u.transferTo)) : '') + ' · est. ' + fmt(cents(u.transferTo ? Math.abs(u.amount) : u.amount)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' · ' + u.category : '');
     row.appendChild(s);
     const btns = document.createElement('span'); btns.className = 'btns';
     btns.appendChild(miniBtn('Change amount', () => chgRule(u.id)));
@@ -989,7 +1056,7 @@ function renderRules() {
     box.appendChild(row);
     for (const c of [...(u.changes || [])].sort((x, y) => x.from < y.from ? -1 : 1)) {
       const cr = document.createElement('div'); cr.className = 'rule sub';
-      const cs = document.createElement('span'); cs.textContent = 'From ' + fmtDate(c.from) + ': est. ' + fmt(cents(c.amount));
+      const cs = document.createElement('span'); cs.textContent = 'From ' + fmtDate(c.from) + ': est. ' + fmt(cents(u.transferTo ? Math.abs(c.amount) : c.amount));
       cr.appendChild(cs); cr.appendChild(miniBtn('Remove', () => removeChange(u.id, c.from)));
       box.appendChild(cr);
     }
@@ -1004,7 +1071,8 @@ function reconItems() {               // unreconciled, live entries up to the en
 function reconSums(items) {
   const d = state.data, R = state.recon, a = acct();
   const mine = d.records.filter(r => r.accountId === a.id && !r.deleted);
-  const opening = cents(a.startingBalance) + mine.filter(r => r.reconciled).reduce((s, r) => s + cents(r.amount), 0);
+  const base0 = anchorOf(a).base;
+  const opening = base0 + mine.filter(r => r.reconciled).reduce((s, r) => s + cents(r.amount), 0);
   const ticked = items.filter(r => R.ticked.has(r.id));
   const tickedSum = ticked.reduce((s, r) => s + cents(r.amount), 0);
   const cleared = opening + tickedSum;
@@ -1013,7 +1081,7 @@ function reconSums(items) {
   const hasStmt = R.stmt !== '' && isFinite(parseFloat(R.stmt));
   const stmtCents = hasStmt ? cents(parseFloat(R.stmt)) : null;
   const end = monthEnd(R.month);
-  const ledgerEnd = cents(a.startingBalance) + mine.filter(r => r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
+  const ledgerEnd = base0 + mine.filter(r => r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
   return { opening, ticked, tickedSum, cleared, rest, restSum, stmtCents, diff: hasStmt ? stmtCents - cleared : null, ledgerEnd };
 }
 
@@ -1099,7 +1167,8 @@ function finishRecon() {
   if (S.diff === null) { alert('Enter the closing balance from your bank statement first.'); return; }
   if (!S.ticked.length) { alert('Tick the items that appear on the statement first.'); return; }
   if (S.diff !== 0 && !confirm('There is still a difference of ' + fmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
-  for (const r of S.ticked) r.reconciled = R.month;
+  for (const r of S.ticked) { r.reconciled = R.month; r.reconAmt = cents(r.amount); }
+  for (const r of S.rest) delete r.reconAmt;      // not on the statement, so counted in full again
   d.reconciliations[key] = { accountId:a.id, month:R.month, statementBalance:S.stmtCents / 100, difference:S.diff / 100, itemCount:S.ticked.length, completedAt:new Date().toISOString() };
   R.ticked.clear(); R.stmt = '';
   changed();
@@ -1107,7 +1176,7 @@ function finishRecon() {
 function reopenMonth(month) {
   const a = acct();
   if (!confirm('Undo the reconciliation of ' + monthLabel(month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
-  for (const r of state.data.records) if (r.accountId === a.id && r.reconciled === month) delete r.reconciled;
+  for (const r of state.data.records) if (r.accountId === a.id && r.reconciled === month) { delete r.reconciled; delete r.reconAmt; }
   delete state.data.reconciliations[a.id + '|' + month];
   changed();
 }
@@ -1188,7 +1257,7 @@ function renderReport() {
 function openEdit(ctx, o) {
   state.edit = ctx;
   $('editTitle').textContent = o.title;
-  $('eDate').value = o.date; $('eAmount').value = o.amount;
+  $('eDate').value = o.date; setMoney($('eAmount'), o.amount);
   $('eText').value = o.text || ''; $('eText').required = !!o.withText;
   $('eTextWrap').hidden = !o.withText;
   $('eCatWrap').hidden = !o.withCat;
@@ -1214,12 +1283,12 @@ function addMissed() {                    // quick add from the reconciliation p
 }
 function editOcc(it) {
   const u = ruleById(it.ruleId);
-  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, { title:'Confirm amount: ' + it.text, date:it.date, amount:it.amount,
-    note:'Enter the amount the biller has confirmed. It will then show in bold. The estimate was ' + fmt(cents(estimateFor(u, it.orig))) + '.', save:'Confirm', revert:it.confirmed });
+  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, { title:'Confirm amount: ' + it.text, date:it.date, amount:u.transferTo ? Math.abs(it.amount) : it.amount,
+    note:'Enter the amount the biller has confirmed. It will then show in bold. The estimate was ' + fmt(cents(u.transferTo ? Math.abs(estimateFor(u, it.orig)) : estimateFor(u, it.orig))) + '.', save:'Confirm', revert:it.confirmed });
 }
 function chgRule(id) {
   const u = ruleById(id), t = todayStr();
-  openEdit({ kind:'chg', ruleId:id }, { title:'Change amount: ' + u.text, date:t, amount:estimateFor(u, t),
+  openEdit({ kind:'chg', ruleId:id }, { title:'Change amount: ' + u.text, date:t, amount:u.transferTo ? Math.abs(estimateFor(u, t)) : estimateFor(u, t),
     note:'From this date on, each projected occurrence uses the new estimate. Occurrences you have already confirmed keep their confirmed amount.', save:'Schedule change' });
 }
 $('editForm').addEventListener('submit', ev => {
@@ -1230,11 +1299,11 @@ $('editForm').addEventListener('submit', ev => {
   const now = new Date().toISOString();
   if (E.kind === 'occ') {
     const u = ruleById(E.ruleId); if (!u) return;
-    u.overrides[E.orig] = { amount, date, confirmedAt:now };
+    u.overrides[E.orig] = { amount:u.transferTo ? -Math.abs(amount) : amount, date, confirmedAt:now };
   } else if (E.kind === 'chg') {
     const u = ruleById(E.ruleId); if (!u) return;
     u.changes = (u.changes || []).filter(c => c.from !== date);
-    u.changes.push({ from:date, amount });
+    u.changes.push({ from:date, amount:u.transferTo ? -Math.abs(amount) : amount });
   } else if (E.kind === 'add') {
     const text = $('eText').value.trim(); if (!text) return;
     const rec = { id:uid(), accountId:state.accountId, text, category:catValue($('eCat')), amount, date, createdAt:now, deleted:false, deletedAt:null };
@@ -1272,7 +1341,7 @@ function openAcct(a) {
   $('acctTitle').textContent = a ? 'Edit account' : (state.data && state.data.accounts.length ? 'Add account' : 'Create your first account');
   sel.value = a ? a.type : ACCT_TYPES[0];
   $('aInst').value = a ? a.institution : ''; $('aName').value = a ? a.name : ''; $('aNum').value = a ? a.number : '';
-  $('aBal').value = a ? a.startingBalance : ''; $('aOpen').value = a ? a.openedOn : todayStr();
+  setMoney($('aBal'), a ? a.startingBalance : ''); $('aOpen').value = a ? a.openedOn : todayStr();
   $('aNote').textContent = a ? 'Changing the opening balance changes every balance in this account.'
     : 'Only the last 4 digits of an account number are ever shown. You can enter just those.';
   $('acctDlg').showModal();
@@ -1300,17 +1369,18 @@ $('btnFirst').addEventListener('click', () => openAcct(null));
 
 /* ---------- Actions ---------- */
 $('type').addEventListener('change', applyTypeUI);
+$('rType').addEventListener('change', applyRTypeUI);
 $('cat').addEventListener('change', () => onCatChange($('cat')));
 $('rCat').addEventListener('change', () => onCatChange($('rCat')));
 $('eCat').addEventListener('change', () => onCatChange($('eCat')));
 attachSuggest($('text'), s => {
   if (s.category) syncCats($('cat'), s.category);
-  if ($('amount').value === '' && s.amount !== undefined) { $('amount').value = s.amount; }
+  if ($('amount').value === '' && s.amount !== undefined) { setMoney($('amount'), s.amount); }
   $('amount').focus(); if ($('amount').select) $('amount').select();
 });
 attachSuggest($('rText'), s => {
   if (s.category) syncCats($('rCat'), s.category);
-  if ($('rAmount').value === '' && s.amount !== undefined) $('rAmount').value = s.amount;
+  if ($('rAmount').value === '' && s.amount !== undefined) setMoney($('rAmount'), s.amount);
 });
 attachSuggest($('eText'));
 
@@ -1338,8 +1408,12 @@ $('recurForm').addEventListener('submit', ev => {
   const amount = parseFloat($('rAmount').value), text = $('rText').value.trim();
   const startDate = $('rStart').value, endDate = $('rEnd').value || null, frequency = $('rFreq').value;
   if (!isFinite(amount) || !text || !startDate) return;
+  const isX = $('rType').value === 'transfer', to = $('rTo').value;
+  if (isX && to === state.accountId) { alert('Choose a different account to transfer to.'); return; }
   if (endDate && endDate < startDate) { alert('The last date must be on or after the first date.'); return; }
-  state.data.recurring.push({ id:uid(), accountId:state.accountId, text, category:catValue($('rCat')), amount, frequency, startDate, endDate, skipped:[], overrides:{}, changes:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  const rule = { id:uid(), accountId:state.accountId, text, category:isX ? '' : catValue($('rCat')), amount:isX ? -Math.abs(amount) : amount, frequency, startDate, endDate, skipped:[], overrides:{}, changes:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null };
+  if (isX) rule.transferTo = to;
+  state.data.recurring.push(rule);
   $('rAmount').value = ''; $('rText').value = ''; $('rEnd').value = '';
   changed();
 });
@@ -1374,6 +1448,12 @@ function deleteRecord(id) {
   changed();
 }
 function postRecord(u, orig, date, amount) {
+  if (u.transferTo) {                     // two linked entries, one in each account
+    const amt = Math.abs(amount), tid = uid(), now = new Date().toISOString();
+    for (const [acc, sgn] of [[u.accountId, -1], [u.transferTo, 1]])
+      state.data.records.push({ id:uid(), accountId:acc, text:u.text, category:'', amount:sgn * amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid, recurringId:u.id, recurringDate:orig });
+    return;
+  }
   state.data.records.push({ id:uid(), accountId:u.accountId, text:u.text, category:u.category || '', amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:orig });
 }
 function postOcc(it) {                    // turn a projected item into a real entry
@@ -1385,6 +1465,7 @@ function postOcc(it) {                    // turn a projected item into a real e
     if (v === null) return;
     amt = parseFloat(v);
     if (!isFinite(amt)) return;
+    if (u.transferTo) amt = Math.abs(amt);
   }
   postRecord(u, it.orig, it.date, amt);
   changed();
