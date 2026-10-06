@@ -125,7 +125,7 @@
   <div class="small" id="mode"></div>
 
   <div id="banner"></div>
-  <input type="file" id="fileInput" accept=".json,application/json" hidden>
+  <input type="file" id="fileInput" hidden>   <!-- no type filter: Safari and Chrome grey out a ledger file whose name or type they do not recognise as JSON -->
 
   <section id="setup" class="card" hidden>
     <strong>First use</strong>
@@ -374,8 +374,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.9';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 19:40';
+const APP_VERSION = '4.10';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 20:05';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -700,7 +700,7 @@ async function openFile() {
   if (!confirmDiscard()) return;
   if (FS) {
     try {
-      const [h] = await window.showOpenFilePicker({ types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
+      const [h] = await window.showOpenFilePicker();   // no filter, so every file is selectable; a file that is not a ledger gets a clear message below
       const d = JSON.parse(await (await h.getFile()).text());
       const bad = fileProblem(d);
       if (bad) return setMsg(bad, 'err');
