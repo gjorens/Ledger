@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ledger Test</title>
+<title>myLedger</title>
 <style>
   :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#d9d9e0; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; }
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
@@ -11,6 +11,7 @@
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
   main { max-width:760px; margin:0 auto; padding:16px; }
   h1 { font-size:1.3rem; margin:0 0 4px; }
+  h1 small { font-size:.7rem; font-weight:400; color:var(--muted); margin-left:6px; white-space:nowrap; }
   .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
   .banner { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:10px; margin:10px 0; font-size:.92rem; }
   .banner.warn { background:var(--warn-bg); color:var(--warn-fg); }
@@ -43,7 +44,7 @@
 </head>
 <body>
 <main>
-  <h1>Ledger Test</h1>
+  <h1>myLedger <small id="ver"></small></h1>
   <div class="small" id="mode"></div>
 
   <div id="banner"></div>
@@ -95,6 +96,9 @@ const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file')
 const $ = id => document.getElementById(id);
 const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err' };
 let saving = false;
+const APP_VERSION = '1.0';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 13:38';
+$('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 /* ---------- IndexedDB (browser-side draft + file handle) ---------- */
 function idb() {
