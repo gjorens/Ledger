@@ -23,6 +23,8 @@
   button.mini { padding:4px 9px; font-size:.82rem; }
   button:disabled { opacity:.5; }
   input, select { font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
+  input[type=number] { -moz-appearance:textfield; appearance:textfield; }   /* no up/down spinner arrows */
+  input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
   details.card summary { cursor:pointer; font-weight:600; }
   .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
@@ -64,7 +66,7 @@
   td.act button + button { margin-left:4px; }
   .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:10px; }
   #reconList { max-height:40vh; overflow:auto; margin:8px 0; }
-  .ritem { display:grid; grid-template-columns:auto 7.5em 1fr auto; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
+  .ritem { display:grid; grid-template-columns:auto 8.5em 1fr auto 3.6em; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
   .ritem input { width:auto; }
   .ritem .a { font-variant-numeric:tabular-nums; font-weight:700; }
   .ritem .d { color:var(--muted); }
@@ -163,8 +165,8 @@
           <div><label class="lbl" for="cMonth">Statement month</label><select id="cMonth"></select></div>
           <div><label class="lbl" for="cStmt">Statement closing balance</label><input id="cStmt" type="number" step="0.01" inputmode="decimal" placeholder="From your bank statement"></div>
         </div>
-        <p class="small" style="margin:8px 0 0">Tick each item that appears on the statement. Items not ticked carry over to the next month.</p>
-        <div class="filebar" style="margin:6px 0 0"><button class="mini" id="cTick" type="button">Tick all</button><button class="mini" id="cUntick" type="button">Untick all</button></div>
+        <p class="small" style="margin:8px 0 0">Tick each item that appears on the statement. Items not ticked can be edited here and carry over to the next month if they stay unticked.</p>
+        <div class="filebar" style="margin:6px 0 0"><button class="mini" id="cTick" type="button">Tick all</button><button class="mini" id="cUntick" type="button">Untick all</button><button class="mini" id="cAdd" type="button">Add missed item</button></div>
         <div id="reconList"></div>
         <div class="rsum" id="reconSummary"></div>
         <div class="filebar"><button class="primary" id="cFinish" type="button">Mark month reconciled</button></div>
@@ -227,8 +229,8 @@ const state = {
   initialScroll:true, edit:null, recon:{ month:null, ticked:new Set(), stmt:'' }
 };
 let saving = false;
-const APP_VERSION = '3.0';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 14:26';
+const APP_VERSION = '3.1';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 15:21';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 /* ---------- IndexedDB (browser-side draft + file handle) ---------- */
@@ -709,51 +711,60 @@ function reconSums(items) {
   return { opening, ticked, tickedSum, cleared, rest, restSum, stmtCents, diff: hasStmt ? stmtCents - cleared : null, ledgerEnd };
 }
 
+function openMonths() {               // ended months that still need reconciling, oldest first
+  const d = state.data, cur = todayStr().slice(0, 7), justEnded = monthsList()[1];
+  const set = new Set([justEnded]);
+  for (const r of d.records) if (!r.deleted && !r.reconciled) set.add(r.date.slice(0, 7));
+  return [...set].filter(m => m < cur && !d.reconciliations[m]).sort();
+}
+
 function renderRecon() {
   const R = state.recon, d = state.data;
-  const months = monthsList();
-  if (!R.month) R.month = months[1];                       // the month just ended
-  const sel = $('cMonth');
-  if (!sel.dataset.filled) {
-    sel.innerHTML = '';
-    months.forEach((m, i) => { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m) + (i === 1 ? ' (just ended)' : ''); sel.appendChild(o); });
-    sel.dataset.filled = '1';
-  }
-  sel.value = R.month;
-  if ($('cStmt').value !== R.stmt) $('cStmt').value = R.stmt;
+  const open = openMonths(), justEnded = monthsList()[1];
+  $('reconWork').hidden = !open.length;
+  $('reconDone').hidden = !!open.length;
+  $('reconDone').textContent = 'Every month up to ' + monthLabel(justEnded) + ' is reconciled.';
 
-  const done = d.reconciliations[R.month];
-  $('reconWork').hidden = !!done;
-  $('reconDone').hidden = !done;
-  if (done) {
-    const t = monthLabel(R.month) + ' was reconciled on ' + fmtTime(done.completedAt) + ' against a statement balance of ' + fmt(cents(done.statementBalance)) + ' (' + done.itemCount + ' items' + (done.difference ? ', difference ' + fmt(cents(done.difference)) : '') + '). ';
-    $('reconDone').textContent = t;
-    $('reconDone').appendChild(miniBtn('Reopen', () => reopenMonth(R.month)));
-  } else {
+  if (open.length) {
+    if (!R.month || !open.includes(R.month)) { R.month = open[0]; R.ticked.clear(); R.stmt = ''; }
+    const sel = $('cMonth'), key = open.join(',');
+    if (sel.dataset.key !== key) {
+      sel.innerHTML = '';
+      for (const m of open) { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m) + (m === justEnded ? ' (just ended)' : ''); sel.appendChild(o); }
+      sel.dataset.key = key;
+    }
+    sel.value = R.month;
+    if ($('cStmt').value !== R.stmt) $('cStmt').value = R.stmt;
+
     const items = reconItems();
     const ids = new Set(items.map(r => r.id));
     for (const id of [...R.ticked]) if (!ids.has(id)) R.ticked.delete(id);
     const list = $('reconList'); list.innerHTML = '';
     const start = R.month + '-01';
-    if (!items.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'Nothing left to reconcile up to the end of ' + monthLabel(R.month) + '.'; list.appendChild(p); }
+    if (!items.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'Nothing to tick yet. Use "Add missed item" if the statement has something that is not in your ledger.'; list.appendChild(p); }
     for (const r of items) {
-      const lab = document.createElement('label'); lab.className = 'ritem';
+      const row = document.createElement('div'); row.className = 'ritem';
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = R.ticked.has(r.id);
-      cb.onchange = () => { if (cb.checked) R.ticked.add(r.id); else R.ticked.delete(r.id); updateReconSummary(); };
       const dd = document.createElement('span'); dd.className = 'd'; dd.textContent = fmtDate(r.date) + (r.date < start ? ' (earlier)' : '');
       const tt = document.createElement('span'); tt.textContent = r.text;
       const aa = document.createElement('span'); aa.className = 'a' + (r.amount < 0 ? ' neg' : ''); aa.textContent = fmt(cents(r.amount));
-      lab.appendChild(cb); lab.appendChild(dd); lab.appendChild(tt); lab.appendChild(aa);
-      list.appendChild(lab);
+      const eb = miniBtn('Edit', () => editRecord(r)); eb.hidden = cb.checked;      // only unticked items can be edited
+      const toggle = on => { cb.checked = on; if (on) R.ticked.add(r.id); else R.ticked.delete(r.id); eb.hidden = on; updateReconSummary(); };
+      cb.onchange = () => toggle(cb.checked);
+      row.onclick = e => { if (e.target === cb || (e.target.closest && e.target.closest('button'))) return; toggle(!cb.checked); };
+      row.appendChild(cb); row.appendChild(dd); row.appendChild(tt); row.appendChild(aa); row.appendChild(eb);
+      list.appendChild(row);
     }
     updateReconSummary();
   }
 
   const hist = $('reconHistory'); hist.innerHTML = '';
-  const months2 = Object.keys(d.reconciliations).sort().reverse();
-  if (months2.length) {
-    const h = document.createElement('div'); h.className = 'small'; h.style.marginTop = '10px'; h.textContent = 'Completed: ' + months2.map(m => monthLabel(m)).join(', ');
-    hist.appendChild(h);
+  const done = Object.keys(d.reconciliations).sort((x, y) => d.reconciliations[x].completedAt < d.reconciliations[y].completedAt ? -1 : 1);
+  if (done.length) {
+    const last = done[done.length - 1];
+    const holder = document.createElement('div'); holder.style.marginTop = '10px';
+    holder.appendChild(miniBtn('Undo last reconciliation', () => reopenMonth(last)));
+    hist.appendChild(holder);
   }
 }
 
@@ -799,8 +810,8 @@ function openEdit(ctx, title, date, amount, text, note, saveLabel, canRevert) {
   state.edit = ctx;
   $('editTitle').textContent = title;
   $('eDate').value = date; $('eAmount').value = amount;
-  $('eText').value = text || ''; $('eText').required = ctx.kind === 'rec';
-  $('eTextWrap').hidden = ctx.kind !== 'rec';
+  $('eText').value = text || ''; $('eText').required = ctx.kind !== 'occ';
+  $('eTextWrap').hidden = ctx.kind === 'occ';
   $('eNote').textContent = note || '';
   $('eSave').textContent = saveLabel;
   $('eRevert').hidden = !canRevert;
@@ -810,6 +821,11 @@ function closeEdit() { const dlg = $('editDlg'); state.edit = null; if (dlg.open
 function editRecord(r) {
   openEdit({ kind:'rec', id:r.id }, 'Edit entry', r.date, r.amount, r.text,
     r.reconciled ? 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement. Changing the date or amount marks it as not reconciled.' : '', 'Save', false);
+}
+function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
+  openEdit({ kind:'add' }, 'Add missed item', monthEnd(state.recon.month), '', '',
+    'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.', 'Add', false);
+  setTimeout(() => $('eAmount').focus(), 50);
 }
 function editOcc(it) {
   const u = ruleById(it.ruleId);
@@ -824,6 +840,11 @@ $('editForm').addEventListener('submit', ev => {
   if (E.kind === 'occ') {
     const u = ruleById(E.ruleId); if (!u) return;
     u.overrides[E.orig] = { amount, date, confirmedAt:new Date().toISOString() };
+  } else if (E.kind === 'add') {
+    const text = $('eText').value.trim(); if (!text) return;
+    const rec = { id:uid(), text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null };
+    state.data.records.push(rec);
+    state.recon.ticked.add(rec.id);
   } else {
     const r = state.data.records.find(x => x.id === E.id); if (!r) return;
     const text = $('eText').value.trim(); if (!text) return;
@@ -877,6 +898,7 @@ $('cStmt').addEventListener('input', ev => { state.recon.stmt = ev.target.value;
 $('cTick').addEventListener('click', () => { for (const r of reconItems()) state.recon.ticked.add(r.id); renderRecon(); });
 $('cUntick').addEventListener('click', () => { state.recon.ticked.clear(); renderRecon(); });
 $('cFinish').addEventListener('click', finishRecon);
+$('cAdd').addEventListener('click', addMissed);
 
 function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
