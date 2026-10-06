@@ -9,7 +9,7 @@
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
-  main { max-width:860px; margin:0 auto; padding:16px; }
+  main { max-width:920px; margin:0 auto; padding:16px; }
   h1 { font-size:1.3rem; margin:0 0 4px; }
   h1 small { font-size:.7rem; font-weight:400; color:var(--muted); margin-left:6px; white-space:nowrap; }
   .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
@@ -28,26 +28,39 @@
   .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
   details.card summary { cursor:pointer; font-weight:600; }
   .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  .tabs { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 2px; align-items:center; }
+  .tab { border-radius:999px; padding:6px 14px; }
+  .tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:end; margin-top:10px; }
   form.entry .desc { grid-column:span 2; }
   form.entry .full { grid-column:1 / -1; }
   form.entry .addbtn button { width:100%; }
   form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
+  .desc, #eTextWrap { position:relative; }
+  .suggest { position:absolute; left:0; right:0; top:100%; z-index:30; background:var(--bg); border:1px solid var(--line); border-radius:9px; margin:2px 0 0; padding:0; list-style:none; max-height:230px; overflow:auto; box-shadow:0 4px 14px rgba(0,0,0,.2); }
+  .suggest li { padding:8px 10px; cursor:pointer; font-size:.92rem; display:flex; justify-content:space-between; gap:8px; }
+  .suggest li.on, .suggest li:hover { background:var(--card); }
+  .suggest li small { color:var(--muted); white-space:nowrap; }
   .summary { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
   .stat { flex:1 1 150px; background:var(--card); border-radius:10px; padding:8px 12px; }
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
-  .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:.9rem; }
+  .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:.9rem; flex-wrap:wrap; }
+  .rule.sub { border-top:none; padding:2px 0 2px 16px; color:var(--muted); font-size:.85rem; }
+  .rule .btns { white-space:nowrap; }
+  .rule .btns button + button { margin-left:4px; }
   .horizon { display:flex; align-items:center; gap:8px; margin:10px 0 0; }
   .horizon select { width:auto; }
   .tablewrap { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:10px; }
-  table { border-collapse:collapse; width:100%; min-width:620px; }
+  table { border-collapse:collapse; width:100%; min-width:720px; }
+  #repTable { min-width:0; }
   th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
   th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); position:sticky; top:0; z-index:2; box-shadow:0 1px 0 var(--line); }
   tr:last-child td { border-bottom:none; }
   td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   td.time { white-space:nowrap; color:var(--muted); font-size:.85rem; }
+  td.cat { color:var(--muted); font-size:.85rem; white-space:nowrap; }
   tr.deleted td { color:var(--muted); }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
   tr:not(.deleted):not(.proj):not(.start):not(.divider) td.amt { font-weight:700; }   /* actual amounts are bold */
@@ -57,6 +70,7 @@
   tr.proj td { font-style:italic; color:var(--muted); }
   tr.proj.conf td { color:var(--fg); }
   tr.proj.conf td.amt { font-weight:700; font-style:normal; }   /* confirmed by the biller */
+  tr.total td { font-weight:700; border-top:2px solid var(--line); }
   .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; font-style:normal; font-weight:400; }
   .tag.due { color:var(--warn-fg); background:var(--warn-bg); border-color:transparent; }
   .tag.ok { color:var(--ok-fg); background:var(--ok-bg); border-color:transparent; }
@@ -64,7 +78,7 @@
   tr.proj td.neg { color:#c62828; }
   td.act { white-space:nowrap; text-align:right; }
   td.act button + button { margin-left:4px; }
-  .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:10px; }
+  .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:8px; margin-top:10px; }
   #reconList { max-height:40vh; overflow:auto; margin:8px 0; }
   .ritem { display:grid; grid-template-columns:auto 8.5em 1fr auto 3.6em; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
   .ritem input { width:auto; }
@@ -73,7 +87,7 @@
   .rsum div { display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-variant-numeric:tabular-nums; font-size:.92rem; }
   .rsum .total { border-top:1px solid var(--line); font-weight:700; margin-top:3px; padding-top:6px; }
   .rsum .good { color:var(--ok-fg); } .rsum .bad { color:#c62828; }
-  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:16px; width:min(400px, calc(100% - 32px)); }
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:16px; width:min(420px, calc(100% - 32px)); overflow:visible; }
   dialog::backdrop { background:rgba(0,0,0,.4); }
   dialog h3 { margin:0; }
   [hidden] { display:none !important; }
@@ -95,14 +109,14 @@
 
   <section id="setup" class="card" hidden>
     <strong>First use</strong>
-    <p class="small">Enter your starting balance, or open an existing ledger file above.</p>
-    <form id="setupForm" style="display:flex; gap:8px;">
-      <input id="startBal" type="number" step="0.01" inputmode="decimal" placeholder="Starting balance" required>
-      <button class="primary" type="submit">Start</button>
-    </form>
+    <p class="small">Create your first account (you can add more later), or open an existing ledger file above.</p>
+    <button class="primary" id="btnFirst" type="button">Create first account</button>
   </section>
 
   <section id="app" hidden>
+    <div class="tabs" id="acctBar"></div>
+    <div class="small" id="acctInfo" style="margin:4px 0 0"></div>
+
     <div class="summary" id="summary"></div>
 
     <div class="card">
@@ -112,12 +126,31 @@
           <input id="date" type="date" required>
         </div>
         <div>
-          <label for="amount">Amount (− = out)</label>
+          <label for="type">Type</label>
+          <select id="type">
+            <option value="regular">Payment or deposit</option>
+            <option value="transfer">Transfer between accounts</option>
+          </select>
+        </div>
+        <div>
+          <label for="amount" id="amountLbl">Amount (− = out)</label>
           <input id="amount" type="number" step="0.01" inputmode="decimal" required>
         </div>
         <div class="desc">
           <label for="text">Description</label>
-          <input id="text" type="text" maxlength="60" required>
+          <input id="text" type="text" maxlength="60" autocomplete="off" required>
+        </div>
+        <div id="catWrap">
+          <label for="cat">Category</label>
+          <select id="cat"></select>
+        </div>
+        <div class="tonly" hidden>
+          <label for="xFrom">From account</label>
+          <select id="xFrom"></select>
+        </div>
+        <div class="tonly" hidden>
+          <label for="xTo">To account</label>
+          <select id="xTo"></select>
         </div>
         <div class="addbtn"><button class="primary" type="submit">Add</button></div>
       </form>
@@ -132,7 +165,11 @@
         </div>
         <div class="desc">
           <label for="rText">Description</label>
-          <input id="rText" type="text" maxlength="60" required>
+          <input id="rText" type="text" maxlength="60" autocomplete="off" required>
+        </div>
+        <div>
+          <label for="rCat">Category</label>
+          <select id="rCat"></select>
         </div>
         <div>
           <label for="rFreq">Repeats</label>
@@ -154,7 +191,7 @@
         </div>
         <div class="addbtn"><button class="primary" type="submit">Add recurring</button></div>
       </form>
-      <p class="small" style="margin:8px 0 6px">The amount here is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
+      <p class="small" style="margin:8px 0 6px">The amount here is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use <b>Change amount</b>. If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
       <div id="ruleList"></div>
     </details>
 
@@ -175,6 +212,32 @@
       <div id="reconHistory"></div>
     </details>
 
+    <details class="card" id="repDet">
+      <summary>Reports</summary>
+      <div class="recon-top">
+        <div><label class="lbl" for="pPeriod">Period</label>
+          <select id="pPeriod">
+            <option value="thisMonth">This month</option>
+            <option value="lastMonth">Last month</option>
+            <option value="thisYear">This year</option>
+            <option value="lastYear">Last year</option>
+            <option value="last12">Last 12 months</option>
+            <option value="all">All time</option>
+            <option value="custom">Custom range…</option>
+          </select></div>
+        <div><label class="lbl" for="pScope">Accounts</label>
+          <select id="pScope"><option value="one">This account</option><option value="all">All accounts</option></select></div>
+        <div><label class="lbl" for="pView">View</label>
+          <select id="pView"><option value="cat">By category</option><option value="month">By category and month</option></select></div>
+      </div>
+      <div class="recon-top" id="pCustom" hidden>
+        <div><label class="lbl" for="pFrom">From</label><input id="pFrom" type="date"></div>
+        <div><label class="lbl" for="pTo">To</label><input id="pTo" type="date"></div>
+      </div>
+      <div class="tablewrap" style="max-height:50vh"><table id="repTable"></table></div>
+      <p class="small" style="margin:8px 0 0">Transfers between your own accounts, deleted entries and projected items are left out.</p>
+    </details>
+
     <div class="horizon small">
       <label for="horizon">Look ahead</label>
       <select id="horizon">
@@ -187,7 +250,7 @@
 
     <div class="tablewrap" id="tablewrap">
       <table>
-        <thead><tr><th>Date</th><th>Text</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Text</th><th>Category</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -207,7 +270,11 @@
     </div>
     <div class="full" id="eTextWrap">
       <label for="eText">Description</label>
-      <input id="eText" type="text" maxlength="60">
+      <input id="eText" type="text" maxlength="60" autocomplete="off">
+    </div>
+    <div class="full" id="eCatWrap">
+      <label for="eCat">Category</label>
+      <select id="eCat"></select>
     </div>
     <p class="small full" id="eNote" style="margin:0"></p>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
@@ -218,20 +285,64 @@
   </form>
 </dialog>
 
+<dialog id="acctDlg">
+  <form id="acctForm" class="entry" style="margin-top:0">
+    <h3 class="full" id="acctTitle">Add account</h3>
+    <div>
+      <label for="aType">Type</label>
+      <select id="aType"></select>
+    </div>
+    <div>
+      <label for="aInst">Institution</label>
+      <input id="aInst" type="text" maxlength="60" autocomplete="off">
+    </div>
+    <div>
+      <label for="aName">Name (optional)</label>
+      <input id="aName" type="text" maxlength="40" autocomplete="off" placeholder="e.g. Everyday">
+    </div>
+    <div>
+      <label for="aNum">Account number (optional)</label>
+      <input id="aNum" type="text" maxlength="30" inputmode="numeric" autocomplete="off">
+    </div>
+    <div>
+      <label for="aBal">Opening balance</label>
+      <input id="aBal" type="number" step="0.01" inputmode="decimal" required>
+    </div>
+    <div>
+      <label for="aOpen">Balance as of</label>
+      <input id="aOpen" type="date" required>
+    </div>
+    <p class="small full" id="aNote" style="margin:0"></p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="aCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 'use strict';
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
 const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
 const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
 const $ = id => document.getElementById(id);
+const DATA_VERSION = 4;
+const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
+const DEFAULT_CATEGORIES = ['Income', 'Housing', 'Utilities', 'Groceries', 'Dining', 'Transport', 'Health', 'Shopping', 'Subscriptions', 'Entertainment', 'Gifts', 'Insurance', 'Other'];
+const NEWCAT = '__new__';
 const state = {
   data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false,
-  initialScroll:true, edit:null, recon:{ month:null, ticked:new Set(), stmt:'' }
+  initialScroll:true, edit:null, acctEdit:null, accountId:null,
+  recon:{ month:null, ticked:new Set(), stmt:'' },
+  rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '3.1';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 15:21';
+const APP_VERSION = '4.0';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 15:42';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
+
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } };
 
 /* ---------- IndexedDB (browser-side draft + file handle) ---------- */
 function idb() {
@@ -281,6 +392,7 @@ function addMonths(s, n) {            // keeps the day of month; clamps to month
 }
 const monthEnd = ym => { const [y, m] = ym.split('-').map(Number); return ymd(y, m, new Date(Date.UTC(y, m, 0)).getUTCDate()); };
 const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month:'long', year:'numeric' }); };
+const monthShort = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month:'short', year:'2-digit' }); };
 function monthsList() {               // current month first, then back 24 months
   const t = new Date(); let y = t.getFullYear(), m = t.getMonth() + 1; const out = [];
   for (let i = 0; i < 25; i++) { out.push(y + '-' + pad(m)); m--; if (m === 0) { m = 12; y--; } }
@@ -291,23 +403,61 @@ const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medi
 
 /* ---------- Data helpers ---------- */
 const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Every 3 months', yearly:'Yearly' };
-const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && typeof d.startingBalance === 'number';
+const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && (Array.isArray(d.accounts) || typeof d.startingBalance === 'number');
+function fileProblem(d) {
+  if (!valid(d)) return 'That file is not a ledger file.';
+  if ((d.version || 1) > DATA_VERSION) return 'That file was saved by a newer version of myLedger. Reload this page to update, then try again.';
+  return null;
+}
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const cents = x => Math.round(x * 100);
 const fmt = c => (c / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
 const ruleById = id => state.data.recurring.find(x => x.id === id);
+const acctById = id => state.data.accounts.find(a => a.id === id);
+const last4 = n => { const s = String(n || '').replace(/\D/g, ''); return s ? '…' + s.slice(-4) : ''; };
+const acctLabel = a => a.name || [a.institution, a.type].filter(Boolean).join(' ') || 'Account';
+const acctSub = a => [a.institution, a.type, last4(a.number)].filter(Boolean).join(' · ');
+const balanceOf = a => cents(a.startingBalance) + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
+const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[] });
+
+function ensureAccount() {
+  const ids = state.data.accounts.map(a => a.id);
+  if (!ids.includes(state.accountId)) { const saved = lsGet('myLedger.account'); state.accountId = ids.includes(saved) ? saved : ids[0]; }
+}
+function acct() { ensureAccount(); return acctById(state.accountId); }
 
 function migrate(d) {                 // upgrades older files in memory; saved as the new version on the next save
-  d.version = 3;
+  d.version = DATA_VERSION;
+  const nowIso = d.createdAt || new Date().toISOString();
+  if (!Array.isArray(d.accounts) || !d.accounts.length) {
+    d.accounts = [{ id:uid(), name:'Main account', type:ACCT_TYPES[0], institution:'', number:'', startingBalance: typeof d.startingBalance === 'number' ? d.startingBalance : 0, openedOn:localDate(nowIso), createdAt:nowIso, closed:false }];
+  }
+  delete d.startingBalance;
+  const first = d.accounts[0].id;
+  if (!Array.isArray(d.categories)) d.categories = DEFAULT_CATEGORIES.slice();
   if (!Array.isArray(d.recurring)) d.recurring = [];
   if (!d.settings || typeof d.settings !== 'object') d.settings = {};
   if (!d.settings.horizonMonths) d.settings.horizonMonths = 3;
   if (!d.reconciliations || typeof d.reconciliations !== 'object') d.reconciliations = {};
   for (const u of d.recurring) {
+    if (!u.accountId) u.accountId = first;
     if (!u.overrides || typeof u.overrides !== 'object') u.overrides = {};   // confirmed amounts/dates, keyed by scheduled date
     if (!Array.isArray(u.skipped)) u.skipped = [];
+    if (!Array.isArray(u.changes)) u.changes = [];                           // known future changes to the estimate
+    if (u.category === undefined) u.category = '';
   }
-  for (const r of d.records) if (!r.date) r.date = localDate(r.createdAt || d.createdAt || new Date().toISOString());
+  for (const r of d.records) {
+    if (!r.accountId) r.accountId = first;
+    if (!r.date) r.date = localDate(r.createdAt || nowIso);
+    if (r.category === undefined) r.category = '';
+  }
+  for (const k of Object.keys(d.reconciliations)) {
+    const v = d.reconciliations[k];
+    if (!k.includes('|')) { delete d.reconciliations[k]; d.reconciliations[first + '|' + k] = Object.assign({}, v, { accountId:first, month:k }); }
+    else if (!v.accountId) { const [a, m] = k.split('|'); v.accountId = a; v.month = m; }
+  }
+  const have = new Set(d.categories.map(c => c.toLowerCase()));
+  for (const r of d.records.concat(d.recurring)) if (r.category && !have.has(r.category.toLowerCase())) { d.categories.push(r.category); have.add(r.category.toLowerCase()); }
   return d;
 }
 
@@ -329,10 +479,16 @@ function nth(u, n) {
   return null;
 }
 
+function estimateFor(u, date) {       // the estimate in force on a date, after any scheduled changes
+  let amt = u.amount, best = '';
+  for (const c of (u.changes || [])) if (c.from <= date && c.from >= best) { best = c.from; amt = c.amount; }
+  return amt;
+}
+
 function computeActual() {
-  const d = state.data;
-  const recs = [...d.records].sort(cmp);
-  let bal = cents(d.startingBalance);
+  const a = acct();
+  const recs = state.data.records.filter(r => r.accountId === a.id).sort(cmp);
+  let bal = cents(a.startingBalance);
   const rows = [];
   for (const r of recs) {
     if (!r.deleted) bal += cents(r.amount);   // deleted records no longer affect later balances
@@ -349,11 +505,11 @@ function handledSet() {               // occurrences already posted (even if tha
 }
 
 function computeProjected(startCents) {
-  const d = state.data, today = todayStr();
+  const d = state.data, today = todayStr(), a = acct();
   const limit = addMonths(today, d.settings.horizonMonths || 3);
   const done = handledSet(), items = [];
   for (const u of d.recurring) {
-    if (u.deleted) continue;
+    if (u.deleted || u.accountId !== a.id) continue;
     const end = (u.endDate && u.endDate < limit) ? u.endDate : limit;
     for (let n = 0; n < 5000; n++) {
       const orig = nth(u, n);
@@ -361,7 +517,7 @@ function computeProjected(startCents) {
       if (done.has(u.id + '|' + orig)) continue;
       const ov = u.overrides ? u.overrides[orig] : null;     // confirmed by the biller
       const date = (ov && ov.date) || orig;
-      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, amount: ov ? ov.amount : u.amount, confirmed: !!ov, due: date <= today });
+      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, category:u.category || '', amount: ov ? ov.amount : estimateFor(u, orig), confirmed: !!ov, due: date <= today });
     }
   }
   items.sort(cmp);
@@ -480,7 +636,8 @@ async function openFile() {
     try {
       const [h] = await window.showOpenFilePicker({ types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
       const d = JSON.parse(await (await h.getFile()).text());
-      if (!valid(d)) return setMsg('That file is not a ledger file.', 'err');
+      const bad = fileProblem(d);
+      if (bad) return setMsg(bad, 'err');
       state.handle = h; await kvSet('handle', h);
       adopt(d, h.name);
     } catch (e) { if (e.name !== 'AbortError') setMsg('Could not open file: ' + e.message, 'err'); }
@@ -493,7 +650,8 @@ $('fileInput').addEventListener('change', async ev => {
   if (!f) return;
   try {
     const d = JSON.parse(await f.text());
-    if (!valid(d)) return setMsg('That file is not a ledger file.', 'err');
+    const bad = fileProblem(d);
+    if (bad) return setMsg(bad, 'err');
     adopt(d, f.name);
   } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
 });
@@ -504,7 +662,7 @@ async function refreshFromFile() {   // pick up changes saved from another devic
     if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') { state.needsReconnect = true; render(); return; }
     state.needsReconnect = false;
     const d = JSON.parse(await (await state.handle.getFile()).text());
-    if (valid(d) && d.savedAt && (!state.baseSavedAt || d.savedAt > state.baseSavedAt)) adopt(d);
+    if (!fileProblem(d) && d.savedAt && (!state.baseSavedAt || d.savedAt > state.baseSavedAt)) adopt(d);
     else render();
   } catch (e) { /* ignore */ }
 }
@@ -516,13 +674,88 @@ async function reconnect() {          // needs a tap: browsers only allow the pe
     if (await h.requestPermission({ mode:'readwrite' }) !== 'granted') return;
     state.needsReconnect = false;
     const d = JSON.parse(await (await h.getFile()).text());
-    if (!valid(d)) return render();
+    const bad = fileProblem(d);
+    if (bad) return setMsg(bad, 'err');
     const newer = !state.baseSavedAt || (d.savedAt && d.savedAt > state.baseSavedAt);
     if (!state.data) return adopt(d, h.name);
     if (!newer) return render();
     if (state.dirty && !confirm('The file has newer changes, and you also have unsaved changes here.\n\nLoad the file version? Your unsaved changes here will be replaced.')) return render();
     adopt(d, h.name);
   } catch (e) { setMsg('Could not reconnect: ' + e.message, 'err'); }
+}
+
+/* ---------- Categories ---------- */
+function syncCats(sel, value) {       // (re)build a category dropdown; keeps the current choice unless a value is given
+  const cats = state.data.categories, key = cats.join('|');
+  const cur = value !== undefined ? value : sel.value;
+  if (sel.dataset.key !== key) {
+    sel.innerHTML = '';
+    const mk = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    mk('', '(no category)'); cats.forEach(c => mk(c, c)); mk(NEWCAT, '+ New category…');
+    sel.dataset.key = key;
+  }
+  sel.value = cats.includes(cur) ? cur : '';
+}
+function onCatChange(sel) {
+  if (sel.value !== NEWCAT) return;
+  const n = (prompt('New category name:') || '').trim();
+  const dup = n && state.data.categories.find(c => c.toLowerCase() === n.toLowerCase());
+  if (n && !dup) { state.data.categories.push(n); state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); syncCats(sel, n); }
+  else syncCats(sel, dup || '');
+}
+const catValue = sel => (sel.value === NEWCAT ? '' : sel.value);
+
+/* ---------- Suggestions while typing a description ---------- */
+function suggestFor(q) {
+  q = q.trim().toLowerCase();
+  if (!q || !state.data) return [];
+  const m = new Map();
+  for (const r of state.data.records) {
+    if (r.deleted || r.transferId) continue;
+    const e = m.get(r.text);
+    if (!e) m.set(r.text, { text:r.text, n:1, last:r });
+    else { e.n++; if (r.date >= e.last.date) e.last = r; }
+  }
+  for (const u of state.data.recurring) if (!u.deleted && !m.has(u.text)) m.set(u.text, { text:u.text, n:0, last:{ category:u.category, amount:u.amount } });
+  const pre = [], sub = [];
+  for (const e of m.values()) {
+    const t = e.text.toLowerCase();
+    if (t === q) continue;
+    if (t.startsWith(q)) pre.push(e); else if (t.includes(q)) sub.push(e);
+  }
+  const rank = (a, b) => (b.n - a.n) || a.text.localeCompare(b.text);
+  return [...pre.sort(rank), ...sub.sort(rank)].slice(0, 8).map(e => ({ text:e.text, category:e.last.category || '', amount:e.last.amount }));
+}
+function attachSuggest(input, onPick) {
+  const ul = document.createElement('ul'); ul.className = 'suggest'; ul.hidden = true;
+  input.parentElement.appendChild(ul);
+  let items = [], active = -1;
+  const hide = () => { ul.hidden = true; active = -1; };
+  const pick = s => { input.value = s.text; hide(); if (onPick) onPick(s); };
+  const show = () => {
+    items = suggestFor(input.value); ul.innerHTML = '';
+    if (!items.length) return hide();
+    items.forEach(s => {
+      const li = document.createElement('li');
+      const a = document.createElement('span'); a.textContent = s.text; li.appendChild(a);
+      if (s.category) { const b = document.createElement('small'); b.textContent = s.category; li.appendChild(b); }
+      li.onpointerdown = e => { e.preventDefault(); pick(s); };      // keeps focus in the box on touch screens
+      ul.appendChild(li);
+    });
+    ul.hidden = false; active = -1;
+  };
+  input.addEventListener('input', show);
+  input.addEventListener('focus', () => { if (input.value) show(); });
+  input.addEventListener('blur', () => setTimeout(hide, 150));
+  input.addEventListener('keydown', e => {
+    if (ul.hidden) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      [...ul.children].forEach((li, i) => li.classList.toggle('on', i === active));
+    } else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(items[active]); }
+    else if (e.key === 'Escape') hide();
+  });
 }
 
 /* ---------- Messages & render ---------- */
@@ -564,19 +797,41 @@ function render() {
     }
   } else b.className = '';
 
-  $('setup').hidden = !!state.data;
-  $('app').hidden = !state.data;
-  if (!state.data) return;
+  const ready = !!(state.data && state.data.accounts.length);
+  $('setup').hidden = ready;
+  $('app').hidden = !ready;
+  if (!ready) return;
 
+  ensureAccount();
   const A = computeActual();
   const P = computeProjected(A.final);
+  renderAcctBar();
   renderSummary(A, P);
+  renderEntry();
   renderTable(A, P);
   renderRules();
   renderRecon();
+  if ($('repDet').open) renderReport();
   $('horizon').value = String(state.data.settings.horizonMonths || 3);
-  if (!$('date').value) $('date').value = todayStr();
   if (!$('rStart').value) $('rStart').value = todayStr();
+  syncCats($('rCat'));
+}
+
+function renderAcctBar() {
+  const bar = $('acctBar'); bar.innerHTML = '';
+  for (const a of state.data.accounts) {
+    const btn = document.createElement('button'); btn.className = 'tab' + (a.id === state.accountId ? ' on' : '');
+    btn.textContent = acctLabel(a); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
+  }
+  bar.appendChild(miniBtn('+ Add account', () => openAcct(null)));
+  bar.appendChild(miniBtn('Edit account', () => openAcct(acct())));
+  $('acctInfo').textContent = acctSub(acct());
+}
+function switchAccount(id) {
+  state.accountId = id; lsSet('myLedger.account', id);
+  state.initialScroll = true;
+  state.recon = { month:null, ticked:new Set(), stmt:'' };
+  render();
 }
 
 function stat(label, value, neg, sub) {
@@ -592,6 +847,42 @@ function renderSummary(A, P) {
     s.appendChild(stat('Projected by ' + fmtDate(P.limit), fmt(P.end), P.end < 0));
     s.appendChild(stat('Lowest projected', fmt(P.low.bal), P.low.bal < 0, fmtDate(P.low.date)));
   }
+  if (state.data.accounts.length > 1) {
+    const total = state.data.accounts.reduce((t, a) => t + balanceOf(a), 0);
+    s.appendChild(stat('All accounts', fmt(total), total < 0));
+  }
+}
+
+/* ---------- Entry form ---------- */
+function renderEntry() {
+  const accts = state.data.accounts;
+  syncCats($('cat'));
+  const key = accts.map(a => a.id + a.name + a.institution + a.type).join('|');
+  for (const id of ['xFrom', 'xTo']) {
+    const sel = $(id);
+    if (sel.dataset.key !== key) {
+      sel.innerHTML = '';
+      for (const a of accts) { const o = document.createElement('option'); o.value = a.id; o.textContent = acctLabel(a); sel.appendChild(o); }
+      sel.dataset.key = key; sel.dataset.acc = '';
+    }
+    if (sel.dataset.acc !== state.accountId) {      // defaults follow the account you are looking at
+      const other = accts.find(a => a.id !== state.accountId);
+      sel.value = id === 'xFrom' ? state.accountId : (other ? other.id : state.accountId);
+      sel.dataset.acc = state.accountId;
+    }
+  }
+  const opt = $('type').querySelector('option[value=transfer]');
+  if (opt) opt.disabled = accts.length < 2;
+  if (accts.length < 2 && $('type').value === 'transfer') $('type').value = 'regular';
+  applyTypeUI();
+  if (!$('date').value) $('date').value = todayStr();
+}
+function applyTypeUI() {
+  const t = $('type').value === 'transfer';
+  $('catWrap').hidden = t;
+  for (const el of document.querySelectorAll ? document.querySelectorAll('.tonly') : []) el.hidden = !t;
+  $('amountLbl').textContent = t ? 'Amount to move' : 'Amount (− = out)';
+  $('text').required = !t;
 }
 
 function addCell(tr, text, cls) {
@@ -607,13 +898,14 @@ function miniBtn(label, fn, cls) {
 
 function renderTable(A, P) {
   const tb = $('rows'); tb.innerHTML = '';
-  const today = todayStr();
+  const today = todayStr(), a = acct();
   let anchor = null;                    // the latest real transaction before today
   const start = document.createElement('tr'); start.className = 'start';
-  addCell(start, fmtDate(localDate(state.data.createdAt || new Date().toISOString())), 'time');
-  addCell(start, 'Starting balance');
+  addCell(start, fmtDate(a.openedOn || localDate(a.createdAt || new Date().toISOString())), 'time');
+  addCell(start, 'Opening balance');
+  addCell(start, '', 'cat');
   addCell(start, '', 'num');
-  addCell(start, fmt(cents(state.data.startingBalance)), 'num');
+  addCell(start, fmt(cents(a.startingBalance)), 'num');
   addCell(start, '');
   tb.appendChild(start);
 
@@ -623,11 +915,13 @@ function renderTable(A, P) {
     const dc = addCell(tr, fmtDate(r.date), 'time');
     dc.title = (r.createdAt ? 'Entered ' + fmtTime(r.createdAt) : '') + (r.editedAt ? ' · edited ' + fmtTime(r.editedAt) : '');
     const t = addCell(tr, r.text, 'text');
+    if (r.transferId) tag(t, '⇄', '', 'Transfer between your accounts');
     if (r.recurringId) tag(t, '↻');
     if (r.reconciled) tag(t, '✓', 'ok', 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement');
     if (r.deleted) tag(t, 'deleted');
-    const a = addCell(tr, fmt(cents(r.amount)), 'num amt');
-    if (r.amount < 0) a.classList.add('neg');
+    addCell(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
+    const am = addCell(tr, fmt(cents(r.amount)), 'num amt');
+    if (r.amount < 0) am.classList.add('neg');
     const bc = addCell(tr, fmt(bal), 'num');
     if (bal < 0) bc.classList.add('neg');
     const act = addCell(tr, '', 'act');
@@ -642,7 +936,7 @@ function renderTable(A, P) {
   if (P.rows.length) {
     const dueCount = P.rows.filter(x => x.it.due).length;
     const dv = document.createElement('tr'); dv.className = 'divider';
-    const dtd = document.createElement('td'); dtd.colSpan = 5;
+    const dtd = document.createElement('td'); dtd.colSpan = 6;
     dtd.appendChild(document.createTextNode('Projected from recurring items, through ' + fmtDate(P.limit)));
     if (dueCount) dtd.appendChild(miniBtn('Post all due (' + dueCount + ')', postAllDue));
     dv.appendChild(dtd); tb.appendChild(dv);
@@ -654,8 +948,9 @@ function renderTable(A, P) {
       tag(t, '↻');
       if (!it.confirmed) tag(t, 'est.', '', 'Estimated amount: press Edit to confirm the biller\'s amount');
       if (it.due) tag(t, 'due', 'due');
-      const a = addCell(tr, fmt(cents(it.amount)), 'num amt');
-      if (it.amount < 0) a.classList.add('neg');
+      addCell(tr, it.category, 'cat');
+      const am = addCell(tr, fmt(cents(it.amount)), 'num amt');
+      if (it.amount < 0) am.classList.add('neg');
       const bc = addCell(tr, fmt(bal), 'num');
       if (bal < 0) bc.classList.add('neg');
       const act = addCell(tr, '', 'act');
@@ -679,26 +974,37 @@ function renderTable(A, P) {
 
 function renderRules() {
   const box = $('ruleList'); box.innerHTML = '';
-  const act = state.data.recurring.filter(u => !u.deleted);
-  if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items yet.'; box.appendChild(p); return; }
+  const a = acct();
+  const act = state.data.recurring.filter(u => !u.deleted && u.accountId === a.id);
+  if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items for this account yet.'; box.appendChild(p); return; }
   for (const u of act) {
     const row = document.createElement('div'); row.className = 'rule';
     const s = document.createElement('span');
-    s.textContent = u.text + ' · est. ' + fmt(cents(u.amount)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '');
+    s.textContent = u.text + ' · est. ' + fmt(cents(u.amount)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' · ' + u.category : '');
     row.appendChild(s);
-    row.appendChild(miniBtn('Stop', () => stopRule(u.id), 'danger'));
+    const btns = document.createElement('span'); btns.className = 'btns';
+    btns.appendChild(miniBtn('Change amount', () => chgRule(u.id)));
+    btns.appendChild(miniBtn('Stop', () => stopRule(u.id), 'danger'));
+    row.appendChild(btns);
     box.appendChild(row);
+    for (const c of [...(u.changes || [])].sort((x, y) => x.from < y.from ? -1 : 1)) {
+      const cr = document.createElement('div'); cr.className = 'rule sub';
+      const cs = document.createElement('span'); cs.textContent = 'From ' + fmtDate(c.from) + ': est. ' + fmt(cents(c.amount));
+      cr.appendChild(cs); cr.appendChild(miniBtn('Remove', () => removeChange(u.id, c.from)));
+      box.appendChild(cr);
+    }
   }
 }
 
-/* ---------- Monthly reconciliation ---------- */
+/* ---------- Monthly reconciliation (per account) ---------- */
 function reconItems() {               // unreconciled, live entries up to the end of the chosen month (earlier leftovers carry over)
-  const end = monthEnd(state.recon.month);
-  return state.data.records.filter(r => !r.deleted && !r.reconciled && r.date <= end).sort(cmp);
+  const a = acct(), end = monthEnd(state.recon.month);
+  return state.data.records.filter(r => r.accountId === a.id && !r.deleted && !r.reconciled && r.date <= end).sort(cmp);
 }
 function reconSums(items) {
-  const d = state.data, R = state.recon;
-  const opening = cents(d.startingBalance) + d.records.filter(r => !r.deleted && r.reconciled).reduce((s, r) => s + cents(r.amount), 0);
+  const d = state.data, R = state.recon, a = acct();
+  const mine = d.records.filter(r => r.accountId === a.id && !r.deleted);
+  const opening = cents(a.startingBalance) + mine.filter(r => r.reconciled).reduce((s, r) => s + cents(r.amount), 0);
   const ticked = items.filter(r => R.ticked.has(r.id));
   const tickedSum = ticked.reduce((s, r) => s + cents(r.amount), 0);
   const cleared = opening + tickedSum;
@@ -707,27 +1013,27 @@ function reconSums(items) {
   const hasStmt = R.stmt !== '' && isFinite(parseFloat(R.stmt));
   const stmtCents = hasStmt ? cents(parseFloat(R.stmt)) : null;
   const end = monthEnd(R.month);
-  const ledgerEnd = cents(d.startingBalance) + d.records.filter(r => !r.deleted && r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
+  const ledgerEnd = cents(a.startingBalance) + mine.filter(r => r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
   return { opening, ticked, tickedSum, cleared, rest, restSum, stmtCents, diff: hasStmt ? stmtCents - cleared : null, ledgerEnd };
 }
 
-function openMonths() {               // ended months that still need reconciling, oldest first
-  const d = state.data, cur = todayStr().slice(0, 7), justEnded = monthsList()[1];
+function openMonths() {               // ended months that still need reconciling for this account, oldest first
+  const d = state.data, a = acct(), cur = todayStr().slice(0, 7), justEnded = monthsList()[1];
   const set = new Set([justEnded]);
-  for (const r of d.records) if (!r.deleted && !r.reconciled) set.add(r.date.slice(0, 7));
-  return [...set].filter(m => m < cur && !d.reconciliations[m]).sort();
+  for (const r of d.records) if (r.accountId === a.id && !r.deleted && !r.reconciled) set.add(r.date.slice(0, 7));
+  return [...set].filter(m => m < cur && !d.reconciliations[a.id + '|' + m]).sort();
 }
 
 function renderRecon() {
-  const R = state.recon, d = state.data;
+  const R = state.recon, d = state.data, a = acct();
   const open = openMonths(), justEnded = monthsList()[1];
   $('reconWork').hidden = !open.length;
   $('reconDone').hidden = !!open.length;
-  $('reconDone').textContent = 'Every month up to ' + monthLabel(justEnded) + ' is reconciled.';
+  $('reconDone').textContent = 'Every month up to ' + monthLabel(justEnded) + ' is reconciled for ' + acctLabel(a) + '.';
 
   if (open.length) {
     if (!R.month || !open.includes(R.month)) { R.month = open[0]; R.ticked.clear(); R.stmt = ''; }
-    const sel = $('cMonth'), key = open.join(',');
+    const sel = $('cMonth'), key = a.id + '|' + open.join(',');
     if (sel.dataset.key !== key) {
       sel.innerHTML = '';
       for (const m of open) { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m) + (m === justEnded ? ' (just ended)' : ''); sel.appendChild(o); }
@@ -759,11 +1065,11 @@ function renderRecon() {
   }
 
   const hist = $('reconHistory'); hist.innerHTML = '';
-  const done = Object.keys(d.reconciliations).sort((x, y) => d.reconciliations[x].completedAt < d.reconciliations[y].completedAt ? -1 : 1);
-  if (done.length) {
-    const last = done[done.length - 1];
+  const mine = Object.values(d.reconciliations).filter(v => v.accountId === a.id).sort((x, y) => x.completedAt < y.completedAt ? -1 : 1);
+  if (mine.length) {
+    const last = mine[mine.length - 1];
     const holder = document.createElement('div'); holder.style.marginTop = '10px';
-    holder.appendChild(miniBtn('Undo last reconciliation', () => reopenMonth(last)));
+    holder.appendChild(miniBtn('Undo last reconciliation', () => reopenMonth(last.month)));
     hist.appendChild(holder);
   }
 }
@@ -787,71 +1093,165 @@ function updateReconSummary() {
 }
 
 function finishRecon() {
-  const R = state.recon, d = state.data;
-  if (d.reconciliations[R.month]) return;
+  const R = state.recon, d = state.data, a = acct(), key = a.id + '|' + R.month;
+  if (d.reconciliations[key]) return;
   const S = reconSums(reconItems());
   if (S.diff === null) { alert('Enter the closing balance from your bank statement first.'); return; }
   if (!S.ticked.length) { alert('Tick the items that appear on the statement first.'); return; }
   if (S.diff !== 0 && !confirm('There is still a difference of ' + fmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
   for (const r of S.ticked) r.reconciled = R.month;
-  d.reconciliations[R.month] = { statementBalance: S.stmtCents / 100, difference: S.diff / 100, itemCount: S.ticked.length, completedAt: new Date().toISOString() };
+  d.reconciliations[key] = { accountId:a.id, month:R.month, statementBalance:S.stmtCents / 100, difference:S.diff / 100, itemCount:S.ticked.length, completedAt:new Date().toISOString() };
   R.ticked.clear(); R.stmt = '';
   changed();
 }
 function reopenMonth(month) {
-  if (!confirm('Reopen ' + monthLabel(month) + '? Its items will be marked as not reconciled again.')) return;
-  for (const r of state.data.records) if (r.reconciled === month) delete r.reconciled;
-  delete state.data.reconciliations[month];
+  const a = acct();
+  if (!confirm('Undo the reconciliation of ' + monthLabel(month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
+  for (const r of state.data.records) if (r.accountId === a.id && r.reconciled === month) delete r.reconciled;
+  delete state.data.reconciliations[a.id + '|' + month];
   changed();
 }
 
-/* ---------- Edit dialog ---------- */
-function openEdit(ctx, title, date, amount, text, note, saveLabel, canRevert) {
+/* ---------- Reports ---------- */
+function reportRange() {
+  const R = state.rep, t = todayStr(), y = Number(t.slice(0, 4)), m = t.slice(0, 7);
+  switch (R.period) {
+    case 'thisMonth': return [m + '-01', monthEnd(m)];
+    case 'lastMonth': { const lm = monthsList()[1]; return [lm + '-01', monthEnd(lm)]; }
+    case 'thisYear':  return [y + '-01-01', y + '-12-31'];
+    case 'lastYear':  return [(y - 1) + '-01-01', (y - 1) + '-12-31'];
+    case 'last12':    return [addDays(addMonths(t, -12), 1), t];
+    case 'custom':    return [R.from || '0000-01-01', R.to || '9999-12-31'];
+    default:          return ['0000-01-01', '9999-12-31'];
+  }
+}
+function reportRecords() {
+  const [from, to] = reportRange();
+  return state.data.records.filter(r => !r.deleted && !r.transferId && r.date >= from && r.date <= to && (state.rep.scope === 'all' || r.accountId === state.accountId));
+}
+function reportByCategory(recs) {
+  const m = new Map();
+  for (const r of recs) {
+    const k = r.category || 'Uncategorized';
+    const e = m.get(k) || { cat:k, inC:0, outC:0, byMonth:new Map() };
+    const c = cents(r.amount);
+    if (c >= 0) e.inC += c; else e.outC += -c;
+    const ym = r.date.slice(0, 7); e.byMonth.set(ym, (e.byMonth.get(ym) || 0) + c);
+    m.set(k, e);
+  }
+  return [...m.values()].sort((a, b) => (b.outC - a.outC) || (b.inC - a.inC) || a.cat.localeCompare(b.cat));
+}
+function renderReport() {
+  const R = state.rep, tbl = $('repTable'); tbl.innerHTML = '';
+  $('pCustom').hidden = R.period !== 'custom';
+  const recs = reportRecords();
+  const cell = (tr, tagName, text, cls) => { const e = document.createElement(tagName); e.textContent = text; if (cls) e.className = cls; tr.appendChild(e); return e; };
+  if (!recs.length) { const tr = document.createElement('tr'); cell(tr, 'td', 'No entries in this period.'); tbl.appendChild(tr); return; }
+  const rows = reportByCategory(recs);
+  const thead = document.createElement('thead'), htr = document.createElement('tr'); thead.appendChild(htr); tbl.appendChild(thead);
+  const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+  if (R.view === 'cat') {
+    ['Category', 'Money in', 'Money out', 'Net', 'Share of spending'].forEach((h, i) => cell(htr, 'th', h, i ? 'num' : ''));
+    const totIn = rows.reduce((s, r) => s + r.inC, 0), totOut = rows.reduce((s, r) => s + r.outC, 0);
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      cell(tr, 'td', r.cat);
+      cell(tr, 'td', r.inC ? fmt(r.inC) : '', 'num');
+      cell(tr, 'td', r.outC ? fmt(r.outC) : '', 'num');
+      const net = r.inC - r.outC; cell(tr, 'td', fmt(net), 'num' + (net < 0 ? ' neg' : ''));
+      cell(tr, 'td', totOut && r.outC ? (r.outC * 100 / totOut).toFixed(1) + '%' : '', 'num');
+      tbody.appendChild(tr);
+    }
+    const tr = document.createElement('tr'); tr.className = 'total';
+    cell(tr, 'td', 'Total'); cell(tr, 'td', fmt(totIn), 'num'); cell(tr, 'td', fmt(totOut), 'num');
+    const net = totIn - totOut; cell(tr, 'td', fmt(net), 'num' + (net < 0 ? ' neg' : '')); cell(tr, 'td', '', 'num');
+    tbody.appendChild(tr);
+  } else {
+    const months = [...new Set(recs.map(r => r.date.slice(0, 7)))].sort();
+    cell(htr, 'th', 'Category (net)'); months.forEach(m => cell(htr, 'th', monthShort(m), 'num')); cell(htr, 'th', 'Total', 'num');
+    const colTot = new Map(months.map(m => [m, 0])); let grand = 0;
+    for (const r of rows) {
+      const tr = document.createElement('tr'); cell(tr, 'td', r.cat); let rt = 0;
+      for (const m of months) {
+        const v = r.byMonth.get(m) || 0; rt += v; colTot.set(m, colTot.get(m) + v);
+        cell(tr, 'td', v ? fmt(v) : '', 'num' + (v < 0 ? ' neg' : ''));
+      }
+      grand += rt; cell(tr, 'td', fmt(rt), 'num' + (rt < 0 ? ' neg' : '')); tbody.appendChild(tr);
+    }
+    const tr = document.createElement('tr'); tr.className = 'total'; cell(tr, 'td', 'Net');
+    for (const m of months) { const v = colTot.get(m); cell(tr, 'td', fmt(v), 'num' + (v < 0 ? ' neg' : '')); }
+    cell(tr, 'td', fmt(grand), 'num' + (grand < 0 ? ' neg' : '')); tbody.appendChild(tr);
+  }
+}
+
+/* ---------- Edit dialog (entries, confirmed amounts, future changes, missed items) ---------- */
+function openEdit(ctx, o) {
   state.edit = ctx;
-  $('editTitle').textContent = title;
-  $('eDate').value = date; $('eAmount').value = amount;
-  $('eText').value = text || ''; $('eText').required = ctx.kind !== 'occ';
-  $('eTextWrap').hidden = ctx.kind === 'occ';
-  $('eNote').textContent = note || '';
-  $('eSave').textContent = saveLabel;
-  $('eRevert').hidden = !canRevert;
+  $('editTitle').textContent = o.title;
+  $('eDate').value = o.date; $('eAmount').value = o.amount;
+  $('eText').value = o.text || ''; $('eText').required = !!o.withText;
+  $('eTextWrap').hidden = !o.withText;
+  $('eCatWrap').hidden = !o.withCat;
+  if (o.withCat) syncCats($('eCat'), o.cat || '');
+  $('eNote').textContent = o.note || '';
+  $('eSave').textContent = o.save;
+  $('eRevert').hidden = !o.revert;
   $('editDlg').showModal();
 }
 function closeEdit() { const dlg = $('editDlg'); state.edit = null; if (dlg.open) dlg.close(); }
+const otherLeg = r => r.transferId ? state.data.records.find(x => x.transferId === r.transferId && x.id !== r.id) : null;
 function editRecord(r) {
-  openEdit({ kind:'rec', id:r.id }, 'Edit entry', r.date, r.amount, r.text,
-    r.reconciled ? 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement. Changing the date or amount marks it as not reconciled.' : '', 'Save', false);
+  const isT = !!r.transferId;
+  let note = '';
+  if (isT) note = 'This is one side of a transfer. A new date or amount is applied to the matching entry in the other account too.';
+  if (r.reconciled || (otherLeg(r) && otherLeg(r).reconciled)) note += (note ? ' ' : '') + 'Reconciled with a statement: changing the date or amount marks it as not reconciled.';
+  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:r.amount, text:r.text, cat:r.category, note, save:'Save', withText:true, withCat:!isT });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
-  openEdit({ kind:'add' }, 'Add missed item', monthEnd(state.recon.month), '', '',
-    'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.', 'Add', false);
+  openEdit({ kind:'add' }, { title:'Add missed item', date:monthEnd(state.recon.month), amount:'', text:'', cat:'',
+    note:'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.', save:'Add', withText:true, withCat:true });
   setTimeout(() => $('eAmount').focus(), 50);
 }
 function editOcc(it) {
   const u = ruleById(it.ruleId);
-  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, 'Confirm amount: ' + it.text, it.date, it.amount, '',
-    'Enter the amount the biller has confirmed. It will then show in bold. The original estimate was ' + fmt(cents(u.amount)) + '.', 'Confirm', it.confirmed);
+  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, { title:'Confirm amount: ' + it.text, date:it.date, amount:it.amount,
+    note:'Enter the amount the biller has confirmed. It will then show in bold. The estimate was ' + fmt(cents(estimateFor(u, it.orig))) + '.', save:'Confirm', revert:it.confirmed });
+}
+function chgRule(id) {
+  const u = ruleById(id), t = todayStr();
+  openEdit({ kind:'chg', ruleId:id }, { title:'Change amount: ' + u.text, date:t, amount:estimateFor(u, t),
+    note:'From this date on, each projected occurrence uses the new estimate. Occurrences you have already confirmed keep their confirmed amount.', save:'Schedule change' });
 }
 $('editForm').addEventListener('submit', ev => {
   ev.preventDefault();
   const E = state.edit; if (!E) return;
   const date = $('eDate').value, amount = parseFloat($('eAmount').value);
   if (!date || !isFinite(amount)) return;
+  const now = new Date().toISOString();
   if (E.kind === 'occ') {
     const u = ruleById(E.ruleId); if (!u) return;
-    u.overrides[E.orig] = { amount, date, confirmedAt:new Date().toISOString() };
+    u.overrides[E.orig] = { amount, date, confirmedAt:now };
+  } else if (E.kind === 'chg') {
+    const u = ruleById(E.ruleId); if (!u) return;
+    u.changes = (u.changes || []).filter(c => c.from !== date);
+    u.changes.push({ from:date, amount });
   } else if (E.kind === 'add') {
     const text = $('eText').value.trim(); if (!text) return;
-    const rec = { id:uid(), text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null };
+    const rec = { id:uid(), accountId:state.accountId, text, category:catValue($('eCat')), amount, date, createdAt:now, deleted:false, deletedAt:null };
     state.data.records.push(rec);
     state.recon.ticked.add(rec.id);
   } else {
     const r = state.data.records.find(x => x.id === E.id); if (!r) return;
     const text = $('eText').value.trim(); if (!text) return;
-    const moved = r.date !== date || cents(r.amount) !== cents(amount);
-    if (r.reconciled && moved && !confirm('This entry was reconciled with the ' + monthLabel(r.reconciled) + ' statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
-    r.date = date; r.amount = amount; r.text = text; r.editedAt = new Date().toISOString();
+    const other = otherLeg(r);
+    const newAmt = r.transferId ? (r.amount < 0 ? -Math.abs(amount) : Math.abs(amount)) : amount;
+    const moved = r.date !== date || cents(r.amount) !== cents(newAmt);
+    const anyRec = r.reconciled || (other && other.reconciled);
+    if (anyRec && moved && !confirm('This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
+    r.date = date; r.amount = newAmt; r.text = text; r.editedAt = now;
+    if (!r.transferId) r.category = catValue($('eCat'));
     if (r.reconciled && moved) delete r.reconciled;
+    if (other) { other.date = date; other.amount = -newAmt; other.editedAt = now; if (other.reconciled && moved) delete other.reconciled; }
   }
   closeEdit(); changed();
 });
@@ -863,19 +1263,73 @@ $('eRevert').addEventListener('click', () => {
 $('eCancel').addEventListener('click', closeEdit);
 $('editDlg').addEventListener('close', () => { state.edit = null; });
 
-/* ---------- Actions ---------- */
-$('setupForm').addEventListener('submit', ev => {
+/* ---------- Account dialog ---------- */
+function openAcct(a) {
+  state.acctEdit = a ? a.id : null;
+  const sel = $('aType');
+  if (!sel.dataset.filled) { sel.innerHTML = ''; ACCT_TYPES.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); }); sel.dataset.filled = '1'; }
+  if (a && !ACCT_TYPES.includes(a.type)) { const o = document.createElement('option'); o.value = a.type; o.textContent = a.type; sel.appendChild(o); }
+  $('acctTitle').textContent = a ? 'Edit account' : (state.data && state.data.accounts.length ? 'Add account' : 'Create your first account');
+  sel.value = a ? a.type : ACCT_TYPES[0];
+  $('aInst').value = a ? a.institution : ''; $('aName').value = a ? a.name : ''; $('aNum').value = a ? a.number : '';
+  $('aBal').value = a ? a.startingBalance : ''; $('aOpen').value = a ? a.openedOn : todayStr();
+  $('aNote').textContent = a ? 'Changing the opening balance changes every balance in this account.'
+    : 'Only the last 4 digits of an account number are ever shown. You can enter just those.';
+  $('acctDlg').showModal();
+}
+function closeAcct() { const dlg = $('acctDlg'); state.acctEdit = null; if (dlg.open) dlg.close(); }
+$('acctForm').addEventListener('submit', ev => {
   ev.preventDefault();
-  const v = parseFloat($('startBal').value);
-  if (!isFinite(v)) return;
-  state.data = { version:3, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, recurring:[], reconciliations:{}, records:[] };
-  changed();
+  const type = $('aType').value, institution = $('aInst').value.trim(), name = $('aName').value.trim(), number = $('aNum').value.trim();
+  const startingBalance = parseFloat($('aBal').value), openedOn = $('aOpen').value;
+  if (!isFinite(startingBalance) || !openedOn) return;
+  if (state.acctEdit) {
+    const a = acctById(state.acctEdit); if (!a) return;
+    Object.assign(a, { type, institution, name, number, startingBalance, openedOn });
+  } else {
+    if (!state.data) state.data = newData();
+    const a = { id:uid(), name, type, institution, number, startingBalance, openedOn, createdAt:new Date().toISOString(), closed:false };
+    state.data.accounts.push(a);
+    state.accountId = a.id; lsSet('myLedger.account', a.id);
+    state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' };
+  }
+  closeAcct(); changed();
 });
+$('aCancel').addEventListener('click', closeAcct);
+$('btnFirst').addEventListener('click', () => openAcct(null));
+
+/* ---------- Actions ---------- */
+$('type').addEventListener('change', applyTypeUI);
+$('cat').addEventListener('change', () => onCatChange($('cat')));
+$('rCat').addEventListener('change', () => onCatChange($('rCat')));
+$('eCat').addEventListener('change', () => onCatChange($('eCat')));
+attachSuggest($('text'), s => {
+  if (s.category) syncCats($('cat'), s.category);
+  if ($('amount').value === '' && s.amount !== undefined) { $('amount').value = s.amount; }
+  $('amount').focus(); if ($('amount').select) $('amount').select();
+});
+attachSuggest($('rText'), s => {
+  if (s.category) syncCats($('rCat'), s.category);
+  if ($('rAmount').value === '' && s.amount !== undefined) $('rAmount').value = s.amount;
+});
+attachSuggest($('eText'));
+
 $('entry').addEventListener('submit', ev => {
   ev.preventDefault();
-  const amount = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value;
-  if (!isFinite(amount) || !text || !date) return;
-  state.data.records.push({ id:uid(), text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  const amount = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value, type = $('type').value;
+  if (!isFinite(amount) || !date) return;
+  const now = new Date().toISOString();
+  if (type === 'transfer') {                 // two offsetting entries, one in each account
+    const from = $('xFrom').value, to = $('xTo').value;
+    if (from === to) { alert('Choose two different accounts for a transfer.'); return; }
+    const amt = Math.abs(amount); if (!amt) return;
+    const A = acctById(from), B = acctById(to), tid = uid();
+    state.data.records.push({ id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:'', amount:-amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+    state.data.records.push({ id:uid(), accountId:to, text: text || 'Transfer from ' + acctLabel(A), category:'', amount:amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+  } else {
+    if (!text) return;
+    state.data.records.push({ id:uid(), accountId:state.accountId, text, category:catValue($('cat')), amount, date, createdAt:now, deleted:false, deletedAt:null });
+  }
   $('amount').value = ''; $('text').value = ''; $('amount').focus();   // the date stays, handy when entering a statement
   changed();
 });
@@ -885,7 +1339,7 @@ $('recurForm').addEventListener('submit', ev => {
   const startDate = $('rStart').value, endDate = $('rEnd').value || null, frequency = $('rFreq').value;
   if (!isFinite(amount) || !text || !startDate) return;
   if (endDate && endDate < startDate) { alert('The last date must be on or after the first date.'); return; }
-  state.data.recurring.push({ id:uid(), text, amount, frequency, startDate, endDate, skipped:[], overrides:{}, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  state.data.recurring.push({ id:uid(), accountId:state.accountId, text, category:catValue($('rCat')), amount, frequency, startDate, endDate, skipped:[], overrides:{}, changes:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
   $('rAmount').value = ''; $('rText').value = ''; $('rEnd').value = '';
   changed();
 });
@@ -899,16 +1353,28 @@ $('cTick').addEventListener('click', () => { for (const r of reconItems()) state
 $('cUntick').addEventListener('click', () => { state.recon.ticked.clear(); renderRecon(); });
 $('cFinish').addEventListener('click', finishRecon);
 $('cAdd').addEventListener('click', addMissed);
+$('repDet').addEventListener('toggle', () => { if ($('repDet').open && state.data) renderReport(); });
+$('pPeriod').addEventListener('change', ev => { state.rep.period = ev.target.value; renderReport(); });
+$('pScope').addEventListener('change', ev => { state.rep.scope = ev.target.value; renderReport(); });
+$('pView').addEventListener('change', ev => { state.rep.view = ev.target.value; renderReport(); });
+$('pFrom').addEventListener('change', ev => { state.rep.from = ev.target.value; renderReport(); });
+$('pTo').addEventListener('change', ev => { state.rep.to = ev.target.value; renderReport(); });
 
 function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted) return;
-  if (!confirm('Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.' + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
-  r.deleted = true; r.deletedAt = new Date().toISOString();
+  const other = otherLeg(r);
+  const msg = other
+    ? 'Delete this transfer? Both sides (here and in ' + acctLabel(acctById(other.accountId)) + ') stay in the file marked as deleted, and balances adjust.'
+    : 'Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.';
+  if (!confirm(msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  const now = new Date().toISOString();
+  r.deleted = true; r.deletedAt = now;
+  if (other && !other.deleted) { other.deleted = true; other.deletedAt = now; }
   changed();
 }
 function postRecord(u, orig, date, amount) {
-  state.data.records.push({ id:uid(), text:u.text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:orig });
+  state.data.records.push({ id:uid(), accountId:u.accountId, text:u.text, category:u.category || '', amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:orig });
 }
 function postOcc(it) {                    // turn a projected item into a real entry
   const u = ruleById(it.ruleId);
@@ -945,6 +1411,12 @@ function stopRule(id) {
   if (!u) return;
   if (!confirm('Stop "' + u.text + '"? Entries already posted stay; no more will be projected.')) return;
   u.deleted = true; u.deletedAt = new Date().toISOString();
+  changed();
+}
+function removeChange(id, from) {
+  const u = ruleById(id);
+  if (!u || !confirm('Remove the scheduled change from ' + fmtDate(from) + '?')) return;
+  u.changes = (u.changes || []).filter(c => c.from !== from);
   changed();
 }
 
