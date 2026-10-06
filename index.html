@@ -122,90 +122,11 @@
 
     <div class="summary" id="summary"></div>
 
-    <div class="card">
-      <form id="entry" class="entry" style="margin-top:0">
-        <div>
-          <label for="date">Transaction date</label>
-          <input id="date" type="date" required>
-        </div>
-        <div>
-          <label for="type">Type</label>
-          <select id="type">
-            <option value="regular">Payment or deposit</option>
-            <option value="transfer">Transfer between accounts</option>
-          </select>
-        </div>
-        <div>
-          <label for="amount" id="amountLbl">Amount (− = out)</label>
-          <input id="amount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
-        </div>
-        <div class="desc">
-          <label for="text">Description</label>
-          <input id="text" type="text" maxlength="60" autocomplete="off" required>
-        </div>
-        <div id="catWrap">
-          <label for="cat">Category</label>
-          <select id="cat"></select>
-        </div>
-        <div class="tonly" hidden>
-          <label for="xFrom">From account</label>
-          <select id="xFrom"></select>
-        </div>
-        <div class="tonly" hidden>
-          <label for="xTo">To account</label>
-          <select id="xTo"></select>
-        </div>
-        <div class="addbtn"><button class="primary" type="submit">Add</button></div>
-      </form>
-    </div>
+    <div class="filebar"><button class="primary" id="btnNew" type="button">+ New item</button></div>
 
     <details class="card" id="recur">
       <summary>Recurring items</summary>
-      <form id="recurForm" class="entry">
-        <div>
-          <label for="rType">Type</label>
-          <select id="rType">
-            <option value="regular">Payment or deposit</option>
-            <option value="transfer">Transfer to another account</option>
-          </select>
-        </div>
-        <div id="rToWrap" hidden>
-          <label for="rTo">To account</label>
-          <select id="rTo"></select>
-        </div>
-        <div>
-          <label for="rAmount" id="rAmountLbl">Estimated amount (− = out)</label>
-          <input id="rAmount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
-        </div>
-        <div class="desc">
-          <label for="rText">Description</label>
-          <input id="rText" type="text" maxlength="60" autocomplete="off" required>
-        </div>
-        <div id="rCatWrap">
-          <label for="rCat">Category</label>
-          <select id="rCat"></select>
-        </div>
-        <div>
-          <label for="rFreq">Repeats</label>
-          <select id="rFreq">
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Every 2 weeks</option>
-            <option value="monthly" selected>Monthly</option>
-            <option value="quarterly">Every 3 months</option>
-            <option value="yearly">Yearly</option>
-          </select>
-        </div>
-        <div>
-          <label for="rStart">First date</label>
-          <input id="rStart" type="date" required>
-        </div>
-        <div>
-          <label for="rEnd">Last date (optional)</label>
-          <input id="rEnd" type="date">
-        </div>
-        <div class="addbtn"><button class="primary" type="submit">Add recurring</button></div>
-      </form>
-      <p class="small" style="margin:8px 0 6px">The amount here is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use <b>Change amount</b>. If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
+      <p class="small" style="margin:8px 0 6px">Recurring items are created with <b>+ New item</b> by choosing a repeat. The amount is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use <b>Change amount</b>. If the first date was in the past, those occurrences show as Due so you can post or skip them.</p>
       <div id="ruleList"></div>
     </details>
 
@@ -270,6 +191,64 @@
     </div>
   </section>
 </main>
+
+<dialog id="newDlg">
+  <form id="newForm" class="entry" style="margin-top:0">
+    <h3 class="full" id="nTitle">New item</h3>
+    <div id="typeWrap">
+      <label for="type">Type</label>
+      <select id="type">
+        <option value="regular">Payment or deposit</option>
+        <option value="transfer">Transfer between accounts</option>
+      </select>
+    </div>
+    <div id="freqWrap">
+      <label for="rFreq">Repeats</label>
+      <select id="rFreq">
+        <option value="once" selected>Does not repeat</option>
+        <option value="weekly">Weekly</option>
+        <option value="biweekly">Every 2 weeks</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Every 3 months</option>
+        <option value="yearly">Yearly</option>
+      </select>
+    </div>
+    <div>
+      <label for="date" id="dateLbl">Transaction date</label>
+      <input id="date" type="date" required>
+    </div>
+    <div>
+      <label for="amount" id="amountLbl">Amount (− = out)</label>
+      <input id="amount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div class="desc full">
+      <label for="text">Description</label>
+      <input id="text" type="text" maxlength="60" autocomplete="off" required>
+    </div>
+    <div id="catWrap" class="full">
+      <label for="cat">Category</label>
+      <select id="cat"></select>
+    </div>
+    <div class="tonly" hidden>
+      <label for="xFrom">From account</label>
+      <select id="xFrom"></select>
+    </div>
+    <div class="tonly" hidden>
+      <label for="xTo">To account</label>
+      <select id="xTo"></select>
+    </div>
+    <div class="ronly full" hidden>
+      <label for="rEnd">Last date (optional)</label>
+      <input id="rEnd" type="date">
+    </div>
+    <p class="small full" id="nNote" style="margin:0"></p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
+      <button type="button" id="nCancel">Cancel</button>
+      <button type="submit" id="nAgain">Add another</button>
+      <button type="submit" class="primary" id="nAdd">Add</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="editDlg">
   <form id="editForm" class="entry" style="margin-top:0">
@@ -351,8 +330,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.1';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 16:25';
+const APP_VERSION = '4.2';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 16:48';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -869,8 +848,6 @@ function render() {
   renderRecon();
   if ($('repDet').open) renderReport();
   $('horizon').value = String(state.data.settings.horizonMonths || 3);
-  if (!$('rStart').value) $('rStart').value = todayStr();
-  syncCats($('rCat'));
 }
 
 function renderAcctBar() {
@@ -931,17 +908,6 @@ function renderEntry() {
   if (opt) opt.disabled = accts.length < 2;
   if (accts.length < 2 && $('type').value === 'transfer') $('type').value = 'regular';
   applyTypeUI();
-  const sel = $('rTo'), others = accts.filter(a => a.id !== state.accountId), okey = others.map(a => a.id + acctLabel(a)).join('|');
-  if (sel.dataset.key !== okey) { sel.innerHTML = ''; for (const a of others) { const o = document.createElement('option'); o.value = a.id; o.textContent = acctLabel(a); sel.appendChild(o); } sel.dataset.key = okey; }
-  const ro = $('rType').querySelector('option[value=transfer]'); if (ro) ro.disabled = !others.length;
-  if (!others.length) $('rType').value = 'regular';
-  applyRTypeUI();
-  if (!$('date').value) $('date').value = todayStr();
-}
-function applyRTypeUI() {
-  const t = $('rType').value === 'transfer';
-  $('rToWrap').hidden = !t; $('rCatWrap').hidden = t;
-  $('rAmountLbl').textContent = t ? 'Estimated amount to move' : 'Estimated amount (− = out)';
 }
 function applyTypeUI() {
   const t = $('type').value === 'transfer';
@@ -949,6 +915,27 @@ function applyTypeUI() {
   for (const el of document.querySelectorAll ? document.querySelectorAll('.tonly') : []) el.hidden = !t;
   $('amountLbl').textContent = t ? 'Amount to move' : 'Amount (− = out)';
   $('text').required = !t;
+  const rep_ = $('rFreq').value !== 'once';
+  for (const el of document.querySelectorAll ? document.querySelectorAll('.ronly') : []) el.hidden = !rep_;
+  $('dateLbl').textContent = rep_ ? 'First date' : 'Transaction date';
+  if (rep_) $('amountLbl').textContent = t ? 'Estimated amount to move' : 'Estimated amount (− = out)';
+}
+function openNew(o) {                     // the one place every new item starts: single, transfer or recurring
+  o = o || {};
+  state.newCtx = o;
+  renderEntry();
+  $('type').value = 'regular'; $('rFreq').value = 'once';
+  $('date').value = o.date || todayStr();
+  $('amount').value = ''; $('text').value = ''; $('rEnd').value = '';
+  syncCats($('cat'));
+  $('typeWrap').hidden = !!o.missed; $('freqWrap').hidden = !!o.missed;
+  $('nAgain').hidden = !!o.missed;
+  $('nTitle').textContent = o.title || 'New item';
+  $('nNote').textContent = o.note || '';
+  $('nAdd').textContent = o.missed ? 'Add and tick' : 'Add';
+  applyTypeUI();
+  $('newDlg').showModal();
+  setTimeout(() => $('amount').focus(), 50);
 }
 
 function addCell(tr, text, cls) {
@@ -1277,9 +1264,8 @@ function editRecord(r) {
   openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:r.amount, text:r.text, cat:r.category, note, save:'Save', withText:true, withCat:!isT });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
-  openEdit({ kind:'add' }, { title:'Add missed item', date:monthEnd(state.recon.month), amount:'', text:'', cat:'',
-    note:'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.', save:'Add', withText:true, withCat:true });
-  setTimeout(() => $('eAmount').focus(), 50);
+  openNew({ missed:true, title:'Add missed item', date:monthEnd(state.recon.month),
+    note:'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.' });
 }
 function editOcc(it) {
   const u = ruleById(it.ruleId);
@@ -1304,11 +1290,6 @@ $('editForm').addEventListener('submit', ev => {
     const u = ruleById(E.ruleId); if (!u) return;
     u.changes = (u.changes || []).filter(c => c.from !== date);
     u.changes.push({ from:date, amount:u.transferTo ? -Math.abs(amount) : amount });
-  } else if (E.kind === 'add') {
-    const text = $('eText').value.trim(); if (!text) return;
-    const rec = { id:uid(), accountId:state.accountId, text, category:catValue($('eCat')), amount, date, createdAt:now, deleted:false, deletedAt:null };
-    state.data.records.push(rec);
-    state.recon.ticked.add(rec.id);
   } else {
     const r = state.data.records.find(x => x.id === E.id); if (!r) return;
     const text = $('eText').value.trim(); if (!text) return;
@@ -1369,52 +1350,47 @@ $('btnFirst').addEventListener('click', () => openAcct(null));
 
 /* ---------- Actions ---------- */
 $('type').addEventListener('change', applyTypeUI);
-$('rType').addEventListener('change', applyRTypeUI);
+$('rFreq').addEventListener('change', applyTypeUI);
+$('btnNew').addEventListener('click', () => openNew());
+$('nCancel').addEventListener('click', () => $('newDlg').close());
 $('cat').addEventListener('change', () => onCatChange($('cat')));
-$('rCat').addEventListener('change', () => onCatChange($('rCat')));
 $('eCat').addEventListener('change', () => onCatChange($('eCat')));
 attachSuggest($('text'), s => {
   if (s.category) syncCats($('cat'), s.category);
   if ($('amount').value === '' && s.amount !== undefined) { setMoney($('amount'), s.amount); }
   $('amount').focus(); if ($('amount').select) $('amount').select();
 });
-attachSuggest($('rText'), s => {
-  if (s.category) syncCats($('rCat'), s.category);
-  if ($('rAmount').value === '' && s.amount !== undefined) setMoney($('rAmount'), s.amount);
-});
 attachSuggest($('eText'));
 
-$('entry').addEventListener('submit', ev => {
+$('newForm').addEventListener('submit', ev => {
   ev.preventDefault();
-  const amount = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value, type = $('type').value;
+  const amount = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value, type = $('type').value, freq = $('rFreq').value;
   if (!isFinite(amount) || !date) return;
-  const now = new Date().toISOString();
-  if (type === 'transfer') {                 // two offsetting entries, one in each account
-    const from = $('xFrom').value, to = $('xTo').value;
-    if (from === to) { alert('Choose two different accounts for a transfer.'); return; }
-    const amt = Math.abs(amount); if (!amt) return;
-    const A = acctById(from), B = acctById(to), tid = uid();
-    state.data.records.push({ id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:'', amount:-amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
-    state.data.records.push({ id:uid(), accountId:to, text: text || 'Transfer from ' + acctLabel(A), category:'', amount:amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
-  } else {
-    if (!text) return;
-    state.data.records.push({ id:uid(), accountId:state.accountId, text, category:catValue($('cat')), amount, date, createdAt:now, deleted:false, deletedAt:null });
+  const X = type === 'transfer', ctx = state.newCtx || {};
+  const from = X ? $('xFrom').value : state.accountId, to = X ? $('xTo').value : null;
+  if (X && from === to) { alert('Choose two different accounts for a transfer.'); return; }
+  if (X && !Math.abs(amount)) return;
+  if (!X && !text) return;
+  const now = new Date().toISOString(), A = X ? acctById(from) : null, B = X ? acctById(to) : null;
+  if (freq === 'once') {
+    if (X) {                                 // two offsetting entries, one in each account
+      const amt = Math.abs(amount), tid = uid();
+      state.data.records.push({ id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:'', amount:-amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+      state.data.records.push({ id:uid(), accountId:to, text: text || 'Transfer from ' + acctLabel(A), category:'', amount:amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+    } else {
+      const rec = { id:uid(), accountId:state.accountId, text, category:catValue($('cat')), amount, date, createdAt:now, deleted:false, deletedAt:null };
+      state.data.records.push(rec);
+      if (ctx.missed) state.recon.ticked.add(rec.id);
+    }
+  } else {                                   // repeating: stored as a recurring item, projected until posted
+    const endDate = $('rEnd').value || null;
+    if (endDate && endDate < date) { alert('The last date must be on or after the first date.'); return; }
+    const rule = { id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
+    if (X) rule.transferTo = to;
+    state.data.recurring.push(rule);
   }
-  $('amount').value = ''; $('text').value = ''; $('amount').focus();   // the date stays, handy when entering a statement
-  changed();
-});
-$('recurForm').addEventListener('submit', ev => {
-  ev.preventDefault();
-  const amount = parseFloat($('rAmount').value), text = $('rText').value.trim();
-  const startDate = $('rStart').value, endDate = $('rEnd').value || null, frequency = $('rFreq').value;
-  if (!isFinite(amount) || !text || !startDate) return;
-  const isX = $('rType').value === 'transfer', to = $('rTo').value;
-  if (isX && to === state.accountId) { alert('Choose a different account to transfer to.'); return; }
-  if (endDate && endDate < startDate) { alert('The last date must be on or after the first date.'); return; }
-  const rule = { id:uid(), accountId:state.accountId, text, category:isX ? '' : catValue($('rCat')), amount:isX ? -Math.abs(amount) : amount, frequency, startDate, endDate, skipped:[], overrides:{}, changes:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null };
-  if (isX) rule.transferTo = to;
-  state.data.recurring.push(rule);
-  $('rAmount').value = ''; $('rText').value = ''; $('rEnd').value = '';
+  if (ev.submitter && ev.submitter.id === 'nAgain' && !ctx.missed) { $('amount').value = ''; $('text').value = ''; $('amount').focus(); }   // the date stays, handy when entering a statement
+  else $('newDlg').close();
   changed();
 });
 $('horizon').addEventListener('change', ev => {
