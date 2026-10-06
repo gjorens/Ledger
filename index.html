@@ -189,6 +189,7 @@ async function saveToHandle(auto) {
     state.baseSavedAt = savedAt;
     state.dirty = false;
     state.msg = null;
+    state.needsReconnect = false;
     await persistDraft();
     return true;
   } catch (e) {
@@ -271,10 +272,28 @@ $('fileInput').addEventListener('change', async ev => {
 async function refreshFromFile() {   // pick up changes saved from another device
   if (!state.handle || state.dirty || saving) return;
   try {
-    if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') return;
+    if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') { state.needsReconnect = true; render(); return; }
+    state.needsReconnect = false;
     const d = JSON.parse(await (await state.handle.getFile()).text());
     if (valid(d) && d.savedAt && (!state.baseSavedAt || d.savedAt > state.baseSavedAt)) adopt(d);
+    else render();
   } catch (e) { /* ignore */ }
+}
+
+async function reconnect() {          // needs a tap: browsers only allow the permission prompt from a click
+  const h = state.handle;
+  if (!h) return;
+  try {
+    if (await h.requestPermission({ mode:'readwrite' }) !== 'granted') return;
+    state.needsReconnect = false;
+    const d = JSON.parse(await (await h.getFile()).text());
+    if (!valid(d)) return render();
+    const newer = !state.baseSavedAt || (d.savedAt && d.savedAt > state.baseSavedAt);
+    if (!state.data) return adopt(d, h.name);
+    if (!newer) return render();
+    if (state.dirty && !confirm('The file has newer changes, and you also have unsaved changes here.\n\nLoad the file version? Your unsaved changes here will be replaced.')) return render();
+    adopt(d, h.name);
+  } catch (e) { setMsg('Could not reconnect: ' + e.message, 'err'); }
 }
 
 /* ---------- Messages & render ---------- */
@@ -294,6 +313,7 @@ function render() {
   const b = $('banner'); b.innerHTML = '';
   let text = null, cls = 'ok', withBtn = false;
   if (state.msg) { text = state.msg; cls = state.msgKind; withBtn = state.msgKind === 'warn'; }
+  else if (state.needsReconnect && state.handle) { text = 'Tap Reconnect to load the latest from ' + state.fileName + '.'; cls = 'warn'; }
   else if (state.data && state.dirty) {
     cls = 'warn'; withBtn = true;
     if (FS && state.handle) text = 'Unsaved changes. Autosave in progress (' + state.fileName + ').';
@@ -309,6 +329,9 @@ function render() {
       const btn = document.createElement('button'); btn.className = 'primary';
       btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose file') : SAVE_LABEL;
       btn.onclick = saveNow; b.appendChild(btn);
+    } else if (!state.msg && state.needsReconnect && state.handle) {
+      const btn = document.createElement('button'); btn.className = 'primary';
+      btn.textContent = 'Reconnect'; btn.onclick = reconnect; b.appendChild(btn);
     }
   } else b.className = '';
 
