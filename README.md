@@ -55,6 +55,9 @@ Tip: Safari's download setting "Ask for each download" avoids a pile of `ledger 
 - Optional per account: "warn me if the balance is projected to drop below ..." (for a card: "amount owing goes above ...").
 - A popup appears when a change makes a future balance (real future-dated entries plus projections) fall below the level, and the account's tab gets a **red ring** for as long as that is true.
 
+**Balance graph**
+- The **Balance graph** button (next to Look ahead) shows a compact line graph of the 12 months ending at the look-ahead date, with the same 12 months a year earlier as a second line. The projected part is dashed, and the account's warning level is drawn as a red dotted line.
+
 **Reports**
 - By category, or by category and month, for this month, last month, this year, last year, the last 12 months, all time or a custom range, for one account or all. Transfers, deleted entries and projections are excluded.
 

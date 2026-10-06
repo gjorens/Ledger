@@ -65,6 +65,9 @@
   .txhead .horizon { margin:0; }
   .horizon { display:flex; align-items:center; gap:8px; margin:6px 0 0; }
   .horizon select { width:auto; }
+  dialog.wide { width:min(560px, calc(100% - 24px)); }
+  #gChart svg { width:100%; height:auto; display:block; }
+  .gl { display:inline-block; width:18px; height:0; border-top:2.5px solid; vertical-align:middle; margin:0 4px 0 8px; }
   .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
   table { border-collapse:collapse; width:100%; min-width:720px; }
   #repTable { min-width:0; }
@@ -203,6 +206,7 @@
           <option value="6">6 months</option>
           <option value="12">12 months</option>
         </select>
+        <button class="mini" id="btnGraph" type="button">Balance graph</button>
       </div>
     </div>
 
@@ -214,6 +218,13 @@
     </div>
   </section>
 </main>
+
+<dialog id="graphDlg" class="wide">
+  <h3 id="gTitle" style="margin-bottom:4px">Balance</h3>
+  <div id="gChart"></div>
+  <div class="small" id="gLegend" style="margin:4px 0 0"></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" id="gClose">Close</button></div>
+</dialog>
 
 <dialog id="newDlg">
   <form id="newForm" class="entry" style="margin-top:0">
@@ -363,8 +374,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.7';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 18:55';
+const APP_VERSION = '4.9';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 19:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -882,6 +893,84 @@ function checkWarnings() {                // called after every change; warns wh
 }
 $('warnOk').addEventListener('click', () => $('warnDlg').close());
 
+/* ---------- Balance graph: the 12 months ending at the look-ahead date, against the same 12 months a year earlier ---------- */
+function balanceEvents(a) {               // every dated change to the balance (real and projected), as running balances
+  const keep = state.accountId; state.accountId = a.id;
+  try {
+    const A = computeActual(), P = computeProjected(A.final);
+    const ev = [];
+    for (const r of state.data.records) if (r.accountId === a.id && !r.deleted) ev.push({ date:r.date, c:cents(r.amount), r });
+    for (const { it } of P.rows) ev.push({ date:it.date, c:cents(it.amount), r:it });
+    ev.sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : 0);
+    let bal = anchorOf(a).base;
+    const out = [];
+    for (const e of ev) { bal += e.c; out.push({ date:e.date, bal }); }
+    const first = ev.length ? (a.openedOn && a.openedOn < ev[0].date ? a.openedOn : ev[0].date) : (a.openedOn || todayStr());
+    return { events:out, base:anchorOf(a).base, first, limit:P.limit };
+  } finally { state.accountId = keep; }
+}
+function balanceSeries(a) {
+  const B = balanceEvents(a), end = B.limit, start = addDays(addMonths(end, -12), 1);
+  const dates = []; for (let d = start; d < end; d = addDays(d, 7)) dates.push(d); dates.push(end);
+  const valueAt = (list, d) => {             // balance at the close of day d
+    let lo = 0, hi = list.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (list[m].date <= d) lo = m + 1; else hi = m; }
+    return lo ? list[lo - 1].bal : B.base;
+  };
+  const cur = dates.map(d => ({ date:d, bal:valueAt(B.events, d) }));
+  const prev = dates.map(d => { const pd = addMonths(d, -12); return { date:pd, bal:pd < B.first ? null : valueAt(B.events, pd) }; });
+  return { dates, cur, prev, start, end, today:todayStr() };
+}
+function openGraph() {
+  const a = acct(), G = balanceSeries(a), sg = sgn(a), NS = 'http://www.w3.org/2000/svg';
+  const val = p => p.bal === null ? null : (sg * p.bal) / 100;
+  const cv = G.cur.map(val), pv = G.prev.map(val);
+  const all = cv.concat(pv).filter(v => v !== null);
+  const lvl = typeof a.warnBelow === 'number' ? (sg * a.warnBelow) / 100 : null;
+  let lo = Math.min(...all), hi = Math.max(...all);
+  if (lvl !== null && lvl >= lo - (hi - lo) * 0.3 && lvl <= hi + (hi - lo) * 0.3) { lo = Math.min(lo, lvl); hi = Math.max(hi, lvl); }
+  if (hi - lo < 1) { hi += 1; lo -= 1; }
+  const W = 520, H = 190, L = 40, R = 8, T = 8, Bm = 20, n = G.dates.length;
+  const x = i => L + (W - L - R) * i / (n - 1), y = v => T + (H - T - Bm) * (1 - (v - lo) / (hi - lo));
+  const el = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; return e; };
+  const svg = el('svg', { viewBox:'0 0 ' + W + ' ' + H, role:'img' });
+  const k = v => Math.abs(v) >= 10000 ? (v / 1000).toFixed(0) + 'k' : Math.abs(v) >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toFixed(0);
+  const grid = { stroke:'var(--line)', 'stroke-width':1 }, lab = { fill:'var(--muted)', 'font-size':10 };
+  for (let g = 0; g <= 3; g++) {              // light horizontal guides with value labels
+    const v = lo + (hi - lo) * g / 3;
+    svg.appendChild(el('line', Object.assign({ x1:L, x2:W - R, y1:y(v), y2:y(v) }, grid)));
+    svg.appendChild(el('text', Object.assign({ x:L - 4, y:y(v) + 3, 'text-anchor':'end' }, lab), k(v)));
+  }
+  const dayMs = 86400000, toT = d => { const [yy, mm, dd] = d.split('-').map(Number); return Date.UTC(yy, mm - 1, dd); };
+  const span = toT(G.end) - toT(G.start);
+  for (let q = 0; q <= 4; q++) {              // month ticks: start, every 3 months, end
+    const d = q === 4 ? G.end : addMonths(G.start, q * 3), fx = L + (W - L - R) * Math.min(1, (toT(d) - toT(G.start)) / span);
+    const [yy, mm] = d.split('-').map(Number), name = new Date(yy, mm - 1, 1).toLocaleDateString(undefined, { month:'short' }) + ' ’' + String(yy).slice(2);
+    svg.appendChild(el('text', Object.assign({ x:fx, y:H - 6, 'text-anchor':q === 0 ? 'start' : q === 4 ? 'end' : 'middle' }, lab), name));
+  }
+  if (lvl !== null && lvl >= lo && lvl <= hi) svg.appendChild(el('line', { x1:L, x2:W - R, y1:y(lvl), y2:y(lvl), stroke:'#d32f2f', 'stroke-width':1, 'stroke-dasharray':'2 3' }));
+  const path = (vals, from, to) => { let d = ''; for (let i = from; i <= to; i++) if (vals[i] !== null) d += (d ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(vals[i]).toFixed(1); return d; };
+  svg.appendChild(el('path', { d:path(pv, 0, n - 1), fill:'none', stroke:'var(--muted)', 'stroke-width':1.5, 'stroke-linejoin':'round' }));
+  const ti = G.dates.findIndex(d => d > G.today);      // first sample after today: from here the line is projected
+  const split = ti < 0 ? n : Math.max(ti, 1);
+  svg.appendChild(el('path', { d:path(cv, 0, split - 1), fill:'none', stroke:'var(--accent)', 'stroke-width':2, 'stroke-linejoin':'round' }));
+  if (split < n) {
+    svg.appendChild(el('path', { d:path(cv, split - 1, n - 1), fill:'none', stroke:'var(--accent)', 'stroke-width':2, 'stroke-dasharray':'4 3', 'stroke-linejoin':'round' }));
+    const tx = x(split - 1); svg.appendChild(el('line', { x1:tx, x2:tx, y1:T, y2:H - Bm, stroke:'var(--muted)', 'stroke-width':1, 'stroke-dasharray':'1 3' }));
+  }
+  const box = $('gChart'); box.innerHTML = ''; box.appendChild(svg);
+  const L1 = isLiab(a) ? 'amount owing' : 'balance';
+  $('gTitle').textContent = acctLabel(a) + ' · ' + L1;
+  const rng = (s0, e0) => fmtDate(s0) + ' – ' + fmtDate(e0);
+  const lg = $('gLegend'); lg.innerHTML = '';
+  const item = (color, dash, text) => { const sp = document.createElement('span'); const sw = document.createElement('span'); sw.className = 'gl'; sw.style.borderTopColor = color; if (dash) sw.style.borderTopStyle = 'dashed'; sp.appendChild(sw); sp.appendChild(document.createTextNode(text)); lg.appendChild(sp); };
+  item('var(--accent)', false, rng(G.start, G.end) + (split < n ? ' (dashed = projected)' : ''));
+  item('var(--muted)', false, 'a year earlier: ' + rng(addMonths(G.start, -12), addMonths(G.end, -12)));
+  $('graphDlg').showModal();
+}
+$('btnGraph').addEventListener('click', openGraph);
+$('gClose').addEventListener('click', () => $('graphDlg').close());
+
 function render() {
   $('mode').textContent = FS
     ? 'Folder access supported: autosaves to your chosen file every 30 s, and when you leave the page.'
@@ -971,10 +1060,6 @@ function renderSummary(A, P) {
   if (P.rows.length) {
     s.appendChild(stat((L ? 'Owing by ' : 'Projected by ') + fmtDate(P.limit), dfmt(P.end), lowBal(a, P.end)));
     s.appendChild(stat(L ? 'Highest projected owing' : 'Lowest projected', dfmt(P.low.bal), lowBal(a, P.low.bal), fmtDate(P.low.date)));
-  }
-  if (state.data.accounts.length > 1) {
-    const total = state.data.accounts.reduce((t, a) => t + balanceOf(a), 0);
-    s.appendChild(stat('All accounts (net)', fmt(total), total < 0));
   }
 }
 
