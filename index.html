@@ -90,6 +90,8 @@
 <script>
 'use strict';
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
+const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
+const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
 const $ = id => document.getElementById(id);
 const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err' };
 let saving = false;
@@ -201,7 +203,7 @@ async function exportFile() {     // Safari / iPhone / iPad path: must run from 
   const json = JSON.stringify(out, null, 2);
   const file = new File([json], 'ledger.json', { type:'application/json' });
   let done = false;
-  if (navigator.canShare && navigator.canShare({ files:[file] })) {
+  if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) {
     try { await navigator.share({ files:[file], title:'Ledger' }); done = true; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
@@ -281,12 +283,12 @@ function setMsg(m, kind) { state.msg = m; state.msgKind = kind || 'err'; render(
 function render() {
   $('mode').textContent = FS
     ? 'Folder access supported: autosaves to your chosen file every 30 s, and when you leave the page.'
-    : 'Manual mode (this browser cannot write files directly): changes are kept in the browser; use Save to Files to update your file.';
+    : 'Manual mode (this browser cannot write files directly): changes are kept in the browser; use ' + SAVE_LABEL + (TOUCH ? ' to update your file.' : ', then move the downloaded ledger.json into your iCloud folder (replace the old one).');
 
   $('btnChoose').hidden = !FS;
   $('btnChoose').textContent = state.handle ? 'Change save file…' : 'Choose save file…';
   $('btnSave').hidden = !state.data;
-  $('btnSave').textContent = FS ? 'Save now' : 'Save to Files';
+  $('btnSave').textContent = SAVE_LABEL;
 
   // banner
   const b = $('banner'); b.innerHTML = '';
@@ -296,7 +298,7 @@ function render() {
     cls = 'warn'; withBtn = true;
     if (FS && state.handle) text = 'Unsaved changes. Autosave in progress (' + state.fileName + ').';
     else if (FS) text = 'Unsaved changes stored in this browser only. Choose a save file to enable autosave.';
-    else text = 'Unsaved changes (kept in this browser only' + (state.draftAt ? ', last edit ' + fmtTime(state.draftAt) : '') + '). Save to Files.';
+    else text = 'Unsaved changes (kept in this browser only' + (state.draftAt ? ', last edit ' + fmtTime(state.draftAt) : '') + '). Use ' + SAVE_LABEL + '.';
   } else if (state.data) {
     text = state.baseSavedAt ? 'All changes saved' + (state.fileName ? ' to ' + state.fileName : '') + ' (' + fmtTime(state.baseSavedAt) + ').' : 'No changes.';
   }
@@ -305,7 +307,7 @@ function render() {
     const s = document.createElement('span'); s.textContent = text; b.appendChild(s);
     if (withBtn) {
       const btn = document.createElement('button'); btn.className = 'primary';
-      btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose file') : 'Save to Files';
+      btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose file') : SAVE_LABEL;
       btn.onclick = saveNow; b.appendChild(btn);
     }
   } else b.className = '';
