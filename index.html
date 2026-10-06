@@ -51,6 +51,18 @@
   .rule.sub { border-top:none; padding:1px 0 1px 16px; color:var(--muted); font-size:.85rem; }
   .rule .btns { white-space:nowrap; }
   .rule .btns button + button { margin-left:4px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:6px 12px; flex-wrap:wrap; }
+  .top .filebar { margin:0; }
+  .boxhead { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:4px; }
+  .boxhead.outer { margin:12px 2px 2px; }
+  .acctbox { border:1px solid var(--line); padding:8px 10px 10px; }
+  .acctbox .tabs { margin:2px 0 6px; }
+  .acctpanel { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:6px 8px; }
+  .acctline { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+  .acctpanel .summary { margin:6px 0 0; }
+  .acctpanel .stat { background:var(--card); }
+  .txhead { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .txhead .horizon { margin:0; }
   .horizon { display:flex; align-items:center; gap:8px; margin:6px 0 0; }
   .horizon select { width:auto; }
   .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
@@ -99,16 +111,17 @@
 </head>
 <body>
 <main>
-  <h1>myLedger <small id="ver"></small></h1>
+  <div class="top">
+    <h1>myLedger <small id="ver"></small></h1>
+    <div class="filebar">
+      <button id="btnOpen">Open file</button>
+      <button id="btnChoose" hidden>Choose save file…</button>
+      <button id="btnSave" class="primary" hidden>Save now</button>
+    </div>
+  </div>
   <div class="small" id="mode"></div>
 
   <div id="banner"></div>
-
-  <div class="filebar">
-    <button id="btnOpen">Open file</button>
-    <button id="btnChoose" hidden>Choose save file…</button>
-    <button id="btnSave" class="primary" hidden>Save now</button>
-  </div>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 
   <section id="setup" class="card" hidden>
@@ -118,13 +131,19 @@
   </section>
 
   <section id="app" hidden>
-    <div class="tabs" id="acctBar"></div>
-    <div class="small" id="acctInfo" style="margin:4px 0 0"></div>
+    <div class="card acctbox">
+      <div class="boxhead">Accounts</div>
+      <div class="tabs" id="acctBar"></div>
+      <div class="acctpanel">
+        <div class="acctline">
+          <div class="small" id="acctInfo" style="margin:0"></div>
+          <button class="primary" id="btnNew" type="button">+ New item</button>
+        </div>
+        <div class="summary" id="summary"></div>
+      </div>
+    </div>
 
-    <div class="summary" id="summary"></div>
-
-    <div class="filebar"><button class="primary" id="btnNew" type="button">+ New item</button></div>
-
+    <div class="boxhead outer">Tools</div>
     <details class="card" id="recur">
       <summary>Recurring items</summary>
       <p class="small" style="margin:8px 0 6px">Recurring items are created with <b>+ New item</b> by choosing a repeat. The amount is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use <b>Change amount</b>. If the first date was in the past, those occurrences show as Due so you can post or skip them.</p>
@@ -174,14 +193,17 @@
       <p class="small" style="margin:8px 0 0">Transfers between your own accounts, deleted entries and projected items are left out.</p>
     </details>
 
-    <div class="horizon small">
-      <label for="horizon">Look ahead</label>
-      <select id="horizon">
-        <option value="1">1 month</option>
-        <option value="3">3 months</option>
-        <option value="6">6 months</option>
-        <option value="12">12 months</option>
-      </select>
+    <div class="txhead">
+      <div class="boxhead outer" id="txTitle" style="margin:0">Transactions</div>
+      <div class="horizon small">
+        <label for="horizon">Look ahead</label>
+        <select id="horizon">
+          <option value="1">1 month</option>
+          <option value="3">3 months</option>
+          <option value="6">6 months</option>
+          <option value="12">12 months</option>
+        </select>
+      </div>
     </div>
 
     <div class="tablewrap" id="tablewrap">
@@ -341,8 +363,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.6';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 18:20';
+const APP_VERSION = '4.7';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 18:55';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -913,6 +935,7 @@ function render() {
   if ($('repDet').open) renderReport();
   checkWarnings();
   $('horizon').value = String(state.data.settings.horizonMonths || 3);
+  $('txTitle').textContent = 'Transactions · ' + acctLabel(acct());
 }
 
 function renderAcctBar() {
