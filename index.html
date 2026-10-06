@@ -9,7 +9,7 @@
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
-  main { max-width:760px; margin:0 auto; padding:16px; }
+  main { max-width:820px; margin:0 auto; padding:16px; }
   h1 { font-size:1.3rem; margin:0 0 4px; }
   h1 small { font-size:.7rem; font-weight:400; color:var(--muted); margin-left:6px; white-space:nowrap; }
   .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
@@ -20,15 +20,26 @@
   button { font:inherit; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
   button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   button.danger { color:#c62828; }
+  button.mini { padding:4px 9px; font-size:.82rem; }
   button:disabled { opacity:.5; }
-  input { font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
+  input, select { font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
   .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
+  details.card summary { cursor:pointer; font-weight:600; }
   .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
-  form.entry { display:grid; grid-template-columns:130px 1fr auto; gap:8px; align-items:end; }
+  form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:end; margin-top:10px; }
+  form.entry .desc { grid-column:span 2; }
+  form.entry .addbtn button { width:100%; }
   form.entry label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
-  @media (max-width:520px) { form.entry { grid-template-columns:1fr 1fr; } form.entry .full { grid-column:1 / -1; } }
-  .tablewrap { overflow-x:auto; margin-top:12px; border:1px solid var(--line); border-radius:10px; }
-  table { border-collapse:collapse; width:100%; min-width:520px; }
+  .summary { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  .stat { flex:1 1 150px; background:var(--card); border-radius:10px; padding:8px 12px; }
+  .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:.75rem; color:var(--muted); }
+  .stat b.neg { color:#c62828; }
+  .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:.9rem; }
+  .horizon { display:flex; align-items:center; gap:8px; margin:10px 0 0; }
+  .horizon select { width:auto; }
+  .tablewrap { overflow-x:auto; margin-top:10px; border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; min-width:560px; }
   th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
   th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); }
   tr:last-child td { border-bottom:none; }
@@ -37,8 +48,15 @@
   tr.deleted td { color:var(--muted); }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
   tr.start td { font-style:italic; color:var(--muted); }
-  .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; }
+  tr.divider td { background:var(--card); font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  tr.divider td button { margin-left:10px; text-transform:none; letter-spacing:0; }
+  tr.proj td { font-style:italic; color:var(--muted); }
+  .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; font-style:normal; }
+  .tag.due { color:var(--warn-fg); background:var(--warn-bg); border-color:transparent; }
   .neg { color:#c62828; }
+  tr.proj td.neg { color:#c62828; }
+  td.act { white-space:nowrap; text-align:right; }
+  td.act button + button { margin-left:4px; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -66,22 +84,74 @@
   </section>
 
   <section id="app" hidden>
+    <div class="summary" id="summary"></div>
+
     <div class="card">
-      <form id="entry" class="entry">
+      <form id="entry" class="entry" style="margin-top:0">
         <div>
-          <label for="amount">Amount (negative = out)</label>
-          <input id="amount" type="number" step="0.01" inputmode="decimal" required>
+          <label for="date">Transaction date</label>
+          <input id="date" type="date" required>
         </div>
         <div>
+          <label for="amount">Amount (− = out)</label>
+          <input id="amount" type="number" step="0.01" inputmode="decimal" required>
+        </div>
+        <div class="desc">
           <label for="text">Description</label>
           <input id="text" type="text" maxlength="60" required>
         </div>
-        <div class="full"><button class="primary" type="submit" style="width:100%">Add</button></div>
+        <div class="addbtn"><button class="primary" type="submit">Add</button></div>
       </form>
     </div>
+
+    <details class="card" id="recur">
+      <summary>Recurring items</summary>
+      <form id="recurForm" class="entry">
+        <div>
+          <label for="rAmount">Amount (− = out)</label>
+          <input id="rAmount" type="number" step="0.01" inputmode="decimal" required>
+        </div>
+        <div class="desc">
+          <label for="rText">Description</label>
+          <input id="rText" type="text" maxlength="60" required>
+        </div>
+        <div>
+          <label for="rFreq">Repeats</label>
+          <select id="rFreq">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 weeks</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="quarterly">Every 3 months</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div>
+          <label for="rStart">First date</label>
+          <input id="rStart" type="date" required>
+        </div>
+        <div>
+          <label for="rEnd">Last date (optional)</label>
+          <input id="rEnd" type="date">
+        </div>
+        <div class="addbtn"><button class="primary" type="submit">Add recurring</button></div>
+      </form>
+      <p class="small" style="margin:8px 0 6px">If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
+      <div id="ruleList"></div>
+    </details>
+
+    <div class="horizon small">
+      <label for="horizon">Look ahead</label>
+      <select id="horizon">
+        <option value="1">1 month</option>
+        <option value="3">3 months</option>
+        <option value="6">6 months</option>
+        <option value="12">12 months</option>
+      </select>
+    </div>
+
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Entered</th><th>Text</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Text</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -94,10 +164,10 @@ const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
 const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
 const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
 const $ = id => document.getElementById(id);
-const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err' };
+const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false };
 let saving = false;
-const APP_VERSION = '1.0';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 13:38';
+const APP_VERSION = '2.0';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 13:52';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 /* ---------- IndexedDB (browser-side draft + file handle) ---------- */
@@ -134,22 +204,95 @@ function persistDraft() {
   return kvSet('draft', { data: state.data, dirty: state.dirty, baseSavedAt: state.baseSavedAt, fileName: state.fileName, draftAt: state.draftAt });
 }
 
+/* ---------- Dates (all transaction dates are plain YYYY-MM-DD strings) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const ymd = (y, m, d) => y + '-' + pad(m) + '-' + pad(d);
+const todayStr = () => { const t = new Date(); return ymd(t.getFullYear(), t.getMonth() + 1, t.getDate()); };
+const localDate = iso => { const t = new Date(iso); return ymd(t.getFullYear(), t.getMonth() + 1, t.getDate()); };
+function addDays(s, n) { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
+function addMonths(s, n) {            // keeps the day of month; clamps to month end (31st -> 30th/28th)
+  const [y, m, d] = s.split('-').map(Number);
+  const t = (m - 1) + n, ny = y + Math.floor(t / 12), nm = ((t % 12) + 12) % 12;
+  const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
+  return ymd(ny, nm + 1, Math.min(d, last));
+}
+const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }); };
+const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+
 /* ---------- Data helpers ---------- */
+const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && typeof d.startingBalance === 'number';
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const fmt = c => (c / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 
-function computeRows() {
+function migrate(d) {                 // older files had only an "entered" timestamp: use its local date as the transaction date
+  d.version = 2;
+  if (!Array.isArray(d.recurring)) d.recurring = [];
+  if (!d.settings || typeof d.settings !== 'object') d.settings = {};
+  if (!d.settings.horizonMonths) d.settings.horizonMonths = 3;
+  for (const r of d.records) if (!r.date) r.date = localDate(r.createdAt || d.createdAt || new Date().toISOString());
+  return d;
+}
+
+// Sort order: transaction date, then credits before debits, then text
+const cmp = (a, b) =>
+  (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) ||
+  ((a.amount < 0) - (b.amount < 0)) ||
+  a.text.localeCompare(b.text, undefined, { sensitivity:'base' }) ||
+  (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+function nth(u, n) {
+  switch (u.frequency) {
+    case 'weekly':    return addDays(u.startDate, 7 * n);
+    case 'biweekly':  return addDays(u.startDate, 14 * n);
+    case 'monthly':   return addMonths(u.startDate, n);
+    case 'quarterly': return addMonths(u.startDate, 3 * n);
+    case 'yearly':    return addMonths(u.startDate, 12 * n);
+  }
+  return null;
+}
+
+function computeActual() {
   const d = state.data;
-  const recs = [...d.records].sort((a, b) => a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : (a.id < b.id ? -1 : 1));
+  const recs = [...d.records].sort(cmp);
   let bal = Math.round(d.startingBalance * 100);
-  const out = [];
+  const rows = [];
   for (const r of recs) {
     if (!r.deleted) bal += Math.round(r.amount * 100);   // deleted records no longer affect later balances
-    out.push({ r, bal });
+    rows.push({ r, bal });
   }
-  return out;
+  return { rows, final: bal };
+}
+
+function handledSet() {               // occurrences already posted (even if that entry was later deleted) or skipped
+  const s = new Set();
+  for (const r of state.data.records) if (r.recurringId) s.add(r.recurringId + '|' + r.recurringDate);
+  for (const u of state.data.recurring) for (const x of (u.skipped || [])) s.add(u.id + '|' + x);
+  return s;
+}
+
+function computeProjected(startCents) {
+  const d = state.data, today = todayStr();
+  const limit = addMonths(today, d.settings.horizonMonths || 3);
+  const done = handledSet(), items = [];
+  for (const u of d.recurring) {
+    if (u.deleted) continue;
+    const end = (u.endDate && u.endDate < limit) ? u.endDate : limit;
+    for (let n = 0; n < 5000; n++) {
+      const dt = nth(u, n);
+      if (!dt || dt > end) break;
+      if (!done.has(u.id + '|' + dt)) items.push({ id:u.id + '|' + dt, ruleId:u.id, date:dt, text:u.text, amount:u.amount, due:dt <= today });
+    }
+  }
+  items.sort(cmp);
+  let bal = startCents, low = null;
+  const rows = [];
+  for (const it of items) {
+    bal += Math.round(it.amount * 100);
+    rows.push({ it, bal });
+    if (!low || bal < low.bal) low = { bal, date:it.date };
+  }
+  return { rows, end:bal, limit, low };
 }
 
 function changed() {
@@ -242,7 +385,7 @@ async function chooseSaveFile() {
 
 /* ---------- Opening ---------- */
 function adopt(d, name) {
-  state.data = d; state.baseSavedAt = d.savedAt || null; state.dirty = false; state.msg = null;
+  state.data = migrate(d); state.baseSavedAt = d.savedAt || null; state.dirty = false; state.msg = null;
   if (name) state.fileName = name;
   persistDraft(); render();
 }
@@ -343,36 +486,105 @@ function render() {
   $('app').hidden = !state.data;
   if (!state.data) return;
 
-  // table
+  const A = computeActual();
+  const P = computeProjected(A.final);
+  renderSummary(A, P);
+  renderTable(A, P);
+  renderRules();
+  $('horizon').value = String(state.data.settings.horizonMonths || 3);
+  if (!$('date').value) $('date').value = todayStr();
+  if (!$('rStart').value) $('rStart').value = todayStr();
+}
+
+function stat(label, value, neg, sub) {
+  const d = document.createElement('div'); d.className = 'stat';
+  const b = document.createElement('b'); b.textContent = value; if (neg) b.className = 'neg';
+  const s = document.createElement('span'); s.textContent = label + (sub ? ' · ' + sub : '');
+  d.appendChild(b); d.appendChild(s); return d;
+}
+function renderSummary(A, P) {
+  const s = $('summary'); s.innerHTML = '';
+  s.appendChild(stat('Balance', fmt(A.final), A.final < 0));
+  if (P.rows.length) {
+    s.appendChild(stat('Projected by ' + fmtDate(P.limit), fmt(P.end), P.end < 0));
+    s.appendChild(stat('Lowest projected', fmt(P.low.bal), P.low.bal < 0, fmtDate(P.low.date)));
+  }
+}
+
+function addCell(tr, text, cls) {
+  const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td;
+}
+function tag(td, label, cls) {
+  const t = document.createElement('span'); t.className = 'tag' + (cls ? ' ' + cls : ''); t.textContent = label; td.appendChild(t);
+}
+function miniBtn(label, fn, cls) {
+  const b = document.createElement('button'); b.className = 'mini' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; return b;
+}
+
+function renderTable(A, P) {
   const tb = $('rows'); tb.innerHTML = '';
   const start = document.createElement('tr'); start.className = 'start';
-  addCell(start, fmtTime(state.data.createdAt || new Date().toISOString()), 'time');
+  addCell(start, fmtDate(localDate(state.data.createdAt || new Date().toISOString())), 'time');
   addCell(start, 'Starting balance');
   addCell(start, '', 'num');
   addCell(start, fmt(Math.round(state.data.startingBalance * 100)), 'num');
   addCell(start, '');
   tb.appendChild(start);
 
-  for (const { r, bal } of computeRows()) {
+  for (const { r, bal } of A.rows) {
     const tr = document.createElement('tr');
     if (r.deleted) tr.className = 'deleted';
-    addCell(tr, fmtTime(r.createdAt), 'time');
+    const dc = addCell(tr, fmtDate(r.date), 'time');
+    if (r.createdAt) dc.title = 'Entered ' + fmtTime(r.createdAt);
     const t = addCell(tr, r.text, 'text');
-    if (r.deleted) { const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = 'deleted'; t.appendChild(tag); }
+    if (r.recurringId) tag(t, '↻');
+    if (r.deleted) tag(t, 'deleted');
     const a = addCell(tr, fmt(Math.round(r.amount * 100)), 'num amt');
     if (r.amount < 0) a.classList.add('neg');
     const bc = addCell(tr, fmt(bal), 'num');
     if (bal < 0) bc.classList.add('neg');
-    const act = addCell(tr, '');
-    if (!r.deleted) {
-      const btn = document.createElement('button'); btn.className = 'danger'; btn.textContent = 'Delete';
-      btn.onclick = () => deleteRecord(r.id); act.appendChild(btn);
-    }
+    const act = addCell(tr, '', 'act');
+    if (!r.deleted) act.appendChild(miniBtn('Delete', () => deleteRecord(r.id), 'danger'));
+    tb.appendChild(tr);
+  }
+
+  if (!P.rows.length) return;
+  const dueCount = P.rows.filter(x => x.it.due).length;
+  const dv = document.createElement('tr'); dv.className = 'divider';
+  const dtd = document.createElement('td'); dtd.colSpan = 5;
+  dtd.appendChild(document.createTextNode('Projected from recurring items, through ' + fmtDate(P.limit)));
+  if (dueCount) dtd.appendChild(miniBtn('Post all due (' + dueCount + ')', postAllDue));
+  dv.appendChild(dtd); tb.appendChild(dv);
+
+  for (const { it, bal } of P.rows) {
+    const tr = document.createElement('tr'); tr.className = 'proj';
+    addCell(tr, fmtDate(it.date), 'time');
+    const t = addCell(tr, it.text, 'text');
+    tag(t, '↻');
+    if (it.due) tag(t, 'due', 'due');
+    const a = addCell(tr, fmt(Math.round(it.amount * 100)), 'num amt');
+    if (it.amount < 0) a.classList.add('neg');
+    const bc = addCell(tr, fmt(bal), 'num');
+    if (bal < 0) bc.classList.add('neg');
+    const act = addCell(tr, '', 'act');
+    act.appendChild(miniBtn('Post', () => postOcc(it.ruleId, it.date)));
+    act.appendChild(miniBtn('Skip', () => skipOcc(it.ruleId, it.date)));
     tb.appendChild(tr);
   }
 }
-function addCell(tr, text, cls) {
-  const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td;
+
+function renderRules() {
+  const box = $('ruleList'); box.innerHTML = '';
+  const act = state.data.recurring.filter(u => !u.deleted);
+  if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items yet.'; box.appendChild(p); return; }
+  for (const u of act) {
+    const row = document.createElement('div'); row.className = 'rule';
+    const s = document.createElement('span');
+    s.textContent = u.text + ' · ' + fmt(Math.round(u.amount * 100)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '');
+    row.appendChild(s);
+    row.appendChild(miniBtn('Stop', () => stopRule(u.id), 'danger'));
+    box.appendChild(row);
+  }
 }
 
 /* ---------- Actions ---------- */
@@ -380,17 +592,32 @@ $('setupForm').addEventListener('submit', ev => {
   ev.preventDefault();
   const v = parseFloat($('startBal').value);
   if (!isFinite(v)) return;
-  state.data = { version:1, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, records:[] };
+  state.data = { version:2, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, recurring:[], records:[] };
   changed();
 });
 $('entry').addEventListener('submit', ev => {
   ev.preventDefault();
-  const amount = parseFloat($('amount').value), text = $('text').value.trim();
-  if (!isFinite(amount) || !text) return;
-  state.data.records.push({ id:uid(), text, amount, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
-  $('amount').value = ''; $('text').value = ''; $('amount').focus();
+  const amount = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value;
+  if (!isFinite(amount) || !text || !date) return;
+  state.data.records.push({ id:uid(), text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  $('amount').value = ''; $('text').value = ''; $('amount').focus();   // the date stays, handy when entering a statement
   changed();
 });
+$('recurForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const amount = parseFloat($('rAmount').value), text = $('rText').value.trim();
+  const startDate = $('rStart').value, endDate = $('rEnd').value || null, frequency = $('rFreq').value;
+  if (!isFinite(amount) || !text || !startDate) return;
+  if (endDate && endDate < startDate) { alert('The last date must be on or after the first date.'); return; }
+  state.data.recurring.push({ id:uid(), text, amount, frequency, startDate, endDate, skipped:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  $('rAmount').value = ''; $('rText').value = ''; $('rEnd').value = '';
+  changed();
+});
+$('horizon').addEventListener('change', ev => {
+  state.data.settings.horizonMonths = parseInt(ev.target.value, 10) || 3;
+  changed();
+});
+
 function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted) return;
@@ -398,6 +625,42 @@ function deleteRecord(id) {
   r.deleted = true; r.deletedAt = new Date().toISOString();
   changed();
 }
+function postRecord(u, date, amount) {
+  state.data.records.push({ id:uid(), text:u.text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:date });
+}
+function postOcc(ruleId, date) {          // turn a projected item into a real entry; the amount can be adjusted to what the bank charged
+  const u = state.data.recurring.find(x => x.id === ruleId);
+  if (!u) return;
+  const v = prompt('Amount for "' + u.text + '" on ' + fmtDate(date) + ':', String(u.amount));
+  if (v === null) return;
+  const amt = parseFloat(v);
+  if (!isFinite(amt)) return;
+  postRecord(u, date, amt);
+  changed();
+}
+function skipOcc(ruleId, date) {
+  const u = state.data.recurring.find(x => x.id === ruleId);
+  if (!u) return;
+  if (!confirm('Skip "' + u.text + '" on ' + fmtDate(date) + '? It will not be posted or projected.')) return;
+  u.skipped = (u.skipped || []).concat(date);
+  changed();
+}
+function postAllDue() {
+  const A = computeActual(), P = computeProjected(A.final);
+  const due = P.rows.filter(x => x.it.due).map(x => x.it);
+  if (!due.length) return;
+  if (!confirm('Post ' + due.length + ' due item' + (due.length > 1 ? 's' : '') + ' at their scheduled amounts?')) return;
+  for (const it of due) postRecord(state.data.recurring.find(x => x.id === it.ruleId), it.date, it.amount);
+  changed();
+}
+function stopRule(id) {
+  const u = state.data.recurring.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm('Stop "' + u.text + '"? Entries already posted stay; no more will be projected.')) return;
+  u.deleted = true; u.deletedAt = new Date().toISOString();
+  changed();
+}
+
 $('btnOpen').onclick = openFile;
 $('btnChoose').onclick = chooseSaveFile;
 $('btnSave').onclick = saveNow;
@@ -417,7 +680,7 @@ window.addEventListener('beforeunload', ev => { if (state.dirty) { ev.preventDef
   if (navigator.storage && navigator.storage.persist) { try { await navigator.storage.persist(); } catch (e) {} }
   const draft = await kvGet('draft');
   if (draft && valid(draft.data)) {
-    state.data = draft.data; state.dirty = !!draft.dirty; state.baseSavedAt = draft.baseSavedAt || null;
+    state.data = migrate(draft.data); state.dirty = !!draft.dirty; state.baseSavedAt = draft.baseSavedAt || null;
     state.fileName = draft.fileName || null; state.draftAt = draft.draftAt || null;
   }
   if (FS) { const h = await kvGet('handle'); if (h) { state.handle = h; state.fileName = h.name; } }
