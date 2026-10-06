@@ -9,7 +9,7 @@
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
-  main { max-width:820px; margin:0 auto; padding:16px; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
   h1 { font-size:1.3rem; margin:0 0 4px; }
   h1 small { font-size:.7rem; font-weight:400; color:var(--muted); margin-left:6px; white-space:nowrap; }
   .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
@@ -28,8 +28,9 @@
   .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
   form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:end; margin-top:10px; }
   form.entry .desc { grid-column:span 2; }
+  form.entry .full { grid-column:1 / -1; }
   form.entry .addbtn button { width:100%; }
-  form.entry label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
+  form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
   .summary { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
   .stat { flex:1 1 150px; background:var(--card); border-radius:10px; padding:8px 12px; }
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
@@ -38,25 +39,41 @@
   .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:.9rem; }
   .horizon { display:flex; align-items:center; gap:8px; margin:10px 0 0; }
   .horizon select { width:auto; }
-  .tablewrap { overflow-x:auto; margin-top:10px; border:1px solid var(--line); border-radius:10px; }
-  table { border-collapse:collapse; width:100%; min-width:560px; }
+  .tablewrap { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; min-width:620px; }
   th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
-  th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); }
+  th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); position:sticky; top:0; z-index:2; box-shadow:0 1px 0 var(--line); }
   tr:last-child td { border-bottom:none; }
   td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   td.time { white-space:nowrap; color:var(--muted); font-size:.85rem; }
   tr.deleted td { color:var(--muted); }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
+  tr:not(.deleted):not(.proj):not(.start):not(.divider) td.amt { font-weight:700; }   /* actual amounts are bold */
   tr.start td { font-style:italic; color:var(--muted); }
   tr.divider td { background:var(--card); font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   tr.divider td button { margin-left:10px; text-transform:none; letter-spacing:0; }
   tr.proj td { font-style:italic; color:var(--muted); }
-  .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; font-style:normal; }
+  tr.proj.conf td { color:var(--fg); }
+  tr.proj.conf td.amt { font-weight:700; font-style:normal; }   /* confirmed by the biller */
+  .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; font-style:normal; font-weight:400; }
   .tag.due { color:var(--warn-fg); background:var(--warn-bg); border-color:transparent; }
+  .tag.ok { color:var(--ok-fg); background:var(--ok-bg); border-color:transparent; }
   .neg { color:#c62828; }
   tr.proj td.neg { color:#c62828; }
   td.act { white-space:nowrap; text-align:right; }
   td.act button + button { margin-left:4px; }
+  .recon-top { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:10px; }
+  #reconList { max-height:40vh; overflow:auto; margin:8px 0; }
+  .ritem { display:grid; grid-template-columns:auto 7.5em 1fr auto; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:.9rem; cursor:pointer; }
+  .ritem input { width:auto; }
+  .ritem .a { font-variant-numeric:tabular-nums; font-weight:700; }
+  .ritem .d { color:var(--muted); }
+  .rsum div { display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-variant-numeric:tabular-nums; font-size:.92rem; }
+  .rsum .total { border-top:1px solid var(--line); font-weight:700; margin-top:3px; padding-top:6px; }
+  .rsum .good { color:var(--ok-fg); } .rsum .bad { color:#c62828; }
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:16px; width:min(400px, calc(100% - 32px)); }
+  dialog::backdrop { background:rgba(0,0,0,.4); }
+  dialog h3 { margin:0; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -108,7 +125,7 @@
       <summary>Recurring items</summary>
       <form id="recurForm" class="entry">
         <div>
-          <label for="rAmount">Amount (− = out)</label>
+          <label for="rAmount">Estimated amount (− = out)</label>
           <input id="rAmount" type="number" step="0.01" inputmode="decimal" required>
         </div>
         <div class="desc">
@@ -135,8 +152,25 @@
         </div>
         <div class="addbtn"><button class="primary" type="submit">Add recurring</button></div>
       </form>
-      <p class="small" style="margin:8px 0 6px">If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
+      <p class="small" style="margin:8px 0 6px">The amount here is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If the first date is in the past, those occurrences show as Due so you can post or skip them.</p>
       <div id="ruleList"></div>
+    </details>
+
+    <details class="card" id="reconDet">
+      <summary>Monthly reconciliation</summary>
+      <div id="reconWork">
+        <div class="recon-top">
+          <div><label class="lbl" for="cMonth">Statement month</label><select id="cMonth"></select></div>
+          <div><label class="lbl" for="cStmt">Statement closing balance</label><input id="cStmt" type="number" step="0.01" inputmode="decimal" placeholder="From your bank statement"></div>
+        </div>
+        <p class="small" style="margin:8px 0 0">Tick each item that appears on the statement. Items not ticked carry over to the next month.</p>
+        <div class="filebar" style="margin:6px 0 0"><button class="mini" id="cTick" type="button">Tick all</button><button class="mini" id="cUntick" type="button">Untick all</button></div>
+        <div id="reconList"></div>
+        <div class="rsum" id="reconSummary"></div>
+        <div class="filebar"><button class="primary" id="cFinish" type="button">Mark month reconciled</button></div>
+      </div>
+      <div id="reconDone" class="small" hidden></div>
+      <div id="reconHistory"></div>
     </details>
 
     <div class="horizon small">
@@ -149,7 +183,7 @@
       </select>
     </div>
 
-    <div class="tablewrap">
+    <div class="tablewrap" id="tablewrap">
       <table>
         <thead><tr><th>Date</th><th>Text</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
@@ -158,16 +192,43 @@
   </section>
 </main>
 
+<dialog id="editDlg">
+  <form id="editForm" class="entry" style="margin-top:0">
+    <h3 class="full" id="editTitle">Edit</h3>
+    <div>
+      <label for="eDate">Date</label>
+      <input id="eDate" type="date" required>
+    </div>
+    <div>
+      <label for="eAmount">Amount</label>
+      <input id="eAmount" type="number" step="0.01" inputmode="decimal" required>
+    </div>
+    <div class="full" id="eTextWrap">
+      <label for="eText">Description</label>
+      <input id="eText" type="text" maxlength="60">
+    </div>
+    <p class="small full" id="eNote" style="margin:0"></p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
+      <button type="button" id="eRevert" class="danger">Revert to estimate</button>
+      <button type="button" id="eCancel">Cancel</button>
+      <button type="submit" class="primary" id="eSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 'use strict';
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
 const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
 const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
 const $ = id => document.getElementById(id);
-const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false };
+const state = {
+  data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false,
+  initialScroll:true, edit:null, recon:{ month:null, ticked:new Set(), stmt:'' }
+};
 let saving = false;
-const APP_VERSION = '2.0';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 13:52';
+const APP_VERSION = '3.0';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 14:26';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 /* ---------- IndexedDB (browser-side draft + file handle) ---------- */
@@ -216,6 +277,13 @@ function addMonths(s, n) {            // keeps the day of month; clamps to month
   const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
   return ymd(ny, nm + 1, Math.min(d, last));
 }
+const monthEnd = ym => { const [y, m] = ym.split('-').map(Number); return ymd(y, m, new Date(Date.UTC(y, m, 0)).getUTCDate()); };
+const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month:'long', year:'numeric' }); };
+function monthsList() {               // current month first, then back 24 months
+  const t = new Date(); let y = t.getFullYear(), m = t.getMonth() + 1; const out = [];
+  for (let i = 0; i < 25; i++) { out.push(y + '-' + pad(m)); m--; if (m === 0) { m = 12; y--; } }
+  return out;
+}
 const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }); };
 const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 
@@ -223,13 +291,20 @@ const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medi
 const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && typeof d.startingBalance === 'number';
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const cents = x => Math.round(x * 100);
 const fmt = c => (c / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+const ruleById = id => state.data.recurring.find(x => x.id === id);
 
-function migrate(d) {                 // older files had only an "entered" timestamp: use its local date as the transaction date
-  d.version = 2;
+function migrate(d) {                 // upgrades older files in memory; saved as the new version on the next save
+  d.version = 3;
   if (!Array.isArray(d.recurring)) d.recurring = [];
   if (!d.settings || typeof d.settings !== 'object') d.settings = {};
   if (!d.settings.horizonMonths) d.settings.horizonMonths = 3;
+  if (!d.reconciliations || typeof d.reconciliations !== 'object') d.reconciliations = {};
+  for (const u of d.recurring) {
+    if (!u.overrides || typeof u.overrides !== 'object') u.overrides = {};   // confirmed amounts/dates, keyed by scheduled date
+    if (!Array.isArray(u.skipped)) u.skipped = [];
+  }
   for (const r of d.records) if (!r.date) r.date = localDate(r.createdAt || d.createdAt || new Date().toISOString());
   return d;
 }
@@ -255,10 +330,10 @@ function nth(u, n) {
 function computeActual() {
   const d = state.data;
   const recs = [...d.records].sort(cmp);
-  let bal = Math.round(d.startingBalance * 100);
+  let bal = cents(d.startingBalance);
   const rows = [];
   for (const r of recs) {
-    if (!r.deleted) bal += Math.round(r.amount * 100);   // deleted records no longer affect later balances
+    if (!r.deleted) bal += cents(r.amount);   // deleted records no longer affect later balances
     rows.push({ r, bal });
   }
   return { rows, final: bal };
@@ -279,16 +354,19 @@ function computeProjected(startCents) {
     if (u.deleted) continue;
     const end = (u.endDate && u.endDate < limit) ? u.endDate : limit;
     for (let n = 0; n < 5000; n++) {
-      const dt = nth(u, n);
-      if (!dt || dt > end) break;
-      if (!done.has(u.id + '|' + dt)) items.push({ id:u.id + '|' + dt, ruleId:u.id, date:dt, text:u.text, amount:u.amount, due:dt <= today });
+      const orig = nth(u, n);
+      if (!orig || orig > end) break;
+      if (done.has(u.id + '|' + orig)) continue;
+      const ov = u.overrides ? u.overrides[orig] : null;     // confirmed by the biller
+      const date = (ov && ov.date) || orig;
+      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, amount: ov ? ov.amount : u.amount, confirmed: !!ov, due: date <= today });
     }
   }
   items.sort(cmp);
   let bal = startCents, low = null;
   const rows = [];
   for (const it of items) {
-    bal += Math.round(it.amount * 100);
+    bal += cents(it.amount);
     rows.push({ it, bal });
     if (!low || bal < low.bal) low = { bal, date:it.date };
   }
@@ -386,6 +464,8 @@ async function chooseSaveFile() {
 /* ---------- Opening ---------- */
 function adopt(d, name) {
   state.data = migrate(d); state.baseSavedAt = d.savedAt || null; state.dirty = false; state.msg = null;
+  state.initialScroll = true;           // jump to the latest transaction again whenever a file is loaded
+  state.recon = { month:null, ticked:new Set(), stmt:'' };
   if (name) state.fileName = name;
   persistDraft(); render();
 }
@@ -491,6 +571,7 @@ function render() {
   renderSummary(A, P);
   renderTable(A, P);
   renderRules();
+  renderRecon();
   $('horizon').value = String(state.data.settings.horizonMonths || 3);
   if (!$('date').value) $('date').value = todayStr();
   if (!$('rStart').value) $('rStart').value = todayStr();
@@ -514,8 +595,9 @@ function renderSummary(A, P) {
 function addCell(tr, text, cls) {
   const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td;
 }
-function tag(td, label, cls) {
-  const t = document.createElement('span'); t.className = 'tag' + (cls ? ' ' + cls : ''); t.textContent = label; td.appendChild(t);
+function tag(td, label, cls, title) {
+  const t = document.createElement('span'); t.className = 'tag' + (cls ? ' ' + cls : ''); t.textContent = label;
+  if (title) t.title = title; td.appendChild(t);
 }
 function miniBtn(label, fn, cls) {
   const b = document.createElement('button'); b.className = 'mini' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; return b;
@@ -523,11 +605,13 @@ function miniBtn(label, fn, cls) {
 
 function renderTable(A, P) {
   const tb = $('rows'); tb.innerHTML = '';
+  const today = todayStr();
+  let anchor = null;                    // the latest real transaction before today
   const start = document.createElement('tr'); start.className = 'start';
   addCell(start, fmtDate(localDate(state.data.createdAt || new Date().toISOString())), 'time');
   addCell(start, 'Starting balance');
   addCell(start, '', 'num');
-  addCell(start, fmt(Math.round(state.data.startingBalance * 100)), 'num');
+  addCell(start, fmt(cents(state.data.startingBalance)), 'num');
   addCell(start, '');
   tb.appendChild(start);
 
@@ -535,41 +619,59 @@ function renderTable(A, P) {
     const tr = document.createElement('tr');
     if (r.deleted) tr.className = 'deleted';
     const dc = addCell(tr, fmtDate(r.date), 'time');
-    if (r.createdAt) dc.title = 'Entered ' + fmtTime(r.createdAt);
+    dc.title = (r.createdAt ? 'Entered ' + fmtTime(r.createdAt) : '') + (r.editedAt ? ' · edited ' + fmtTime(r.editedAt) : '');
     const t = addCell(tr, r.text, 'text');
     if (r.recurringId) tag(t, '↻');
+    if (r.reconciled) tag(t, '✓', 'ok', 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement');
     if (r.deleted) tag(t, 'deleted');
-    const a = addCell(tr, fmt(Math.round(r.amount * 100)), 'num amt');
+    const a = addCell(tr, fmt(cents(r.amount)), 'num amt');
     if (r.amount < 0) a.classList.add('neg');
     const bc = addCell(tr, fmt(bal), 'num');
     if (bal < 0) bc.classList.add('neg');
     const act = addCell(tr, '', 'act');
-    if (!r.deleted) act.appendChild(miniBtn('Delete', () => deleteRecord(r.id), 'danger'));
+    if (!r.deleted) {
+      act.appendChild(miniBtn('Edit', () => editRecord(r)));
+      act.appendChild(miniBtn('Delete', () => deleteRecord(r.id), 'danger'));
+      if (r.date < today) anchor = tr;
+    }
     tb.appendChild(tr);
   }
 
-  if (!P.rows.length) return;
-  const dueCount = P.rows.filter(x => x.it.due).length;
-  const dv = document.createElement('tr'); dv.className = 'divider';
-  const dtd = document.createElement('td'); dtd.colSpan = 5;
-  dtd.appendChild(document.createTextNode('Projected from recurring items, through ' + fmtDate(P.limit)));
-  if (dueCount) dtd.appendChild(miniBtn('Post all due (' + dueCount + ')', postAllDue));
-  dv.appendChild(dtd); tb.appendChild(dv);
+  if (P.rows.length) {
+    const dueCount = P.rows.filter(x => x.it.due).length;
+    const dv = document.createElement('tr'); dv.className = 'divider';
+    const dtd = document.createElement('td'); dtd.colSpan = 5;
+    dtd.appendChild(document.createTextNode('Projected from recurring items, through ' + fmtDate(P.limit)));
+    if (dueCount) dtd.appendChild(miniBtn('Post all due (' + dueCount + ')', postAllDue));
+    dv.appendChild(dtd); tb.appendChild(dv);
 
-  for (const { it, bal } of P.rows) {
-    const tr = document.createElement('tr'); tr.className = 'proj';
-    addCell(tr, fmtDate(it.date), 'time');
-    const t = addCell(tr, it.text, 'text');
-    tag(t, '↻');
-    if (it.due) tag(t, 'due', 'due');
-    const a = addCell(tr, fmt(Math.round(it.amount * 100)), 'num amt');
-    if (it.amount < 0) a.classList.add('neg');
-    const bc = addCell(tr, fmt(bal), 'num');
-    if (bal < 0) bc.classList.add('neg');
-    const act = addCell(tr, '', 'act');
-    act.appendChild(miniBtn('Post', () => postOcc(it.ruleId, it.date)));
-    act.appendChild(miniBtn('Skip', () => skipOcc(it.ruleId, it.date)));
-    tb.appendChild(tr);
+    for (const { it, bal } of P.rows) {
+      const tr = document.createElement('tr'); tr.className = 'proj' + (it.confirmed ? ' conf' : '');
+      addCell(tr, fmtDate(it.date), 'time');
+      const t = addCell(tr, it.text, 'text');
+      tag(t, '↻');
+      if (!it.confirmed) tag(t, 'est.', '', 'Estimated amount: press Edit to confirm the biller\'s amount');
+      if (it.due) tag(t, 'due', 'due');
+      const a = addCell(tr, fmt(cents(it.amount)), 'num amt');
+      if (it.amount < 0) a.classList.add('neg');
+      const bc = addCell(tr, fmt(bal), 'num');
+      if (bal < 0) bc.classList.add('neg');
+      const act = addCell(tr, '', 'act');
+      act.appendChild(miniBtn('Edit', () => editOcc(it)));
+      act.appendChild(miniBtn('Post', () => postOcc(it)));
+      act.appendChild(miniBtn('Skip', () => skipOcc(it)));
+      tb.appendChild(tr);
+    }
+  }
+
+  if (state.initialScroll) {            // on opening, bring the latest past transaction into view with a little context above
+    state.initialScroll = false;
+    const wrap = $('tablewrap');
+    if (anchor) {
+      const head = wrap.querySelector('thead');
+      const top = anchor.getBoundingClientRect().top - wrap.getBoundingClientRect().top + wrap.scrollTop;
+      wrap.scrollTop = Math.max(0, top - (head ? head.offsetHeight : 0) - 2 * anchor.offsetHeight);
+    } else wrap.scrollTop = 0;
   }
 }
 
@@ -580,19 +682,172 @@ function renderRules() {
   for (const u of act) {
     const row = document.createElement('div'); row.className = 'rule';
     const s = document.createElement('span');
-    s.textContent = u.text + ' · ' + fmt(Math.round(u.amount * 100)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '');
+    s.textContent = u.text + ' · est. ' + fmt(cents(u.amount)) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '');
     row.appendChild(s);
     row.appendChild(miniBtn('Stop', () => stopRule(u.id), 'danger'));
     box.appendChild(row);
   }
 }
 
+/* ---------- Monthly reconciliation ---------- */
+function reconItems() {               // unreconciled, live entries up to the end of the chosen month (earlier leftovers carry over)
+  const end = monthEnd(state.recon.month);
+  return state.data.records.filter(r => !r.deleted && !r.reconciled && r.date <= end).sort(cmp);
+}
+function reconSums(items) {
+  const d = state.data, R = state.recon;
+  const opening = cents(d.startingBalance) + d.records.filter(r => !r.deleted && r.reconciled).reduce((s, r) => s + cents(r.amount), 0);
+  const ticked = items.filter(r => R.ticked.has(r.id));
+  const tickedSum = ticked.reduce((s, r) => s + cents(r.amount), 0);
+  const cleared = opening + tickedSum;
+  const rest = items.filter(r => !R.ticked.has(r.id));
+  const restSum = rest.reduce((s, r) => s + cents(r.amount), 0);
+  const hasStmt = R.stmt !== '' && isFinite(parseFloat(R.stmt));
+  const stmtCents = hasStmt ? cents(parseFloat(R.stmt)) : null;
+  const end = monthEnd(R.month);
+  const ledgerEnd = cents(d.startingBalance) + d.records.filter(r => !r.deleted && r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
+  return { opening, ticked, tickedSum, cleared, rest, restSum, stmtCents, diff: hasStmt ? stmtCents - cleared : null, ledgerEnd };
+}
+
+function renderRecon() {
+  const R = state.recon, d = state.data;
+  const months = monthsList();
+  if (!R.month) R.month = months[1];                       // the month just ended
+  const sel = $('cMonth');
+  if (!sel.dataset.filled) {
+    sel.innerHTML = '';
+    months.forEach((m, i) => { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m) + (i === 1 ? ' (just ended)' : ''); sel.appendChild(o); });
+    sel.dataset.filled = '1';
+  }
+  sel.value = R.month;
+  if ($('cStmt').value !== R.stmt) $('cStmt').value = R.stmt;
+
+  const done = d.reconciliations[R.month];
+  $('reconWork').hidden = !!done;
+  $('reconDone').hidden = !done;
+  if (done) {
+    const t = monthLabel(R.month) + ' was reconciled on ' + fmtTime(done.completedAt) + ' against a statement balance of ' + fmt(cents(done.statementBalance)) + ' (' + done.itemCount + ' items' + (done.difference ? ', difference ' + fmt(cents(done.difference)) : '') + '). ';
+    $('reconDone').textContent = t;
+    $('reconDone').appendChild(miniBtn('Reopen', () => reopenMonth(R.month)));
+  } else {
+    const items = reconItems();
+    const ids = new Set(items.map(r => r.id));
+    for (const id of [...R.ticked]) if (!ids.has(id)) R.ticked.delete(id);
+    const list = $('reconList'); list.innerHTML = '';
+    const start = R.month + '-01';
+    if (!items.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'Nothing left to reconcile up to the end of ' + monthLabel(R.month) + '.'; list.appendChild(p); }
+    for (const r of items) {
+      const lab = document.createElement('label'); lab.className = 'ritem';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = R.ticked.has(r.id);
+      cb.onchange = () => { if (cb.checked) R.ticked.add(r.id); else R.ticked.delete(r.id); updateReconSummary(); };
+      const dd = document.createElement('span'); dd.className = 'd'; dd.textContent = fmtDate(r.date) + (r.date < start ? ' (earlier)' : '');
+      const tt = document.createElement('span'); tt.textContent = r.text;
+      const aa = document.createElement('span'); aa.className = 'a' + (r.amount < 0 ? ' neg' : ''); aa.textContent = fmt(cents(r.amount));
+      lab.appendChild(cb); lab.appendChild(dd); lab.appendChild(tt); lab.appendChild(aa);
+      list.appendChild(lab);
+    }
+    updateReconSummary();
+  }
+
+  const hist = $('reconHistory'); hist.innerHTML = '';
+  const months2 = Object.keys(d.reconciliations).sort().reverse();
+  if (months2.length) {
+    const h = document.createElement('div'); h.className = 'small'; h.style.marginTop = '10px'; h.textContent = 'Completed: ' + months2.map(m => monthLabel(m)).join(', ');
+    hist.appendChild(h);
+  }
+}
+
+function updateReconSummary() {
+  const S = reconSums(reconItems());
+  const box = $('reconSummary'); box.innerHTML = '';
+  const line = (label, value, cls) => {
+    const row = document.createElement('div'); if (cls) row.className = cls;
+    const a = document.createElement('span'); a.textContent = label;
+    const b = document.createElement('span'); b.textContent = value;
+    row.appendChild(a); row.appendChild(b); box.appendChild(row);
+  };
+  line('Previously reconciled balance', fmt(S.opening));
+  line('+ Ticked items (' + S.ticked.length + ')', fmt(S.tickedSum));
+  line('= Cleared balance', fmt(S.cleared), 'total');
+  line('Statement closing balance', S.stmtCents === null ? 'enter above' : fmt(S.stmtCents));
+  if (S.diff !== null) line(S.diff === 0 ? 'Difference: balanced' : 'Difference', fmt(S.diff), 'total ' + (S.diff === 0 ? 'good' : 'bad'));
+  line('Not ticked / not on the statement (' + S.rest.length + ')', fmt(S.restSum));
+  line('Ledger balance at ' + fmtDate(monthEnd(state.recon.month)), fmt(S.ledgerEnd));
+}
+
+function finishRecon() {
+  const R = state.recon, d = state.data;
+  if (d.reconciliations[R.month]) return;
+  const S = reconSums(reconItems());
+  if (S.diff === null) { alert('Enter the closing balance from your bank statement first.'); return; }
+  if (!S.ticked.length) { alert('Tick the items that appear on the statement first.'); return; }
+  if (S.diff !== 0 && !confirm('There is still a difference of ' + fmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
+  for (const r of S.ticked) r.reconciled = R.month;
+  d.reconciliations[R.month] = { statementBalance: S.stmtCents / 100, difference: S.diff / 100, itemCount: S.ticked.length, completedAt: new Date().toISOString() };
+  R.ticked.clear(); R.stmt = '';
+  changed();
+}
+function reopenMonth(month) {
+  if (!confirm('Reopen ' + monthLabel(month) + '? Its items will be marked as not reconciled again.')) return;
+  for (const r of state.data.records) if (r.reconciled === month) delete r.reconciled;
+  delete state.data.reconciliations[month];
+  changed();
+}
+
+/* ---------- Edit dialog ---------- */
+function openEdit(ctx, title, date, amount, text, note, saveLabel, canRevert) {
+  state.edit = ctx;
+  $('editTitle').textContent = title;
+  $('eDate').value = date; $('eAmount').value = amount;
+  $('eText').value = text || ''; $('eText').required = ctx.kind === 'rec';
+  $('eTextWrap').hidden = ctx.kind !== 'rec';
+  $('eNote').textContent = note || '';
+  $('eSave').textContent = saveLabel;
+  $('eRevert').hidden = !canRevert;
+  $('editDlg').showModal();
+}
+function closeEdit() { const dlg = $('editDlg'); state.edit = null; if (dlg.open) dlg.close(); }
+function editRecord(r) {
+  openEdit({ kind:'rec', id:r.id }, 'Edit entry', r.date, r.amount, r.text,
+    r.reconciled ? 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement. Changing the date or amount marks it as not reconciled.' : '', 'Save', false);
+}
+function editOcc(it) {
+  const u = ruleById(it.ruleId);
+  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, 'Confirm amount: ' + it.text, it.date, it.amount, '',
+    'Enter the amount the biller has confirmed. It will then show in bold. The original estimate was ' + fmt(cents(u.amount)) + '.', 'Confirm', it.confirmed);
+}
+$('editForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const E = state.edit; if (!E) return;
+  const date = $('eDate').value, amount = parseFloat($('eAmount').value);
+  if (!date || !isFinite(amount)) return;
+  if (E.kind === 'occ') {
+    const u = ruleById(E.ruleId); if (!u) return;
+    u.overrides[E.orig] = { amount, date, confirmedAt:new Date().toISOString() };
+  } else {
+    const r = state.data.records.find(x => x.id === E.id); if (!r) return;
+    const text = $('eText').value.trim(); if (!text) return;
+    const moved = r.date !== date || cents(r.amount) !== cents(amount);
+    if (r.reconciled && moved && !confirm('This entry was reconciled with the ' + monthLabel(r.reconciled) + ' statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
+    r.date = date; r.amount = amount; r.text = text; r.editedAt = new Date().toISOString();
+    if (r.reconciled && moved) delete r.reconciled;
+  }
+  closeEdit(); changed();
+});
+$('eRevert').addEventListener('click', () => {
+  const E = state.edit; if (!E || E.kind !== 'occ') return;
+  const u = ruleById(E.ruleId); if (u) delete u.overrides[E.orig];
+  closeEdit(); changed();
+});
+$('eCancel').addEventListener('click', closeEdit);
+$('editDlg').addEventListener('close', () => { state.edit = null; });
+
 /* ---------- Actions ---------- */
 $('setupForm').addEventListener('submit', ev => {
   ev.preventDefault();
   const v = parseFloat($('startBal').value);
   if (!isFinite(v)) return;
-  state.data = { version:2, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, recurring:[], records:[] };
+  state.data = { version:3, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, recurring:[], reconciliations:{}, records:[] };
   changed();
 });
 $('entry').addEventListener('submit', ev => {
@@ -609,7 +864,7 @@ $('recurForm').addEventListener('submit', ev => {
   const startDate = $('rStart').value, endDate = $('rEnd').value || null, frequency = $('rFreq').value;
   if (!isFinite(amount) || !text || !startDate) return;
   if (endDate && endDate < startDate) { alert('The last date must be on or after the first date.'); return; }
-  state.data.recurring.push({ id:uid(), text, amount, frequency, startDate, endDate, skipped:[], createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  state.data.recurring.push({ id:uid(), text, amount, frequency, startDate, endDate, skipped:[], overrides:{}, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
   $('rAmount').value = ''; $('rText').value = ''; $('rEnd').value = '';
   changed();
 });
@@ -617,44 +872,54 @@ $('horizon').addEventListener('change', ev => {
   state.data.settings.horizonMonths = parseInt(ev.target.value, 10) || 3;
   changed();
 });
+$('cMonth').addEventListener('change', ev => { state.recon.month = ev.target.value; state.recon.ticked.clear(); state.recon.stmt = ''; renderRecon(); });
+$('cStmt').addEventListener('input', ev => { state.recon.stmt = ev.target.value; updateReconSummary(); });
+$('cTick').addEventListener('click', () => { for (const r of reconItems()) state.recon.ticked.add(r.id); renderRecon(); });
+$('cUntick').addEventListener('click', () => { state.recon.ticked.clear(); renderRecon(); });
+$('cFinish').addEventListener('click', finishRecon);
 
 function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted) return;
-  if (!confirm('Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.')) return;
+  if (!confirm('Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.' + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
   r.deleted = true; r.deletedAt = new Date().toISOString();
   changed();
 }
-function postRecord(u, date, amount) {
-  state.data.records.push({ id:uid(), text:u.text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:date });
+function postRecord(u, orig, date, amount) {
+  state.data.records.push({ id:uid(), text:u.text, amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:orig });
 }
-function postOcc(ruleId, date) {          // turn a projected item into a real entry; the amount can be adjusted to what the bank charged
-  const u = state.data.recurring.find(x => x.id === ruleId);
+function postOcc(it) {                    // turn a projected item into a real entry
+  const u = ruleById(it.ruleId);
   if (!u) return;
-  const v = prompt('Amount for "' + u.text + '" on ' + fmtDate(date) + ':', String(u.amount));
-  if (v === null) return;
-  const amt = parseFloat(v);
-  if (!isFinite(amt)) return;
-  postRecord(u, date, amt);
+  let amt = it.amount;
+  if (!it.confirmed) {                    // still an estimate: ask for what the bank actually charged
+    const v = prompt('Actual amount for "' + u.text + '" on ' + fmtDate(it.date) + ' (estimate ' + fmt(cents(it.amount)) + '):', String(it.amount));
+    if (v === null) return;
+    amt = parseFloat(v);
+    if (!isFinite(amt)) return;
+  }
+  postRecord(u, it.orig, it.date, amt);
   changed();
 }
-function skipOcc(ruleId, date) {
-  const u = state.data.recurring.find(x => x.id === ruleId);
+function skipOcc(it) {
+  const u = ruleById(it.ruleId);
   if (!u) return;
-  if (!confirm('Skip "' + u.text + '" on ' + fmtDate(date) + '? It will not be posted or projected.')) return;
-  u.skipped = (u.skipped || []).concat(date);
+  if (!confirm('Skip "' + u.text + '" on ' + fmtDate(it.date) + '? It will not be posted or projected.')) return;
+  u.skipped = (u.skipped || []).concat(it.orig);
+  delete u.overrides[it.orig];
   changed();
 }
 function postAllDue() {
   const A = computeActual(), P = computeProjected(A.final);
   const due = P.rows.filter(x => x.it.due).map(x => x.it);
   if (!due.length) return;
-  if (!confirm('Post ' + due.length + ' due item' + (due.length > 1 ? 's' : '') + ' at their scheduled amounts?')) return;
-  for (const it of due) postRecord(state.data.recurring.find(x => x.id === it.ruleId), it.date, it.amount);
+  const est = due.filter(x => !x.confirmed).length;
+  if (!confirm('Post ' + due.length + ' due item' + (due.length > 1 ? 's' : '') + ' at their scheduled amounts?' + (est ? '\n\n' + est + ' of them still use the estimated amount.' : ''))) return;
+  for (const it of due) postRecord(ruleById(it.ruleId), it.orig, it.date, it.amount);
   changed();
 }
 function stopRule(id) {
-  const u = state.data.recurring.find(x => x.id === id);
+  const u = ruleById(id);
   if (!u) return;
   if (!confirm('Stop "' + u.text + '"? Entries already posted stay; no more will be projected.')) return;
   u.deleted = true; u.deletedAt = new Date().toISOString();
