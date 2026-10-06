@@ -30,6 +30,7 @@
   .filebar { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
   .tabs { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 2px; align-items:center; }
   .tab { border-radius:999px; padding:4px 12px; }
+  .tab.low { box-shadow:0 0 0 2px #d32f2f; border-color:#d32f2f; }   /* red ring while the account is at or below its warning level */
   .tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; align-items:end; margin-top:6px; }
   form.entry .desc { grid-column:span 2; }
@@ -185,7 +186,7 @@
 
     <div class="tablewrap" id="tablewrap">
       <table>
-        <thead><tr><th>Date</th><th>Text</th><th>Category</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -278,6 +279,12 @@
   </form>
 </dialog>
 
+<dialog id="warnDlg">
+  <h3>Low balance warning</h3>
+  <div id="warnList" class="small" style="color:var(--fg)"></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button class="primary" id="warnOk" type="button">OK</button></div>
+</dialog>
+
 <dialog id="acctDlg">
   <form id="acctForm" class="entry" style="margin-top:0">
     <h3 class="full" id="acctTitle">Add account</h3>
@@ -305,6 +312,10 @@
       <label for="aOpen">Balance as of</label>
       <input id="aOpen" type="date" required>
     </div>
+    <div class="full">
+      <label for="aWarn">Warn me if the balance is projected to drop below (optional)</label>
+      <input id="aWarn" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="No warning">
+    </div>
     <p class="small full" id="aNote" style="margin:0"></p>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
       <button type="button" id="aCancel">Cancel</button>
@@ -330,8 +341,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.2';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 16:48';
+const APP_VERSION = '4.5';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-06 17:45';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -630,6 +641,7 @@ function adopt(d, name) {
   state.data = migrate(d); state.baseSavedAt = d.savedAt || null; state.dirty = false; state.msg = null;
   state.initialScroll = true;           // jump to the latest transaction again whenever a file is loaded
   state.recon = { month:null, ticked:new Set(), stmt:'' };
+  state.prevLows = null;                // a freshly opened file sets the baseline; only later changes raise warnings
   if (name) state.fileName = name;
   persistDraft(); render();
 }
@@ -796,6 +808,41 @@ function attachSuggest(input, onPick) {
 /* ---------- Messages & render ---------- */
 function setMsg(m, kind) { state.msg = m; state.msgKind = kind || 'err'; render(); }
 
+/* ---------- Low-balance warning ---------- */
+function lowFor(a) {                      // lowest balance from today on (real future-dated entries plus projections)
+  const keep = state.accountId; state.accountId = a.id;
+  try {
+    const A = computeActual(), P = computeProjected(A.final), t = todayStr(), lvl = cents(a.warnBelow);
+    let today = anchorOf(a).base;
+    const pts = [];
+    for (const { r, bal } of A.rows) { if (r.deleted) continue; if (r.date <= t) today = bal; else pts.push({ date:r.date, bal }); }
+    for (const { it, bal } of P.rows) pts.push({ date:it.date, bal });
+    pts.sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : 0);
+    pts.unshift({ date:t, bal:today });
+    let first = null, min = pts[0];
+    for (const p of pts) { if (p.bal < lvl && !first) first = p; if (p.bal < min.bal) min = p; }
+    return { first, min, lvl };
+  } finally { state.accountId = keep; }
+}
+function checkWarnings() {                // called after every change; warns when a change makes a future balance fall below the level
+  const now = {}, msgs = [];
+  for (const a of state.data.accounts) {
+    if (a.closed || typeof a.warnBelow !== 'number') continue;
+    const L = lowFor(a), was = state.prevLows && state.prevLows[a.id];
+    now[a.id] = { breach:!!L.first, min:L.min.bal };
+    if (state.prevLows && L.first && (!was || !was.breach || L.min.bal < was.min))
+      msgs.push(acctLabel(a) + ' is projected to drop below ' + fmt(L.lvl) + ' on ' + fmtDate(L.first.date) + '. Lowest point: ' + fmt(L.min.bal) + ' on ' + fmtDate(L.min.date) + '.');
+  }
+  state.prevLows = now;
+  if (msgs.length) {
+    const box = $('warnList'); box.innerHTML = '';
+    for (const m of msgs) { const p = document.createElement('p'); p.textContent = m; p.style.margin = '4px 0'; box.appendChild(p); }
+    state.lastWarn = msgs;
+    const dlg = $('warnDlg'); if (!dlg.open) dlg.showModal();
+  }
+}
+$('warnOk').addEventListener('click', () => $('warnDlg').close());
+
 function render() {
   $('mode').textContent = FS
     ? 'Folder access supported: autosaves to your chosen file every 30 s, and when you leave the page.'
@@ -847,18 +894,22 @@ function render() {
   renderRules();
   renderRecon();
   if ($('repDet').open) renderReport();
+  checkWarnings();
   $('horizon').value = String(state.data.settings.horizonMonths || 3);
 }
 
 function renderAcctBar() {
   const bar = $('acctBar'); bar.innerHTML = '';
   for (const a of state.data.accounts) {
-    const btn = document.createElement('button'); btn.className = 'tab' + (a.id === state.accountId ? ' on' : '');
+    const low = !a.closed && typeof a.warnBelow === 'number' && lowFor(a).first;
+    const btn = document.createElement('button'); btn.className = 'tab' + (a.id === state.accountId ? ' on' : '') + (low ? ' low' : '');
+    if (low) btn.title = 'Projected to be below ' + fmt(cents(a.warnBelow)) + ' on ' + fmtDate(low.date);
     btn.textContent = acctLabel(a); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
   }
   bar.appendChild(miniBtn('+ Add account', () => openAcct(null)));
   bar.appendChild(miniBtn('Edit account', () => openAcct(acct())));
-  $('acctInfo').textContent = acctSub(acct());
+  const cur = acct();
+  $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? ' · warning below ' + fmt(cents(cur.warnBelow)) : '');
 }
 function switchAccount(id) {
   state.accountId = id; lsSet('myLedger.account', id);
@@ -1322,7 +1373,7 @@ function openAcct(a) {
   $('acctTitle').textContent = a ? 'Edit account' : (state.data && state.data.accounts.length ? 'Add account' : 'Create your first account');
   sel.value = a ? a.type : ACCT_TYPES[0];
   $('aInst').value = a ? a.institution : ''; $('aName').value = a ? a.name : ''; $('aNum').value = a ? a.number : '';
-  setMoney($('aBal'), a ? a.startingBalance : ''); $('aOpen').value = a ? a.openedOn : todayStr();
+  setMoney($('aBal'), a ? a.startingBalance : ''); setMoney($('aWarn'), a && typeof a.warnBelow === 'number' ? a.warnBelow : ''); $('aOpen').value = a ? a.openedOn : todayStr();
   $('aNote').textContent = a ? 'Changing the opening balance changes every balance in this account.'
     : 'Only the last 4 digits of an account number are ever shown. You can enter just those.';
   $('acctDlg').showModal();
@@ -1333,12 +1384,18 @@ $('acctForm').addEventListener('submit', ev => {
   const type = $('aType').value, institution = $('aInst').value.trim(), name = $('aName').value.trim(), number = $('aNum').value.trim();
   const startingBalance = parseFloat($('aBal').value), openedOn = $('aOpen').value;
   if (!isFinite(startingBalance) || !openedOn) return;
+  const wv = parseFloat($('aWarn').value), warnBelow = isFinite(wv) ? wv : null;
   if (state.acctEdit) {
     const a = acctById(state.acctEdit); if (!a) return;
-    Object.assign(a, { type, institution, name, number, startingBalance, openedOn });
+    const oldLabel = acctLabel(a);
+    Object.assign(a, { type, institution, name, number, startingBalance, openedOn, warnBelow });
+    const newLabel = acctLabel(a);
+    if (newLabel !== oldLabel)               // recurring transfers that carry the default description follow the new name
+      for (const u of state.data.recurring)
+        if (!u.deleted && u.transferTo === a.id && (u.autoText || u.text === 'Transfer to ' + oldLabel)) { u.text = 'Transfer to ' + newLabel; u.autoText = true; }
   } else {
     if (!state.data) state.data = newData();
-    const a = { id:uid(), name, type, institution, number, startingBalance, openedOn, createdAt:new Date().toISOString(), closed:false };
+    const a = { id:uid(), name, type, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
     state.data.accounts.push(a);
     state.accountId = a.id; lsSet('myLedger.account', a.id);
     state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' };
@@ -1385,7 +1442,7 @@ $('newForm').addEventListener('submit', ev => {
   } else {                                   // repeating: stored as a recurring item, projected until posted
     const endDate = $('rEnd').value || null;
     if (endDate && endDate < date) { alert('The last date must be on or after the first date.'); return; }
-    const rule = { id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
+    const rule = { id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), autoText: X && !text, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
     if (X) rule.transferTo = to;
     state.data.recurring.push(rule);
   }
