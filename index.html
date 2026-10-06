@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger Test</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#d9d9e0; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 -apple-system, system-ui, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.3rem; margin:0 0 4px; }
+  .small { color:var(--muted); font-size:.85rem; margin-bottom:10px; }
+  .banner { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:10px; margin:10px 0; font-size:.92rem; }
+  .banner.warn { background:var(--warn-bg); color:var(--warn-fg); }
+  .banner.ok { background:var(--ok-bg); color:var(--ok-fg); }
+  .banner.err { background:#fde2e2; color:#7a1212; }
+  button { font:inherit; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { color:#c62828; }
+  button:disabled { opacity:.5; }
+  input { font:inherit; padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
+  .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
+  .filebar { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  form.entry { display:grid; grid-template-columns:130px 1fr auto; gap:8px; align-items:end; }
+  form.entry label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
+  @media (max-width:520px) { form.entry { grid-template-columns:1fr 1fr; } form.entry .full { grid-column:1 / -1; } }
+  .tablewrap { overflow-x:auto; margin-top:12px; border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; min-width:520px; }
+  th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); }
+  tr:last-child td { border-bottom:none; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.time { white-space:nowrap; color:var(--muted); font-size:.85rem; }
+  tr.deleted td { color:var(--muted); }
+  tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
+  tr.start td { font-style:italic; color:var(--muted); }
+  .tag { font-size:.7rem; border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin-left:6px; text-decoration:none; display:inline-block; }
+  .neg { color:#c62828; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ledger Test</h1>
+  <div class="small" id="mode"></div>
+
+  <div id="banner"></div>
+
+  <div class="filebar">
+    <button id="btnOpen">Open file</button>
+    <button id="btnChoose" hidden>Choose save file…</button>
+    <button id="btnSave" class="primary" hidden>Save now</button>
+  </div>
+  <input type="file" id="fileInput" accept=".json,application/json" hidden>
+
+  <section id="setup" class="card" hidden>
+    <strong>First use</strong>
+    <p class="small">Enter your starting balance, or open an existing ledger file above.</p>
+    <form id="setupForm" style="display:flex; gap:8px;">
+      <input id="startBal" type="number" step="0.01" inputmode="decimal" placeholder="Starting balance" required>
+      <button class="primary" type="submit">Start</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <div class="card">
+      <form id="entry" class="entry">
+        <div>
+          <label for="amount">Amount (negative = out)</label>
+          <input id="amount" type="number" step="0.01" inputmode="decimal" required>
+        </div>
+        <div>
+          <label for="text">Description</label>
+          <input id="text" type="text" maxlength="60" required>
+        </div>
+        <div class="full"><button class="primary" type="submit" style="width:100%">Add</button></div>
+      </form>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Entered</th><th>Text</th><th class="num">Amount</th><th class="num">Balance</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
+const $ = id => document.getElementById(id);
+const state = { data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err' };
+let saving = false;
+
+/* ---------- IndexedDB (browser-side draft + file handle) ---------- */
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('ledger-test', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function kvGet(k) {
+  try {
+    const db = await idb();
+    return await new Promise((res, rej) => {
+      const q = db.transaction('kv').objectStore('kv').get(k);
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  } catch (e) { return undefined; }
+}
+async function kvSet(k, v) {
+  try {
+    const db = await idb();
+    await new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(v, k);
+      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+    });
+  } catch (e) { /* storage unavailable: app still works, just no draft */ }
+}
+function persistDraft() {
+  if (!state.data) return Promise.resolve();
+  state.draftAt = new Date().toISOString();
+  return kvSet('draft', { data: state.data, dirty: state.dirty, baseSavedAt: state.baseSavedAt, fileName: state.fileName, draftAt: state.draftAt });
+}
+
+/* ---------- Data helpers ---------- */
+const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && typeof d.startingBalance === 'number';
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const fmt = c => (c / 100).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+
+function computeRows() {
+  const d = state.data;
+  const recs = [...d.records].sort((a, b) => a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : (a.id < b.id ? -1 : 1));
+  let bal = Math.round(d.startingBalance * 100);
+  const out = [];
+  for (const r of recs) {
+    if (!r.deleted) bal += Math.round(r.amount * 100);   // deleted records no longer affect later balances
+    out.push({ r, bal });
+  }
+  return out;
+}
+
+function changed() {
+  state.dirty = true;
+  state.msg = null;
+  persistDraft();      // silent browser-side safety copy on every change
+  render();
+}
+
+/* ---------- Saving ---------- */
+async function saveToHandle(auto) {
+  if (saving || !state.handle || !state.data) return false;
+  saving = true;
+  try {
+    const h = state.handle;
+    let perm = await h.queryPermission({ mode:'readwrite' });
+    if (perm !== 'granted') {
+      if (auto) { setMsg('Folder access needs re-approval. Tap Save now.', 'warn'); return false; }
+      perm = await h.requestPermission({ mode:'readwrite' });
+      if (perm !== 'granted') return false;
+    }
+    // conflict check: has the file been saved by someone/something else since we loaded it?
+    if (state.baseSavedAt) {
+      try {
+        const t = await (await h.getFile()).text();
+        if (t.trim()) {
+          const disk = JSON.parse(t);
+          if (disk.savedAt && disk.savedAt > state.baseSavedAt) {
+            if (auto) { setMsg('The file on disk is newer (saved elsewhere). Tap Save now to decide.', 'warn'); return false; }
+            if (!confirm('The file was saved more recently from another device (' + fmtTime(disk.savedAt) + ').\n\nOverwrite it with this version?\n\nCancel, then use "Open file" to load the newer one.')) return false;
+          }
+        }
+      } catch (e) { /* unreadable/empty file: proceed */ }
+    }
+    const savedAt = new Date().toISOString();
+    const out = { ...state.data, savedAt };
+    const w = await h.createWritable();
+    await w.write(JSON.stringify(out, null, 2));
+    await w.close();
+    state.data.savedAt = savedAt;
+    state.baseSavedAt = savedAt;
+    state.dirty = false;
+    state.msg = null;
+    await persistDraft();
+    return true;
+  } catch (e) {
+    setMsg('Save failed: ' + e.message, 'err');
+    return false;
+  } finally { saving = false; render(); }
+}
+
+async function exportFile() {     // Safari / iPhone / iPad path: must run from a tap
+  const savedAt = new Date().toISOString();
+  const out = { ...state.data, savedAt };
+  const json = JSON.stringify(out, null, 2);
+  const file = new File([json], 'ledger.json', { type:'application/json' });
+  let done = false;
+  if (navigator.canShare && navigator.canShare({ files:[file] })) {
+    try { await navigator.share({ files:[file], title:'Ledger' }); done = true; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  if (!done) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = 'ledger.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    done = true;
+  }
+  if (done) {
+    state.data.savedAt = savedAt; state.baseSavedAt = savedAt; state.dirty = false; state.msg = null;
+    await persistDraft(); render();
+  }
+}
+
+async function saveNow() {
+  if (!state.data) return;
+  if (FS) { if (!state.handle) return chooseSaveFile(); await saveToHandle(false); }
+  else await exportFile();
+}
+
+async function chooseSaveFile() {
+  try {
+    const h = await window.showSaveFilePicker({ suggestedName:'ledger.json', types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
+    state.handle = h; state.fileName = h.name; state.baseSavedAt = null;
+    await kvSet('handle', h);
+    if (state.data) await saveToHandle(false); else render();
+  } catch (e) { if (e.name !== 'AbortError') setMsg('Could not choose file: ' + e.message, 'err'); }
+}
+
+/* ---------- Opening ---------- */
+function adopt(d, name) {
+  state.data = d; state.baseSavedAt = d.savedAt || null; state.dirty = false; state.msg = null;
+  if (name) state.fileName = name;
+  persistDraft(); render();
+}
+function confirmDiscard() {
+  return !state.dirty || confirm('You have unsaved changes. Opening a file will replace them. Continue?');
+}
+async function openFile() {
+  if (!confirmDiscard()) return;
+  if (FS) {
+    try {
+      const [h] = await window.showOpenFilePicker({ types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
+      const d = JSON.parse(await (await h.getFile()).text());
+      if (!valid(d)) return setMsg('That file is not a ledger file.', 'err');
+      state.handle = h; await kvSet('handle', h);
+      adopt(d, h.name);
+    } catch (e) { if (e.name !== 'AbortError') setMsg('Could not open file: ' + e.message, 'err'); }
+  } else {
+    $('fileInput').click();
+  }
+}
+$('fileInput').addEventListener('change', async ev => {
+  const f = ev.target.files[0]; ev.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!valid(d)) return setMsg('That file is not a ledger file.', 'err');
+    adopt(d, f.name);
+  } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
+});
+
+async function refreshFromFile() {   // pick up changes saved from another device
+  if (!state.handle || state.dirty || saving) return;
+  try {
+    if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') return;
+    const d = JSON.parse(await (await state.handle.getFile()).text());
+    if (valid(d) && d.savedAt && (!state.baseSavedAt || d.savedAt > state.baseSavedAt)) adopt(d);
+  } catch (e) { /* ignore */ }
+}
+
+/* ---------- Messages & render ---------- */
+function setMsg(m, kind) { state.msg = m; state.msgKind = kind || 'err'; render(); }
+
+function render() {
+  $('mode').textContent = FS
+    ? 'Folder access supported: autosaves to your chosen file every 30 s, and when you leave the page.'
+    : 'Manual mode (this browser cannot write files directly): changes are kept in the browser; use Save to Files to update your file.';
+
+  $('btnChoose').hidden = !FS;
+  $('btnChoose').textContent = state.handle ? 'Change save file…' : 'Choose save file…';
+  $('btnSave').hidden = !state.data;
+  $('btnSave').textContent = FS ? 'Save now' : 'Save to Files';
+
+  // banner
+  const b = $('banner'); b.innerHTML = '';
+  let text = null, cls = 'ok', withBtn = false;
+  if (state.msg) { text = state.msg; cls = state.msgKind; withBtn = state.msgKind === 'warn'; }
+  else if (state.data && state.dirty) {
+    cls = 'warn'; withBtn = true;
+    if (FS && state.handle) text = 'Unsaved changes. Autosave in progress (' + state.fileName + ').';
+    else if (FS) text = 'Unsaved changes stored in this browser only. Choose a save file to enable autosave.';
+    else text = 'Unsaved changes (kept in this browser only' + (state.draftAt ? ', last edit ' + fmtTime(state.draftAt) : '') + '). Save to Files.';
+  } else if (state.data) {
+    text = state.baseSavedAt ? 'All changes saved' + (state.fileName ? ' to ' + state.fileName : '') + ' (' + fmtTime(state.baseSavedAt) + ').' : 'No changes.';
+  }
+  if (text) {
+    b.className = 'banner ' + cls;
+    const s = document.createElement('span'); s.textContent = text; b.appendChild(s);
+    if (withBtn) {
+      const btn = document.createElement('button'); btn.className = 'primary';
+      btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose file') : 'Save to Files';
+      btn.onclick = saveNow; b.appendChild(btn);
+    }
+  } else b.className = '';
+
+  $('setup').hidden = !!state.data;
+  $('app').hidden = !state.data;
+  if (!state.data) return;
+
+  // table
+  const tb = $('rows'); tb.innerHTML = '';
+  const start = document.createElement('tr'); start.className = 'start';
+  addCell(start, fmtTime(state.data.createdAt || new Date().toISOString()), 'time');
+  addCell(start, 'Starting balance');
+  addCell(start, '', 'num');
+  addCell(start, fmt(Math.round(state.data.startingBalance * 100)), 'num');
+  addCell(start, '');
+  tb.appendChild(start);
+
+  for (const { r, bal } of computeRows()) {
+    const tr = document.createElement('tr');
+    if (r.deleted) tr.className = 'deleted';
+    addCell(tr, fmtTime(r.createdAt), 'time');
+    const t = addCell(tr, r.text, 'text');
+    if (r.deleted) { const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = 'deleted'; t.appendChild(tag); }
+    const a = addCell(tr, fmt(Math.round(r.amount * 100)), 'num amt');
+    if (r.amount < 0) a.classList.add('neg');
+    const bc = addCell(tr, fmt(bal), 'num');
+    if (bal < 0) bc.classList.add('neg');
+    const act = addCell(tr, '');
+    if (!r.deleted) {
+      const btn = document.createElement('button'); btn.className = 'danger'; btn.textContent = 'Delete';
+      btn.onclick = () => deleteRecord(r.id); act.appendChild(btn);
+    }
+    tb.appendChild(tr);
+  }
+}
+function addCell(tr, text, cls) {
+  const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td;
+}
+
+/* ---------- Actions ---------- */
+$('setupForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const v = parseFloat($('startBal').value);
+  if (!isFinite(v)) return;
+  state.data = { version:1, startingBalance:v, createdAt:new Date().toISOString(), savedAt:null, records:[] };
+  changed();
+});
+$('entry').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const amount = parseFloat($('amount').value), text = $('text').value.trim();
+  if (!isFinite(amount) || !text) return;
+  state.data.records.push({ id:uid(), text, amount, createdAt:new Date().toISOString(), deleted:false, deletedAt:null });
+  $('amount').value = ''; $('text').value = ''; $('amount').focus();
+  changed();
+});
+function deleteRecord(id) {
+  const r = state.data.records.find(x => x.id === id);
+  if (!r || r.deleted) return;
+  if (!confirm('Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.')) return;
+  r.deleted = true; r.deletedAt = new Date().toISOString();
+  changed();
+}
+$('btnOpen').onclick = openFile;
+$('btnChoose').onclick = chooseSaveFile;
+$('btnSave').onclick = saveNow;
+
+/* ---------- Safety nets ---------- */
+function flush() { persistDraft(); if (FS && state.handle && state.dirty) saveToHandle(true); }
+setInterval(() => { if (document.visibilityState === 'visible' && state.dirty && FS && state.handle) saveToHandle(true); }, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flush(); else refreshFromFile();
+});
+window.addEventListener('pagehide', flush);
+window.addEventListener('blur', flush);
+window.addEventListener('beforeunload', ev => { if (state.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+
+/* ---------- Startup ---------- */
+(async () => {
+  if (navigator.storage && navigator.storage.persist) { try { await navigator.storage.persist(); } catch (e) {} }
+  const draft = await kvGet('draft');
+  if (draft && valid(draft.data)) {
+    state.data = draft.data; state.dirty = !!draft.dirty; state.baseSavedAt = draft.baseSavedAt || null;
+    state.fileName = draft.fileName || null; state.draftAt = draft.draftAt || null;
+  }
+  if (FS) { const h = await kvGet('handle'); if (h) { state.handle = h; state.fileName = h.name; } }
+  render();
+  await refreshFromFile();
+})();
+</script>
+</body>
+</html>
