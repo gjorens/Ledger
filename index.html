@@ -55,6 +55,11 @@
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
+  .sparkstat { display:flex; flex-direction:column; justify-content:center; }
+  .spark { width:100%; height:30px; display:block; }
+  .spark path { fill:none; stroke-width:1.4; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-linejoin:round; }
+  .sp-cur { stroke:var(--accent); }
+  .sp-prev { stroke:var(--muted); opacity:.55; stroke-width:1 !important; }
   .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:4px 0; border-top:1px solid var(--line); font-size:.9rem; flex-wrap:wrap; }
   .rule.sub { border-top:none; padding:1px 0 1px 16px; color:var(--muted); font-size:.85rem; }
   .rule .btns { white-space:nowrap; }
@@ -215,6 +220,7 @@
         <div><label class="lbl" for="pFrom">From</label><input id="pFrom" type="date"></div>
         <div><label class="lbl" for="pTo">To</label><input id="pTo" type="date"></div>
       </div>
+      <p class="small" id="repNote" style="margin:6px 0" hidden></p>
       <div class="tablewrap" style="max-height:50vh"><table id="repTable"></table></div>
       <p class="small" style="margin:8px 0 0">Transfers between your own accounts, deleted entries and projected items are left out.</p>
     </details>
@@ -311,6 +317,7 @@
         <li>Sorted by date, then credits before debits, then description. The list opens at your latest past transaction.</li>
         <li><b>Edit</b> changes any entry. <b>Delete</b> marks it deleted: it stays in the file but no longer counts.</li>
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
+        <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
         <li>In <b>Recurring items</b>: <b>Change amount</b> schedules a new estimate from a future date, and <b>Stop</b> ends the item.</li>
         <li><b>Look ahead</b> sets how far projections run. <b>Balance graph</b> compares the 12 months ending at that date with the same 12 months a year earlier.</li>
@@ -407,6 +414,20 @@
   </form>
 </dialog>
 
+<dialog id="postDlg">
+  <form id="postForm" method="dialog" class="grid" style="min-width:min(92vw,340px)">
+    <h3 class="full" style="margin:0">Post this item</h3>
+    <p class="small full" id="postInfo" style="margin:0"></p>
+    <div class="full">
+      <label for="postAmt" id="postAmtLbl">Actual amount</label>
+      <input id="postAmt" class="money" type="text" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="postCancel">Cancel</button>
+      <button type="submit" class="primary">Post</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="editDlg">
   <form id="editForm" class="entry" style="margin-top:0">
     <h3 class="full" id="editTitle">Edit</h3>
@@ -447,6 +468,10 @@
     <div>
       <label for="aType">Type</label>
       <select id="aType"></select>
+    </div>
+    <div>
+      <label for="aCur">Currency</label>
+      <select id="aCur"></select>
     </div>
     <div>
       <label for="aInst">Institution</label>
@@ -509,8 +534,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.22';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 19:10';
+const APP_VERSION = '4.25';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 21:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -605,7 +630,13 @@ const ruleById = id => state.data.recurring.find(x => x.id === id);
 const acctById = id => state.data.accounts.find(a => a.id === id);
 const last4 = n => { const s = String(n || '').replace(/\D/g, ''); return s ? '…' + s.slice(-4) : ''; };
 const acctLabel = a => a.name || [a.institution, a.type].filter(Boolean).join(' ') || 'Account';
-const acctSub = a => [a.institution, a.type, last4(a.number)].filter(Boolean).join(' · ');
+const CURRENCIES = [['CAD','Canadian dollar'],['USD','US dollar'],['EUR','Euro'],['GBP','British pound'],['MXN','Mexican peso'],['AUD','Australian dollar'],['NZD','New Zealand dollar'],['CHF','Swiss franc'],['CNY','Chinese yuan'],['INR','Indian rupee'],['HKD','Hong Kong dollar'],['SGD','Singapore dollar'],['BRL','Brazilian real'],['ZAR','South African rand'],['SEK','Swedish krona'],['NOK','Norwegian krone'],['DKK','Danish krone']];
+function money(c, a) {                    // an amount with its account's currency symbol; plain number when the account has no currency set
+  if (a && a.currency) { try { return (c / 100).toLocaleString(undefined, { style:'currency', currency:a.currency }); } catch (e) { /* unknown code: fall through */ } }
+  return fmt(c);
+}
+const dmoney = (c, a) => { a = a || acct(); return money((sgn(a) * c) || 0, a); };
+const acctSub = a => [a.institution, a.type, last4(a.number), a.currency].filter(Boolean).join(' · ');
 // Where the running balance starts. Until a month is reconciled it is the opening balance; afterwards it is the latest
 // statement closing balance, less what that statement already contained (each entry remembers its reconciled amount).
 function anchorOf(a) {
@@ -1083,8 +1114,8 @@ function checkWarnings() {                // called after every change; warns wh
     now[a.id] = { breach:!!L.first, min:L.min.bal };
     if (state.prevLows && L.first && (!was || !was.breach || L.min.bal < was.min))
       msgs.push(isLiab(a)
-        ? acctLabel(a) + ' is projected to owe more than ' + fmt(-L.lvl) + ' on ' + fmtDate(L.first.date) + '. Highest: ' + fmt(-L.min.bal) + ' on ' + fmtDate(L.min.date) + '.'
-        : acctLabel(a) + ' is projected to drop below ' + fmt(L.lvl) + ' on ' + fmtDate(L.first.date) + '. Lowest point: ' + fmt(L.min.bal) + ' on ' + fmtDate(L.min.date) + '.');
+        ? acctLabel(a) + ' is projected to owe more than ' + money(-L.lvl, a) + ' on ' + fmtDate(L.first.date) + '. Highest: ' + money(-L.min.bal, a) + ' on ' + fmtDate(L.min.date) + '.'
+        : acctLabel(a) + ' is projected to drop below ' + money(L.lvl, a) + ' on ' + fmtDate(L.first.date) + '. Lowest point: ' + money(L.min.bal, a) + ' on ' + fmtDate(L.min.date) + '.');
   }
   state.prevLows = now;
   if (msgs.length) {
@@ -1348,13 +1379,13 @@ function renderAcctBar() {
   for (const a of state.data.accounts) {
     const low = !a.closed && typeof a.warnBelow === 'number' && lowFor(a).first;
     const btn = document.createElement('button'); btn.className = 'tab' + (a.id === state.accountId ? ' on' : '') + (low ? ' low' : '');
-    if (low) btn.title = isLiab(a) ? 'Projected to owe more than ' + fmt(cents(-a.warnBelow)) + ' on ' + fmtDate(low.date) : 'Projected to be below ' + fmt(cents(a.warnBelow)) + ' on ' + fmtDate(low.date);
+    if (low) btn.title = isLiab(a) ? 'Projected to owe more than ' + money(cents(-a.warnBelow), a) + ' on ' + fmtDate(low.date) : 'Projected to be below ' + money(cents(a.warnBelow), a) + ' on ' + fmtDate(low.date);
     btn.textContent = acctLabel(a); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
   }
   bar.appendChild(miniBtn('+ Add account', () => openAcct(null)));
   bar.appendChild(miniBtn('Edit account', () => openAcct(acct())));
   const cur = acct();
-  $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? (isLiab(cur) ? ' · warning above ' + fmt(cents(-cur.warnBelow)) + ' owing' : ' · warning below ' + fmt(cents(cur.warnBelow))) : '');
+  $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? (isLiab(cur) ? ' · warning above ' + money(cents(-cur.warnBelow), cur) + ' owing' : ' · warning below ' + money(cents(cur.warnBelow), cur)) : '');
 }
 function switchAccount(id) {
   state.accountId = id; lsSet(ACCT_KEY, id);
@@ -1369,13 +1400,36 @@ function stat(label, value, neg, sub) {
   const s = document.createElement('span'); s.textContent = label + (sub ? ' · ' + sub : '');
   d.appendChild(b); d.appendChild(s); return d;
 }
+function sparkStat(a, L) {                // a very small version of the Balance graph (the Balance graph button opens the full one)
+  const G = balanceSeries(a), sg = sgn(a), NS = 'http://www.w3.org/2000/svg', W = 120, H = 30, pad = 2;
+  const cv = G.cur.map(p => sg * p.bal / 100), pv = G.prev.map(p => p.bal === null ? null : sg * p.bal / 100);
+  const all = cv.concat(pv).filter(v => v !== null);
+  let lo = Math.min(...all), hi = Math.max(...all); if (hi - lo < 1) { hi += 1; lo -= 1; }
+  const n = cv.length, X = i => pad + (W - 2 * pad) * i / Math.max(1, n - 1), Y = v => pad + (H - 2 * pad) * (1 - (v - lo) / (hi - lo));
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'spark'); svg.setAttribute('role', 'img');
+  const path = (vals, from, to, cls, dash) => {
+    let d = '', pen = false;
+    for (let i = from; i <= to; i++) { if (vals[i] === null) { pen = false; continue; } d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(vals[i]).toFixed(1); pen = true; }
+    if (!d) return; const e = document.createElementNS(NS, 'path'); e.setAttribute('d', d); e.setAttribute('class', cls); if (dash) e.setAttribute('stroke-dasharray', '2 2'); svg.appendChild(e);
+  };
+  let split = G.dates.findIndex(d => d > G.today); if (split < 0) split = n;           // first projected point
+  path(pv, 0, n - 1, 'sp-prev');
+  path(cv, 0, Math.max(0, split - 1), 'sp-cur');
+  if (split < n) path(cv, Math.max(0, split - 1), n - 1, 'sp-cur', true);
+  const d = document.createElement('div'); d.className = 'stat sparkstat';
+  d.appendChild(svg);
+  const sp = document.createElement('span'); sp.textContent = '12 months to ' + fmtDate(G.end) + ' · ' + (L ? 'owing ' : '') + dmoney(G.cur[n - 1].bal, a);
+  d.appendChild(sp);
+  d.title = 'Solid: balance so far. Dashed: projected. Grey: the same 12 months a year earlier.';
+  return d;
+}
 function renderSummary(A, P) {
   const s = $('summary'); s.innerHTML = '';
   const a = acct(), L = isLiab(a);
-  s.appendChild(stat(LBL.balance(a), dfmt(A.final), lowBal(a, A.final)));
+  s.appendChild(stat(LBL.balance(a), dmoney(A.final, a), lowBal(a, A.final)));
+  s.appendChild(sparkStat(a, L));
   if (P.rows.length) {
-    s.appendChild(stat((L ? 'Owing by ' : 'Projected by ') + fmtDate(P.limit), dfmt(P.end), lowBal(a, P.end)));
-    s.appendChild(stat(L ? 'Highest projected owing' : 'Lowest projected', dfmt(P.low.bal), lowBal(a, P.low.bal), fmtDate(P.low.date)));
+    s.appendChild(stat(L ? 'Highest projected owing' : 'Lowest projected', dmoney(P.low.bal, a), lowBal(a, P.low.bal), fmtDate(P.low.date)));
   }
 }
 
@@ -1634,13 +1688,13 @@ function updateReconSummary() {
     const b = document.createElement('span'); b.textContent = value;
     row.appendChild(a); row.appendChild(b); box.appendChild(row);
   };
-  line(isLiab(acct()) ? 'Previously reconciled amount owing' : 'Previously reconciled balance', dfmt(S.opening));
-  line('+ Ticked items (' + S.ticked.length + ')', dfmt(S.tickedSum));
-  line(isLiab(acct()) ? '= Cleared amount owing' : '= Cleared balance', dfmt(S.cleared), 'total');
-  line('Statement closing balance', S.stmtCents === null ? 'enter above' : dfmt(S.stmtCents));
-  if (S.diff !== null) line(S.diff === 0 ? 'Difference: balanced' : 'Difference', dfmt(S.diff), 'total ' + (S.diff === 0 ? 'good' : 'bad'));
-  line('Not ticked / not on the statement (' + S.rest.length + ')', dfmt(S.restSum));
-  line((isLiab(acct()) ? 'Ledger amount owing at ' : 'Ledger balance at ') + fmtDate(monthEnd(state.recon.month)), dfmt(S.ledgerEnd));
+  line(isLiab(acct()) ? 'Previously reconciled amount owing' : 'Previously reconciled balance', dmoney(S.opening));
+  line('+ Ticked items (' + S.ticked.length + ')', dmoney(S.tickedSum));
+  line(isLiab(acct()) ? '= Cleared amount owing' : '= Cleared balance', dmoney(S.cleared), 'total');
+  line('Statement closing balance', S.stmtCents === null ? 'enter above' : dmoney(S.stmtCents));
+  if (S.diff !== null) line(S.diff === 0 ? 'Difference: balanced' : 'Difference', dmoney(S.diff), 'total ' + (S.diff === 0 ? 'good' : 'bad'));
+  line('Not ticked / not on the statement (' + S.rest.length + ')', dmoney(S.restSum));
+  line((isLiab(acct()) ? 'Ledger amount owing at ' : 'Ledger balance at ') + fmtDate(monthEnd(state.recon.month)), dmoney(S.ledgerEnd));
 }
 
 function finishRecon() {
@@ -1697,6 +1751,9 @@ function renderReport() {
   const R = state.rep, tbl = $('repTable'); tbl.innerHTML = '';
   $('pCustom').hidden = R.period !== 'custom';
   const recs = reportRecords();
+  { const cs = new Set((R.scope === 'all' ? state.data.accounts : [acct()]).map(a => a.currency).filter(Boolean)), n = $('repNote');
+    n.textContent = cs.size > 1 ? 'These accounts use different currencies (' + [...cs].join(', ') + '). Amounts are added together without conversion, so totals are not meaningful.' : (cs.size === 1 ? 'Amounts in ' + [...cs][0] + '.' : '');
+    n.hidden = !n.textContent; }
   const cell = (tr, tagName, text, cls) => { const e = document.createElement(tagName); e.textContent = text; if (cls) e.className = cls; tr.appendChild(e); return e; };
   if (!recs.length) { const tr = document.createElement('tr'); cell(tr, 'td', 'No entries in this period.'); tbl.appendChild(tr); return; }
   const rows = reportByCategory(recs);
@@ -1824,6 +1881,11 @@ function openAcct(a) {
   if (a && !ACCT_TYPES.includes(a.type)) { const o = document.createElement('option'); o.value = a.type; o.textContent = a.type; sel.appendChild(o); }
   $('acctTitle').textContent = a ? 'Edit account' : (state.data && state.data.accounts.length ? 'Add account' : 'Create your first account');
   sel.value = a ? a.type : ACCT_TYPES[0];
+  const cs = $('aCur');
+  if (!cs.dataset.filled) { cs.innerHTML = ''; const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Not set'; cs.appendChild(o0); CURRENCIES.forEach(([c, n]) => { const o = document.createElement('option'); o.value = c; o.textContent = c + ' \u2013 ' + n; cs.appendChild(o); }); cs.dataset.filled = '1'; }
+  const wantCur = a ? (a.currency || '') : ((state.data && state.data.accounts.length && acct() && acct().currency) || '');   // a new account starts with the currency of the one being viewed
+  if (wantCur && ![...cs.options].some(o => o.value === wantCur)) { const o = document.createElement('option'); o.value = wantCur; o.textContent = wantCur; cs.appendChild(o); }
+  cs.value = wantCur;
   $('aInst').value = a ? a.institution : ''; $('aName').value = a ? a.name : ''; $('aNum').value = a ? a.number : '';
   const sg0 = a ? sgn(a) : 1;
   setMoney($('aBal'), a ? a.startingBalance * sg0 : ''); setMoney($('aWarn'), a && typeof a.warnBelow === 'number' ? a.warnBelow * sg0 : ''); $('aOpen').value = a ? a.openedOn : todayStr();
@@ -1835,7 +1897,7 @@ function openAcct(a) {
 function closeAcct() { const dlg = $('acctDlg'); state.acctEdit = null; if (dlg.open) dlg.close(); }
 $('acctForm').addEventListener('submit', ev => {
   ev.preventDefault();
-  const type = $('aType').value, institution = $('aInst').value.trim(), name = $('aName').value.trim(), number = $('aNum').value.trim();
+  const currency = $('aCur').value, type = $('aType').value, institution = $('aInst').value.trim(), name = $('aName').value.trim(), number = $('aNum').value.trim();
   const sgA = LIAB_TYPES.includes(type) ? -1 : 1;
   const startingBalance = parseFloat($('aBal').value) * sgA, openedOn = $('aOpen').value;
   if (!isFinite(startingBalance) || !openedOn) return;
@@ -1843,14 +1905,14 @@ $('acctForm').addEventListener('submit', ev => {
   if (state.acctEdit) {
     const a = acctById(state.acctEdit); if (!a) return;
     const oldLabel = acctLabel(a);
-    Object.assign(a, { type, institution, name, number, startingBalance, openedOn, warnBelow });
+    Object.assign(a, { type, currency, institution, name, number, startingBalance, openedOn, warnBelow });
     const newLabel = acctLabel(a);
     if (newLabel !== oldLabel)               // recurring transfers that carry the default description follow the new name
       for (const u of state.data.recurring)
         if (!u.deleted && u.transferTo === a.id && (u.autoText || u.text === 'Transfer to ' + oldLabel)) { u.text = 'Transfer to ' + newLabel; u.autoText = true; }
   } else {
     if (!state.data) state.data = newData();
-    const a = { id:uid(), name, type, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
+    const a = { id:uid(), name, type, currency, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
     state.data.accounts.push(a);
     state.accountId = a.id; lsSet(ACCT_KEY, a.id);
     state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' };
@@ -1884,6 +1946,7 @@ $('newForm').addEventListener('submit', ev => {
   const from = X ? $('xFrom').value : state.accountId, to = X ? $('xTo').value : null;
   if (X && from === to) { alert('Choose two different accounts for a transfer.'); return; }
   if (X && !Math.abs(amount)) return;
+  if (X) { const fa = acctById(from), ta = acctById(to); if (fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !confirm('These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return; }
   if (!X && !text) return;
   const now = new Date().toISOString(), A = X ? acctById(from) : null, B = X ? acctById(to) : null;
   if (freq === 'once') {
@@ -1956,20 +2019,30 @@ function postRecord(u, orig, date, amount) {
   }
   state.data.records.push({ id:uid(), accountId:u.accountId, text:u.text, category:u.category || '', amount, date, createdAt:new Date().toISOString(), deleted:false, deletedAt:null, recurringId:u.id, recurringDate:orig });
 }
+let postCtx = null;
 function postOcc(it) {                    // turn a projected item into a real entry
   const u = ruleById(it.ruleId);
   if (!u) return;
-  let amt = it.amount;
-  if (!it.confirmed) {                    // still an estimate: ask for what the bank actually charged
-    const v = prompt('Actual amount for "' + u.text + '" on ' + fmtDate(it.date) + ' (estimate ' + fmt(cents(it.amount)) + '):', String(it.amount));
-    if (v === null) return;
-    amt = parseFloat(v);
-    if (!isFinite(amt)) return;
-    if (u.transferTo) amt = Math.abs(amt);
-  }
+  if (it.confirmed) { postRecord(u, it.orig, it.date, it.amount); changed(); return; }
+  const a = acctById(u.accountId), f = a ? sgn(a) : 1;      // still an estimate: ask for what the bank actually charged, in the same fixed-decimal box as everywhere else
+  postCtx = { u, it, f };
+  $('postInfo').textContent = '"' + u.text + '" on ' + fmtDate(it.date) + ' \u00b7 estimate ' + fmt(cents(it.amount * f));
+  setMoney($('postAmt'), it.amount * f);
+  $('postDlg').showModal(); $('postAmt').focus(); $('postAmt').select();
+}
+$('postForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  if (!postCtx) return $('postDlg').close();
+  const v = parseFloat($('postAmt').value);
+  if (!isFinite(v)) return;
+  const { u, it, f } = postCtx; postCtx = null;
+  let amt = v * f;
+  if (u.transferTo) amt = Math.abs(amt);
+  $('postDlg').close();
   postRecord(u, it.orig, it.date, amt);
   changed();
-}
+});
+$('postCancel').addEventListener('click', () => { postCtx = null; $('postDlg').close(); });
 function skipOcc(it) {
   const u = ruleById(it.ruleId);
   if (!u) return;
