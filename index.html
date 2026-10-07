@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-  :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#d9d9e0; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; --btn:#0e7490; --btn-bd:#0a5568; --tab:#dbe8fb; --tab-bd:#4a6fa5; --tab-on-bd:#07408a; --dng-bg:#fdecec; --dng-bd:#d9534f; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; --btn:#1798b8; --btn-bd:#0e6f88; --tab:#243a5a; --tab-bd:#7fa3d9; --tab-on-bd:#a9c8f5; --dng-bg:#3a1a1a; --dng-bd:#e57373; } }
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#c9ccd6; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; --btn:#eef0f4; --btn-bd:#c2c8d4; --btn-fg:#2a3040; --btn-hv:#e1e5ed; --ico:#46526b; --tab:#e3ebf8; --tab-bd:#4a6fa5; --tab-on-bd:#07408a; --dng-bg:#fdf0f0; --dng-bd:#e3a9a6; --dng-fg:#b3261e; --ok-ico:#1b7f4b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#44444e; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; --btn:#2b2f3a; --btn-bd:#4b5160; --btn-fg:#e4e7ef; --btn-hv:#363b49; --ico:#b9c3d8; --tab:#243a5a; --tab-bd:#7fa3d9; --tab-on-bd:#a9c8f5; --dng-bg:#3a2223; --dng-bd:#7a4545; --dng-fg:#ff9a92; --ok-ico:#7ad9a0; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.3 -apple-system, system-ui, sans-serif; }
   main { max-width:920px; margin:0 auto; padding:10px 12px; }
@@ -25,20 +25,24 @@
   .banner.warn { background:var(--warn-bg); color:var(--warn-fg); }
   .banner.ok { background:var(--ok-bg); color:var(--ok-fg); }
   .banner.err { background:#fde2e2; color:#7a1212; }
-  button { font:inherit; padding:6px 12px; border-radius:9px; border:1px solid var(--btn-bd); background:var(--btn); color:#fff; cursor:pointer; }
-  button:hover { filter:brightness(1.1); }
+  button { font:inherit; padding:6px 12px; border-radius:9px; border:1px solid var(--btn-bd); background:var(--btn); color:var(--btn-fg); cursor:pointer; }
+  button:hover { background:var(--btn-hv); }
   button.primary { background:var(--accent); color:#fff; border-color:var(--tab-on-bd); }
-  button.danger { background:var(--dng-bg); color:#c62828; border-color:var(--dng-bd); }
+  button.primary:hover { background:var(--accent); filter:brightness(1.08); }
+  button.danger { background:var(--dng-bg); color:var(--dng-fg); border-color:var(--dng-bd); }
+  button.icon { color:var(--ico); }
+  button.icon.danger { color:var(--dng-fg); }
+  button.icon.ok { color:var(--ok-ico); }
   button.mini { padding:2px 7px; font-size:.82rem; }
   button.icon { padding:3px 7px; line-height:0; }
-  .ico { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ico { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .touch button.icon { padding:7px 11px; }
   button:disabled { opacity:.5; }
-  @media (prefers-color-scheme: dark) { button.primary { color:#06203d; } button.danger { color:#ff8a80; } .tab.on { color:#06203d; } }
-  input, select { font:inherit; padding:6px 9px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
+  @media (prefers-color-scheme: dark) { button.primary { color:#06203d; } .tab.on { color:#06203d; } }
+  input, select { min-width:0; font:inherit; padding:6px 9px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }   /* no up/down spinner arrows */
   input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  .card { background:var(--card); border-radius:12px; padding:9px 12px; margin:8px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px 12px; margin:8px 0; }
   details.card summary { cursor:pointer; font-weight:600; }
   .filebar { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
   input[readonly] { background:var(--card); color:var(--muted); cursor:default; }
@@ -46,6 +50,9 @@
   .xrow > div { flex:1 1 0; min-width:0; }
   .xrow > button { flex:none; margin-bottom:1px; }
   .tabs { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 2px; align-items:center; }
+  input[type=date] { -webkit-appearance:none; appearance:none; min-width:0; width:100%; text-align:left; min-height:2.3em; }
+  form.entry > div, .xrow > div { min-width:0; }
+  .moneywrap { min-width:0; }
   .tab { border-radius:4px; padding:5px 14px; background:var(--tab); color:var(--fg); border:2px solid var(--tab-bd); font-weight:500; }
   .tab.low { box-shadow:0 0 0 5px #d32f2f; border-color:#d32f2f; }   /* red ring while the account is at or below its warning level */
   .tab.on { background:var(--accent); color:#fff; border-color:var(--tab-on-bd); font-weight:700; }
@@ -109,6 +116,8 @@
   .touch .ritem { padding:6px 0; }
   .touch .rule { padding:6px 0; }
   dialog.wide { width:min(560px, calc(100% - 24px)); }
+  #archDlg { width:min(880px, calc(100% - 24px)); }
+  #archDlg table { min-width:600px; }
   #gChart svg { width:100%; height:auto; display:block; }
   .gl { display:inline-block; width:18px; height:0; border-top:2.5px solid; vertical-align:middle; margin:0 4px 0 8px; }
   .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
@@ -251,7 +260,7 @@
           <option value="6">6 months</option>
           <option value="12">12 months</option>
         </select>
-        <button class="mini" id="btnGraph" type="button">Balance graph</button>
+        <button id="btnGraph" type="button">Balance graph</button>
       </div>
     </div>
 
@@ -304,6 +313,19 @@
   </details>
 
   <details class="sset">
+    <summary>Archive old data</summary>
+    <p class="small" style="margin:8px 0 6px">Over the years the ledger file grows. Archiving moves old <b>reconciled</b> entries (and deleted ones) into a separate file, <b>ledger-archive-YYYY-MM.json</b>, and keeps balances exactly as they are. Nothing is lost: open the archive any time with <b>View an archive…</b>. Entries from the latest reconciled month, and anything not yet reconciled, always stay in your ledger.</p>
+    <label class="lbl" for="arMonth">Archive everything reconciled through</label>
+    <select id="arMonth"></select>
+    <p class="small" id="arPreview" style="margin:6px 0"></p>
+    <div class="filebar">
+      <button id="arGo" class="primary" type="button">Archive…</button>
+      <button id="arView" type="button">View an archive…</button>
+    </div>
+    <div class="small" id="arList" style="white-space:pre-line; margin:4px 0 0"></div>
+  </details>
+
+  <details class="sset">
     <summary>About myLedger</summary>
     <div style="margin-top:8px"><b>myLedger</b> <span id="aboutVer"></span></div>
     <div class="small" id="aboutData" style="margin:4px 0 0"></div>
@@ -335,6 +357,7 @@
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
+        <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
         <li>In <b>Recurring items</b>: <b>Change amount</b> schedules a new estimate from a future date, and <b>Stop</b> ends the item.</li>
@@ -365,6 +388,21 @@
   </details>
 
   <div style="display:flex; justify-content:flex-end; margin-top:10px"><button type="button" id="sClose">Close</button></div>
+</dialog>
+
+<dialog id="archDlg" class="wide" style="max-height:92vh; overflow:auto">
+  <h3 style="margin-bottom:4px">Archive viewer <small style="font-weight:400; color:var(--muted)">(read-only)</small></h3>
+  <div class="small" id="avFiles" style="margin:0 0 6px"></div>
+  <div class="small" id="avNote" style="margin:0 0 6px; color:#c62828"></div>
+  <div class="filebar"><button id="avOpen" type="button" class="primary">Open archive file(s)…</button></div>
+  <div class="recon-top" style="margin-top:6px">
+    <div><label class="lbl" for="avAcct">Account</label><select id="avAcct"></select></div>
+    <div><label class="lbl" for="avSearch">Search</label><input id="avSearch" type="text" autocomplete="off" placeholder="description or category"></div>
+  </div>
+  <div class="small" id="avCount" style="margin:6px 0 2px"></div>
+  <div class="tablewrap" style="max-height:48vh"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num" id="avAmt">Amount</th><th class="num" id="avBal">Balance</th></tr></thead><tbody id="avRows"></tbody></table></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" id="avClose">Close</button></div>
+  <input type="file" id="avInput" multiple hidden>
 </dialog>
 
 <dialog id="graphDlg" class="wide">
@@ -555,8 +593,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.30';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 01:00';
+const APP_VERSION = '4.31';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 20:00';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -623,6 +661,7 @@ const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medi
 const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && (Array.isArray(d.accounts) || typeof d.startingBalance === 'number');
 function fileProblem(d) {
+  if (d && d.type === 'myLedger-archive') return 'That is an archive file, not your ledger. Open it from Settings \u203a Archive old data \u203a View an archive.';
   if (!valid(d)) return 'That file is not a ledger file.';
   if ((d.version || 1) > DATA_VERSION) return 'That file was saved by a newer version of myLedger. Reload this page to update, then try again.';
   return null;
@@ -704,6 +743,7 @@ function migrate(d) {                 // upgrades older files in memory; saved a
   delete d.startingBalance;
   const first = d.accounts[0].id;
   if (!Array.isArray(d.categories)) d.categories = DEFAULT_CATEGORIES.slice();
+  if (!Array.isArray(d.archives)) d.archives = [];
   if (!Array.isArray(d.recurring)) d.recurring = [];
   if (!d.settings || typeof d.settings !== 'object') d.settings = {};
   if (!d.settings.horizonMonths) d.settings.horizonMonths = 3;
@@ -970,7 +1010,7 @@ async function refreshFromFile() {   // pick up changes saved from another devic
 async function fileInDir(dir) {         // this data set's file in a folder: the standard name first, then a sensible look-alike (e.g. "ledger-test (1).json")
   try { return await dir.getFileHandle(PFILE); } catch (e) { if (e.name !== 'NotFoundError') throw e; }
   const names = [];
-  for await (const [n, h] of dir.entries()) if (h.kind === 'file' && /\.json$/i.test(n) && !/\.bak$/i.test(n)) names.push(n);
+  for await (const [n, h] of dir.entries()) if (h.kind === 'file' && /\.json$/i.test(n) && !/archive/i.test(n)) names.push(n);
   const isTest = n => /test/i.test(n), isLedger = n => /ledger/i.test(n);
   const pool = names.filter(n => PROFILE === 'test' ? isTest(n) : !isTest(n));
   const best = pool.filter(isLedger).sort((a, b) => a.length - b.length)[0] || (pool.length === 1 ? pool[0] : null);
@@ -1020,7 +1060,7 @@ function catUsage() {                 // how many live entries and recurring ite
   return m;
 }
 function catList() {                  // the categories in the order the dropdowns show them
-  const d = state.data, mode = d.settings.catSort || 'manual', base = d.categories.slice();
+  const d = state.data, mode = d.settings.catSort || 'alpha', base = d.categories.slice();
   if (mode === 'alpha') return base.sort((a, b) => a.localeCompare(b));
   if (mode === 'used') { const u = catUsage(); return base.sort((a, b) => ((u.get(b) || 0) - (u.get(a) || 0)) || a.localeCompare(b)); }
   return base;
@@ -1275,7 +1315,7 @@ function reassignCategory(from, to) {
 }
 function renderCatSettings() {
   if (!state.data) return;
-  const d = state.data, mode = d.settings.catSort || 'manual', use = catUsage(), box = $('sCatList');
+  const d = state.data, mode = d.settings.catSort || 'alpha', use = catUsage(), box = $('sCatList');
   $('sCatSort').value = mode;
   $('sCatSortNow').hidden = mode !== 'manual';
   box.innerHTML = '';
@@ -1326,8 +1366,134 @@ $('sCatNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preve
 $('sCatSort').addEventListener('change', ev => { state.data.settings.catSort = ev.target.value; changed(); });
 $('sCatSortNow').addEventListener('click', () => { state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); });
 
+/* ---------- Archive: move old, reconciled entries into a separate file that stays viewable ---------- */
+const ARCH_TYPE = 'myLedger-archive';
+const lastReconMonth = a => { let m = null; for (const v of Object.values(state.data.reconciliations)) if (v.accountId === a.id && (!m || v.month > m)) m = v.month; return m; };
+const prevMonthOf = ym => addMonths(ym + '-01', -1).slice(0, 7);
+function archivePlan(month) {             // what would move: reconciled (or deleted) entries up to that month, never the latest reconciled month, transfers only as a pair
+  const d = state.data, cand = new Set(), eff = new Map();
+  for (const a of d.accounts) { const L = lastReconMonth(a); if (!L) continue; const p = prevMonthOf(L); eff.set(a.id, p < month ? p : month); }
+  for (const r of d.records) {
+    const e = eff.get(r.accountId); if (!e) continue;
+    if (r.date <= monthEnd(e) && ((r.reconciled && r.reconciled <= e) || r.deleted)) cand.add(r.id);
+  }
+  const drop = [];
+  for (const r of d.records) if (r.transferId && cand.has(r.id)) { const o = otherLeg(r); if (!o || !cand.has(o.id)) drop.push(r.id); }
+  drop.forEach(id => cand.delete(id));
+  const recs = d.records.filter(r => cand.has(r.id));
+  return { ids: cand, recs, count: recs.length, accounts: new Set(recs.map(r => r.accountId)) };
+}
+function archiveMonths() {                // months that could be chosen as the cut-off (newest first)
+  const d = state.data, out = new Set();
+  let top = ''; for (const a of d.accounts) { const L = lastReconMonth(a); if (L && prevMonthOf(L) > top) top = prevMonthOf(L); }     // later months would add nothing
+  for (const r of d.records) if (r.date.slice(0, 7) <= top) out.add(r.date.slice(0, 7));
+  return [...out].filter(m => archivePlan(m).count > 0).sort().reverse();
+}
+function archiveName(month) {
+  const base = (PROFILE === 'test' ? 'ledger-test-archive-' : 'ledger-archive-') + month, used = new Set((state.data.archives || []).map(x => x.file));
+  let n = base + '.json', i = 2; while (used.has(n)) n = base + '-' + (i++) + '.json';
+  return n;
+}
+function buildArchive(month, plan) {
+  const d = state.data, bal = new Map(), keep = state.accountId;
+  try { for (const a of d.accounts) if (plan.accounts.has(a.id)) { state.accountId = a.id; for (const { r, bal: b } of computeActual().rows) bal.set(r.id, b / 100); } }
+  finally { state.accountId = keep; }
+  const accs = d.accounts.filter(a => plan.accounts.has(a.id)).map(a => ({ id:a.id, name:a.name, type:a.type, institution:a.institution, number:a.number, currency:a.currency || '' }));
+  const recon = {}; for (const [k, v] of Object.entries(d.reconciliations)) if (plan.accounts.has(v.accountId) && v.month <= month) recon[k] = v;
+  return { type:ARCH_TYPE, version:DATA_VERSION, createdAt:new Date().toISOString(), archivedThrough:month, testData:!!d.settings.testData, accounts:accs, reconciliations:recon,
+    records: plan.recs.map(r => Object.assign({}, r, { balance: bal.has(r.id) ? bal.get(r.id) : null })) };
+}
+async function saveArchiveFile(arch, name) {     // returns true only when the file is known to be saved (or the person says it is)
+  const json = JSON.stringify(arch, null, 2);
+  const writeTo = async fh => { const w = await fh.createWritable(); await w.write(json); await w.close(); const back = await (await fh.getFile()).text(); return back.length === json.length; };
+  if (FS && state.dir) {
+    try {
+      if (await state.dir.queryPermission({ mode:'readwrite' }) !== 'granted' && await state.dir.requestPermission({ mode:'readwrite' }) !== 'granted') throw new Error('no folder access');
+      if (await writeTo(await state.dir.getFileHandle(name, { create:true }))) return true;
+    } catch (e) { setMsg('Could not save the archive in the chosen folder: ' + e.message, 'err'); return false; }
+  }
+  if (FS) {
+    try { const fh = await window.showSaveFilePicker({ suggestedName:name, types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] }); return await writeTo(fh); }
+    catch (e) { if (e.name !== 'AbortError') setMsg('Could not save the archive: ' + e.message, 'err'); return false; }
+  }
+  const file = new File([json], name, { type:'application/json' });
+  let shared = false;
+  if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) { try { await navigator.share({ files:[file] }); shared = true; } catch (e) { if (e.name === 'AbortError') return false; } }
+  if (!shared) { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+  return confirm('Was the archive file "' + name + '" saved?\n\nOK removes those entries from your ledger. Cancel keeps them (nothing changes).');
+}
+async function runArchive() {
+  const month = $('arMonth').value; if (!month) return;
+  const plan = archivePlan(month); if (!plan.count) return;
+  if (state.dirty && !FS && !confirm('You have unsaved changes. Save your ledger file after archiving, so the ledger and the archive stay in step. Continue?')) return;
+  if (!confirm('Move ' + plan.count + ' reconciled entr' + (plan.count === 1 ? 'y' : 'ies') + ' (through ' + monthLabel(month) + ') out of your ledger into an archive file?\n\nBalances do not change. Keep the archive file safe: it is the only copy of those entries.')) return;
+  const name = archiveName(month), arch = buildArchive(month, plan);
+  if (!await saveArchiveFile(arch, name)) return;
+  const d = state.data;
+  for (const r of plan.recs) if (r.recurringId && !r.unposted) { const u = d.recurring.find(x => x.id === r.recurringId); if (u && !(u.skipped || []).includes(r.recurringDate)) u.skipped = (u.skipped || []).concat(r.recurringDate); }   // the occurrence stays "handled"
+  d.records = d.records.filter(r => !plan.ids.has(r.id));
+  const dates = plan.recs.map(r => r.date).sort();
+  (d.archives = d.archives || []).push({ file:name, through:month, count:plan.count, from:dates[0], to:dates[dates.length - 1], at:new Date().toISOString() });
+  changed();
+  setMsg('Archived ' + plan.count + ' entries to ' + name + '.' + (FS ? '' : ' Now use ' + SAVE_LABEL + ' to save your ledger.'), 'ok');
+}
+function fillArchive() {
+  if (!state.data) return;
+  const sel = $('arMonth'), months = archiveMonths(), keep = sel.value;
+  sel.innerHTML = '';
+  for (const m of months) { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m); sel.appendChild(o); }
+  const dflt = months.find(m => m <= addMonths(todayStr(), -13).slice(0, 7)) || months[months.length - 1];
+  sel.value = months.includes(keep) ? keep : (dflt || '');
+  $('arGo').disabled = !months.length; sel.disabled = !months.length;
+  $('arList').textContent = (state.data.archives || []).map(x => x.file + ' \u00b7 ' + x.count + ' entries \u00b7 ' + fmtDate(x.from) + ' to ' + fmtDate(x.to)).join('\n');
+  arPreview();
+}
+function arPreview() {
+  const m = $('arMonth').value, p = m ? archivePlan(m) : null;
+  $('arPreview').textContent = !p ? 'Nothing is ready to archive yet. Entries become eligible once their month has been reconciled and a later month has been reconciled too.' :
+    p.count + ' entr' + (p.count === 1 ? 'y' : 'ies') + ' in ' + p.accounts.size + ' account' + (p.accounts.size === 1 ? '' : 's') + ' would move. Balances stay exactly the same.';
+}
+/* ---- read-only archive viewer ---- */
+const AV = { accounts:new Map(), records:[], files:[] };
+async function loadArchiveFiles(files) {
+  const bad = [];
+  for (const f of files) {
+    try {
+      const d = JSON.parse(await f.text());
+      if (!d || d.type !== ARCH_TYPE || !Array.isArray(d.records)) { bad.push(f.name); continue; }
+      if (AV.files.some(x => x.name === f.name)) continue;
+      AV.files.push({ name:f.name, through:d.archivedThrough, count:d.records.length });
+      for (const a of d.accounts || []) AV.accounts.set(a.id, a);
+      for (const r of d.records) AV.records.push(r);
+    } catch (e) { bad.push(f.name); }
+  }
+  AV.records.sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : ((x.createdAt || '') < (y.createdAt || '') ? -1 : 1));
+  $('avNote').textContent = bad.length ? 'Not an archive file: ' + bad.join(', ') : '';
+  renderArchiveView();
+}
+function renderArchiveView() {
+  const sel = $('avAcct'), cur = sel.value;
+  sel.innerHTML = '';
+  for (const a of AV.accounts.values()) { const o = document.createElement('option'); o.value = a.id; o.textContent = acctLabel(a); sel.appendChild(o); }
+  if ([...AV.accounts.keys()].includes(cur)) sel.value = cur;
+  const a = AV.accounts.get(sel.value), L = a && LIAB_TYPES.includes(a.type), f = L ? -1 : 1, q = $('avSearch').value.trim().toLowerCase();
+  $('avFiles').textContent = AV.files.length ? AV.files.map(x => x.name + ' (' + x.count + ', through ' + monthLabel(x.through) + ')').join(' \u00b7 ') : 'No archive opened yet.';
+  const tb = $('avRows'); tb.innerHTML = '';
+  const rows = AV.records.filter(r => r.accountId === sel.value && (!q || (r.text || '').toLowerCase().includes(q) || (r.category || '').toLowerCase().includes(q)));
+  $('avCount').textContent = rows.length + ' entr' + (rows.length === 1 ? 'y' : 'ies');
+  $('avAmt').textContent = L ? 'Charges / payments' : 'Amount'; $('avBal').textContent = L ? 'Owing' : 'Balance';
+  const add = (tr, t, c) => { const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.appendChild(td); };
+  for (const r of rows.slice(0, 600)) {
+    const tr = document.createElement('tr'); if (r.deleted) tr.className = 'deleted';
+    add(tr, fmtDate(r.date), 'time'); add(tr, r.text + (r.deleted ? ' (deleted)' : ''), 'text'); add(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
+    add(tr, fmt(cents(r.amount) * f), 'num'); add(tr, r.balance === null || r.balance === undefined ? '' : fmt(cents(r.balance) * f), 'num');
+    tb.appendChild(tr);
+  }
+  if (rows.length > 600) $('avCount').textContent += ' (showing the first 600: use Search to narrow)';
+}
+
 function fillSettings() {
-  renderCatSettings();
+  renderCatSettings(); fillArchive();
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
@@ -1361,6 +1527,14 @@ async function chooseFolder() {
     $('sWhere').textContent = whereText(); $('sNewFolder').value = '';
   } catch (e) { if (e.name !== 'AbortError') setMsg('Could not choose folder: ' + e.message, 'err'); }
 }
+$('arMonth').addEventListener('change', arPreview);
+$('arGo').addEventListener('click', runArchive);
+$('arView').addEventListener('click', () => { $('settingsDlg').close(); renderArchiveView(); $('archDlg').showModal(); });
+$('avOpen').addEventListener('click', () => { if (TOUCH) $('avInput').accept = '.json,application/json'; else $('avInput').removeAttribute('accept'); $('avInput').click(); });
+$('avInput').addEventListener('change', async ev => { const fl = [...ev.target.files]; ev.target.value = ''; await loadArchiveFiles(fl); });
+$('avAcct').addEventListener('change', renderArchiveView);
+$('avSearch').addEventListener('input', renderArchiveView);
+$('avClose').addEventListener('click', () => $('archDlg').close());
 $('btnGear').addEventListener('click', openSettings);
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
 $('sChooseFolder').addEventListener('click', chooseFolder);
@@ -1631,7 +1805,7 @@ function renderTable(A, P) {
       if (lowBal(a, bal)) bc.classList.add('neg');
       const act = addCell(tr, '', 'act');
       act.appendChild(iconBtn('edit', 'Edit this occurrence', () => editOcc(it)));
-      act.appendChild(iconBtn('check', 'Post: make it a real entry', () => postOcc(it)));
+      act.appendChild(iconBtn('check', 'Post: make it a real entry', () => postOcc(it), 'ok'));
       act.appendChild(iconBtn('skip', 'Skip this occurrence', () => skipOcc(it)));
       tb.appendChild(tr);
     }

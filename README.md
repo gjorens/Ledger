@@ -26,6 +26,7 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 ## Settings (the gear icon)
 
 - **Test data.** There is no switch. A file is test data when it says so inside itself (`settings.testData: true`, as in `ledger-test.json`). Opening it shows an orange stripe and a **TEST DATA** tag on any device. A file whose name contains "test" but is not marked asks you to confirm once, and is then marked. Opening any other file shows no stripe.
+- **Archive old data.** Moves old reconciled entries (and deleted ones) into a separate `ledger-archive-YYYY-MM.json` so the ledger stays small; balances do not change. Entries of the latest reconciled month and anything unreconciled always stay. **View an archive...** opens one or more archive files read-only (account picker, search, running balances). The archive files are the only copy of those entries, so keep them with your ledger. The ledger records which archives exist (`archives` in the data file).
 - **About myLedger.** The version and build time, whether test data is open, and where the app is saving.
 - **User guide.** A short built-in guide to every feature.
 - **Categories.** Add, rename, delete (entries become uncategorised) or merge categories (renaming to an existing name offers to merge). Choose the dropdown order: your own order (with up/down arrows), A–Z, or most used first.
@@ -81,6 +82,7 @@ A JSON file, currently `version: 4`:
   version, createdAt, savedAt,
   settings: { horizonMonths, catSort?, testData? },
   categories: [ ... ],
+  archives:   [ { file, through, count, from, to, at } ],
   accounts:   [ { id, name, type, currency?, institution, number, startingBalance, openedOn, warnBelow, closed } ],
   recurring:  [ { id, accountId, text, category, amount, frequency, startDate, endDate,
                   skipped[], overrides{}, changes[], transferTo?, autoText? } ],

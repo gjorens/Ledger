@@ -4,6 +4,14 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.31 (2026-10-08)
+- **Archive old data** (Settings): moves old reconciled (and deleted) entries into `ledger-archive-YYYY-MM.json` (test data: `ledger-test-archive-...`). Balances, running balances and projections stay exactly the same; the main file keeps a short list of its archives. A read-only **archive viewer** (account picker, search, running balances) opens one or several archive files.
+- New colour scheme: calm neutral "tonal" buttons, blue only for primary actions, soft red for destructive; icon buttons are lighter (green check for Post). Style reference: Material Design 3 button hierarchy (filled / tonal / outlined).
+- Thin border around every section on the main page.
+- Category lists are sorted A-Z by default (Settings still offers your own order or most used).
+- **Balance graph** button is the same size as its neighbours.
+- iPhone: the date and amount boxes in the Edit dialog no longer overlap.
+
 ## 4.30 (2026-10-08)
 - Transfers: standard description "From account → To account" (read-only, follows account renames; older "Transfer to X" / "Payment from X" wording is converted when a file is opened).
 - Transfer amounts are positive only; a double-arrow button between the From and To boxes swaps the direction. The Edit dialog for a transfer has no description or sign.
