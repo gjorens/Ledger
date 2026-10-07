@@ -30,6 +30,9 @@
   button.primary { background:var(--accent); color:#fff; border-color:var(--tab-on-bd); }
   button.danger { background:var(--dng-bg); color:#c62828; border-color:var(--dng-bd); }
   button.mini { padding:2px 7px; font-size:.82rem; }
+  button.icon { padding:3px 7px; line-height:0; }
+  .ico { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .touch button.icon { padding:7px 11px; }
   button:disabled { opacity:.5; }
   @media (prefers-color-scheme: dark) { button.primary { color:#06203d; } button.danger { color:#ff8a80; } .tab.on { color:#06203d; } }
   input, select { font:inherit; padding:6px 9px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
@@ -38,6 +41,10 @@
   .card { background:var(--card); border-radius:12px; padding:9px 12px; margin:8px 0; }
   details.card summary { cursor:pointer; font-weight:600; }
   .filebar { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  input[readonly] { background:var(--card); color:var(--muted); cursor:default; }
+  .xrow { display:flex; gap:6px; align-items:flex-end; }
+  .xrow > div { flex:1 1 0; min-width:0; }
+  .xrow > button { flex:none; margin-bottom:1px; }
   .tabs { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 2px; align-items:center; }
   .tab { border-radius:4px; padding:5px 14px; background:var(--tab); color:var(--fg); border:2px solid var(--tab-bd); font-weight:500; }
   .tab.low { box-shadow:0 0 0 5px #d32f2f; border-color:#d32f2f; }   /* red ring while the account is at or below its warning level */
@@ -327,6 +334,8 @@
         <li><b>Edit</b> changes any entry. <b>Delete</b> marks it deleted: it stays in the file but no longer counts.</li>
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
+        <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
+        <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
         <li>In <b>Recurring items</b>: <b>Change amount</b> schedules a new estimate from a future date, and <b>Stop</b> ends the item.</li>
         <li><b>Look ahead</b> sets how far projections run. <b>Balance graph</b> compares the 12 months ending at that date with the same 12 months a year earlier.</li>
@@ -402,13 +411,16 @@
       <label for="cat">Category</label>
       <select id="cat"></select>
     </div>
-    <div class="tonly" hidden>
-      <label for="xFrom">From account</label>
-      <select id="xFrom"></select>
-    </div>
-    <div class="tonly" hidden>
-      <label for="xTo">To account</label>
-      <select id="xTo"></select>
+    <div class="tonly full xrow" hidden>
+      <div>
+        <label for="xFrom">From account</label>
+        <select id="xFrom"></select>
+      </div>
+      <button type="button" class="icon" id="xSwap" title="Swap the two accounts" aria-label="Swap the two accounts"></button>
+      <div>
+        <label for="xTo">To account</label>
+        <select id="xTo"></select>
+      </div>
     </div>
     <div class="ronly full" hidden>
       <label for="rEnd">Last date (optional)</label>
@@ -543,8 +555,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.28';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 23:30';
+const APP_VERSION = '4.30';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 01:00';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -638,6 +650,24 @@ const ruleAmt = (u, accId, amt) => u.transferTo ? (u.accountId === accId ? -Math
 const ruleById = id => state.data.recurring.find(x => x.id === id);
 const acctById = id => state.data.accounts.find(a => a.id === id);
 const last4 = n => { const s = String(n || '').replace(/\D/g, ''); return s ? '…' + s.slice(-4) : ''; };
+const xferText = (from, to) => acctLabel(from) + ' \u2192 ' + acctLabel(to);      // the standard description of every transfer: From → To
+function normTransferTexts(d) {            // keep standard transfer descriptions in step with the account names (also converts the older "Transfer to X" wording)
+  const acc = id => d.accounts.find(a => a.id === id);
+  const std = t => /^(Transfer|Payment) (to|from) /.test(t || '') || (t || '').includes(' \u2192 ');
+  for (const u of d.recurring || []) {
+    const A = acc(u.accountId), B = u.transferTo && acc(u.transferTo);
+    if (A && B && (u.autoText || std(u.text))) { u.text = xferText(A, B); u.autoText = true; }
+  }
+  const legs = new Map();
+  for (const r of d.records || []) if (r.transferId) { if (!legs.has(r.transferId)) legs.set(r.transferId, []); legs.get(r.transferId).push(r); }
+  for (const pair of legs.values()) {
+    if (pair.length !== 2) continue;
+    const out = pair.find(r => r.amount < 0), inn = pair.find(r => r.amount > 0);
+    const A = out && acc(out.accountId), B = inn && acc(inn.accountId);
+    if (!A || !B) continue;
+    for (const r of pair) if (std(r.text)) r.text = xferText(A, B);
+  }
+}
 const acctLabel = a => a.name || [a.institution, a.type].filter(Boolean).join(' ') || 'Account';
 const CURRENCIES = [['CAD','Canadian dollar'],['USD','US dollar'],['EUR','Euro'],['GBP','British pound'],['MXN','Mexican peso'],['AUD','Australian dollar'],['NZD','New Zealand dollar'],['CHF','Swiss franc'],['CNY','Chinese yuan'],['INR','Indian rupee'],['HKD','Hong Kong dollar'],['SGD','Singapore dollar'],['BRL','Brazilian real'],['ZAR','South African rand'],['SEK','Swedish krona'],['NOK','Norwegian krone'],['DKK','Danish krone']];
 function money(c, a) {                    // an amount with its account's currency symbol; plain number when the account has no currency set
@@ -698,6 +728,7 @@ function migrate(d) {                 // upgrades older files in memory; saved a
   }
   const have = new Set(d.categories.map(c => c.toLowerCase()));
   for (const r of d.records.concat(d.recurring)) if (r.category && !have.has(r.category.toLowerCase())) { d.categories.push(r.category); have.add(r.category.toLowerCase()); }
+  normTransferTexts(d);
   return d;
 }
 
@@ -1023,12 +1054,17 @@ function moneyFormat(raw) {
   const p = digits.padStart(3, '0');
   return (neg ? '-' : '') + p.slice(0, -2) + '.' + p.slice(-2);
 }
+function noNeg(el, on) {                  // positive-only amount box (hides the ± button)
+  if (on) { el.dataset.noNeg = '1'; el.value = String(el.value || '').replace(/[-\u2212]/g, ''); } else delete el.dataset.noNeg;
+  if (el._pm) el._pm.hidden = !!on;
+}
 function setMoney(el, v) {
   const n = typeof v === 'number' ? v : parseFloat(v);
   el.value = isFinite(n) ? (n < 0 ? '-' : '') + Math.abs(n).toFixed(2) : '';
 }
 function attachMoney(el) {
   el.addEventListener('input', () => {
+    if (el.dataset.noNeg) el.value = el.value.replace(/[-\u2212]/g, '');           // transfers take positive amounts only
     const f = moneyFormat(el.value);
     if (el.value !== f) el.value = f;
     try { el.setSelectionRange(f.length, f.length); } catch (e) { /* ignore */ }
@@ -1039,7 +1075,7 @@ function attachMoney(el) {
     el.value = el.value.startsWith('-') ? el.value.slice(1) : '-' + el.value;
     el.dispatchEvent(new Event('input', { bubbles:true })); el.focus();
   });
-  el.parentNode.insertBefore(wrap, el); wrap.appendChild(el); wrap.appendChild(b);
+  el.parentNode.insertBefore(wrap, el); wrap.appendChild(el); wrap.appendChild(b); el._pm = b;
 }
 document.querySelectorAll('input.money').forEach(attachMoney);
 
@@ -1254,8 +1290,8 @@ function renderCatSettings() {
       const dn = miniBtn('\u25bc', () => moveCategory(c, 1)); dn.title = 'Move down'; dn.disabled = i === list.length - 1;
       btns.appendChild(up); btns.appendChild(dn);
     }
-    btns.appendChild(miniBtn('Rename', () => renameCategory(c)));
-    btns.appendChild(miniBtn('Delete', () => deleteCategory(c), 'danger'));
+    btns.appendChild(iconBtn('edit', 'Rename', () => renameCategory(c)));
+    btns.appendChild(iconBtn('trash', 'Delete', () => deleteCategory(c), 'danger'));
     row.appendChild(nm); row.appendChild(btns); box.appendChild(row);
   });
 }
@@ -1467,12 +1503,20 @@ function renderEntry() {
   if (accts.length < 2 && $('type').value === 'transfer') $('type').value = 'regular';
   applyTypeUI();
 }
+function syncXferText() {                 // the description of a transfer is always "From → To"
+  const A = acctById($('xFrom').value), B = acctById($('xTo').value);
+  if (A && B) { $('text').value = xferText(A, B); $('text').dataset.auto = '1'; }
+}
+function swapAccounts() {
+  const f = $('xFrom').value; $('xFrom').value = $('xTo').value; $('xTo').value = f; syncXferText();
+}
 function applyTypeUI() {
   const t = $('type').value === 'transfer';
   $('catWrap').hidden = t;
   for (const el of document.querySelectorAll ? document.querySelectorAll('.tonly') : []) el.hidden = !t;
   $('amountLbl').textContent = t ? 'Amount to move' : LBL.entry(acct());
   $('text').required = !t;
+  noNeg($('amount'), t); $('text').readOnly = t; if (t) syncXferText(); else if ($('text').dataset.auto) { $('text').value = ''; delete $('text').dataset.auto; }
   const rep_ = $('rFreq').value !== 'once';
   for (const el of document.querySelectorAll ? document.querySelectorAll('.ronly') : []) el.hidden = !rep_;
   $('dateLbl').textContent = rep_ ? 'First date' : 'Transaction date';
@@ -1502,6 +1546,24 @@ function addCell(tr, text, cls) {
 function tag(td, label, cls, title) {
   const t = document.createElement('span'); t.className = 'tag' + (cls ? ' ' + cls : ''); t.textContent = label;
   if (title) t.title = title; td.appendChild(t);
+}
+const ICONS = {                           // small line icons (stroke follows the button's text color)
+  edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6',
+  unpost:'M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
+  restore:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  check:'M20 6L9 17l-5-5',
+  skip:'M5 4l10 8-10 8zM19 5v14',
+  stop:'M6 6h12v12H6z',
+  x:'M18 6L6 18M6 6l12 12',
+  swap:'M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4'
+};
+function iconBtn(icon, title, fn, cls) {   // an icon-only mini button; the title is the tooltip and the screen-reader label
+  const b = document.createElement('button'); b.className = 'mini icon' + (cls ? ' ' + cls : ''); b.title = title; b.setAttribute('aria-label', title); b.onclick = fn;
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'ico'); svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(NS, 'path'); path.setAttribute('d', ICONS[icon]); svg.appendChild(path); b.appendChild(svg);
+  return b;
 }
 function miniBtn(label, fn, cls) {
   const b = document.createElement('button'); b.className = 'mini' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; return b;
@@ -1538,11 +1600,11 @@ function renderTable(A, P) {
     if (lowBal(a, bal)) bc.classList.add('neg');
     const act = addCell(tr, '', 'act');
     if (!r.deleted) {
-      act.appendChild(miniBtn('Edit', () => editRecord(r)));
-      if (r.recurringId) act.appendChild(miniBtn('Unpost', () => unpostRecord(r.id)));
-      act.appendChild(miniBtn('Delete', () => deleteRecord(r.id), 'danger'));
+      act.appendChild(iconBtn('edit', 'Edit', () => editRecord(r)));
+      if (r.recurringId) act.appendChild(iconBtn('unpost', 'Unpost: turn it back into a projected item', () => unpostRecord(r.id)));
+      act.appendChild(iconBtn('trash', 'Delete', () => deleteRecord(r.id), 'danger'));
       if (r.date < today) anchor = tr;
-    }
+    } else act.appendChild(iconBtn('restore', 'Undelete: bring this entry back', () => undeleteRecord(r.id)));
     tb.appendChild(tr);
   }
 
@@ -1568,9 +1630,9 @@ function renderTable(A, P) {
       const bc = addCell(tr, dfmt(bal), 'num');
       if (lowBal(a, bal)) bc.classList.add('neg');
       const act = addCell(tr, '', 'act');
-      act.appendChild(miniBtn('Edit', () => editOcc(it)));
-      act.appendChild(miniBtn('Post', () => postOcc(it)));
-      act.appendChild(miniBtn('Skip', () => skipOcc(it)));
+      act.appendChild(iconBtn('edit', 'Edit this occurrence', () => editOcc(it)));
+      act.appendChild(iconBtn('check', 'Post: make it a real entry', () => postOcc(it)));
+      act.appendChild(iconBtn('skip', 'Skip this occurrence', () => skipOcc(it)));
       tb.appendChild(tr);
     }
   }
@@ -1597,14 +1659,14 @@ function renderRules() {
     s.textContent = u.text + (u.transferTo ? ' · transfer ' + acctLabel(acctById(u.accountId)) + ' → ' + acctLabel(acctById(u.transferTo)) : '') + ' · est. ' + fmt(cents(u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acctById(u.accountId)))) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' · ' + u.category : '');
     row.appendChild(s);
     const btns = document.createElement('span'); btns.className = 'btns';
-    btns.appendChild(miniBtn('Change amount', () => chgRule(u.id)));
-    btns.appendChild(miniBtn('Stop', () => stopRule(u.id), 'danger'));
+    btns.appendChild(iconBtn('edit', 'Change amount from a date', () => chgRule(u.id)));
+    btns.appendChild(iconBtn('stop', 'Stop this recurring item', () => stopRule(u.id), 'danger'));
     row.appendChild(btns);
     box.appendChild(row);
     for (const c of [...(u.changes || [])].sort((x, y) => x.from < y.from ? -1 : 1)) {
       const cr = document.createElement('div'); cr.className = 'rule sub';
       const cs = document.createElement('span'); cs.textContent = 'From ' + fmtDate(c.from) + ': est. ' + fmt(cents(u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acctById(u.accountId))));
-      cr.appendChild(cs); cr.appendChild(miniBtn('Remove', () => removeChange(u.id, c.from)));
+      cr.appendChild(cs); cr.appendChild(iconBtn('x', 'Remove this scheduled change', () => removeChange(u.id, c.from)));
       box.appendChild(cr);
     }
   }
@@ -1670,7 +1732,7 @@ function renderRecon() {
       const dd = document.createElement('span'); dd.className = 'd'; dd.textContent = fmtDate(r.date) + (r.date < start ? ' (earlier)' : '');
       const tt = document.createElement('span'); tt.textContent = r.text;
       const aa = document.createElement('span'); aa.className = 'a' + (!isLiab(a) && r.amount < 0 ? ' neg' : ''); aa.textContent = dfmt(cents(r.amount));
-      const eb = miniBtn('Edit', () => editRecord(r)); eb.hidden = cb.checked;      // only unticked items can be edited
+      const eb = iconBtn('edit', 'Edit', () => editRecord(r)); eb.hidden = cb.checked;      // only unticked items can be edited
       const toggle = on => { cb.checked = on; if (on) R.ticked.add(r.id); else R.ticked.delete(r.id); eb.hidden = on; updateReconSummary(); };
       cb.onchange = () => toggle(cb.checked);
       row.onclick = e => { if (e.target === cb || (e.target.closest && e.target.closest('button'))) return; toggle(!cb.checked); };
@@ -1809,6 +1871,7 @@ function openEdit(ctx, o) {
   state.edit = ctx;
   $('editTitle').textContent = o.title;
   state.editFlip = !!o.flip;
+  noNeg($('eAmount'), !!o.noNeg);
   $('eDate').value = o.date; setMoney($('eAmount'), o.flip && typeof o.amount === 'number' ? -o.amount : o.amount);
   $('eAmtLbl').textContent = o.flip ? 'Amount (+ = charge, − = payment)' : 'Amount';
   $('eText').value = o.text || ''; $('eText').required = !!o.withText;
@@ -1827,7 +1890,7 @@ function editRecord(r) {
   let note = '';
   if (isT) note = 'This is one side of a transfer. A new date or amount is applied to the matching entry in the other account too.';
   if (r.reconciled || (otherLeg(r) && otherLeg(r).reconciled)) note += (note ? ' ' : '') + 'Reconciled with a statement: changing the date or amount marks it as not reconciled.';
-  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:r.amount, text:r.text, cat:r.category, note, save:'Save', withText:true, withCat:!isT, flip:!isT && isLiab(acct()) });
+  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()) });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
   openNew({ missed:true, title:'Add missed item', date:monthEnd(state.recon.month),
@@ -1858,7 +1921,7 @@ $('editForm').addEventListener('submit', ev => {
     u.changes.push({ from:date, amount:u.transferTo ? -Math.abs(amount) : amount });
   } else {
     const r = state.data.records.find(x => x.id === E.id); if (!r) return;
-    const text = $('eText').value.trim(); if (!text) return;
+    const text = r.transferId ? r.text : $('eText').value.trim(); if (!text) return;
     const other = otherLeg(r);
     const newAmt = r.transferId ? (r.amount < 0 ? -Math.abs(amount) : Math.abs(amount)) : amount;
     const moved = r.date !== date || cents(r.amount) !== cents(newAmt);
@@ -1918,9 +1981,7 @@ $('acctForm').addEventListener('submit', ev => {
     const oldLabel = acctLabel(a);
     Object.assign(a, { type, currency, institution, name, number, startingBalance, openedOn, warnBelow });
     const newLabel = acctLabel(a);
-    if (newLabel !== oldLabel)               // recurring transfers that carry the default description follow the new name
-      for (const u of state.data.recurring)
-        if (!u.deleted && u.transferTo === a.id && (u.autoText || u.text === 'Transfer to ' + oldLabel)) { u.text = 'Transfer to ' + newLabel; u.autoText = true; }
+    if (newLabel !== oldLabel) normTransferTexts(state.data);      // transfers carry the standard "From → To" description, so they follow the new name
   } else {
     if (!state.data) state.data = newData();
     const a = { id:uid(), name, type, currency, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
@@ -1934,6 +1995,9 @@ $('aCancel').addEventListener('click', closeAcct);
 $('btnFirst').addEventListener('click', () => openAcct(null));
 
 /* ---------- Actions ---------- */
+{ const sb = $('xSwap'); const ib = iconBtn('swap', 'Swap the two accounts', swapAccounts); sb.appendChild(ib.firstChild); sb.addEventListener('click', swapAccounts); }
+$('xFrom').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
+$('xTo').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
 $('type').addEventListener('change', applyTypeUI);
 $('rFreq').addEventListener('change', applyTypeUI);
 $('aType').addEventListener('change', acctLabels);
@@ -1953,7 +2017,7 @@ $('newForm').addEventListener('submit', ev => {
   const amountRaw = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value, type = $('type').value, freq = $('rFreq').value;
   if (!isFinite(amountRaw) || !date) return;
   const X = type === 'transfer', ctx = state.newCtx || {};
-  const amount = X ? amountRaw : amountRaw * sgn(acct());      // on a card, + means a charge, stored as money out
+  const amount = X ? Math.abs(amountRaw) : amountRaw * sgn(acct());      // on a card, + means a charge, stored as money out
   const from = X ? $('xFrom').value : state.accountId, to = X ? $('xTo').value : null;
   if (X && from === to) { alert('Choose two different accounts for a transfer.'); return; }
   if (X && !Math.abs(amount)) return;
@@ -1963,8 +2027,8 @@ $('newForm').addEventListener('submit', ev => {
   if (freq === 'once') {
     if (X) {                                 // two offsetting entries, one in each account
       const amt = Math.abs(amount), tid = uid();
-      state.data.records.push({ id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), category:'', amount:-amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
-      state.data.records.push({ id:uid(), accountId:to, text: text || 'Transfer from ' + acctLabel(A), category:'', amount:amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+      state.data.records.push({ id:uid(), accountId:from, text: xferText(A, B), category:'', amount:-amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
+      state.data.records.push({ id:uid(), accountId:to, text: xferText(A, B), category:'', amount:amt, date, createdAt:now, deleted:false, deletedAt:null, transferId:tid });
     } else {
       const rec = { id:uid(), accountId:state.accountId, text, category:catValue($('cat')), amount, date, createdAt:now, deleted:false, deletedAt:null };
       state.data.records.push(rec);
@@ -1973,11 +2037,11 @@ $('newForm').addEventListener('submit', ev => {
   } else {                                   // repeating: stored as a recurring item, projected until posted
     const endDate = $('rEnd').value || null;
     if (endDate && endDate < date) { alert('The last date must be on or after the first date.'); return; }
-    const rule = { id:uid(), accountId:from, text: text || 'Transfer to ' + acctLabel(B), autoText: X && !text, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
+    const rule = { id:uid(), accountId:from, text: X ? xferText(A, B) : text, autoText: X, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
     if (X) rule.transferTo = to;
     state.data.recurring.push(rule);
   }
-  if (ev.submitter && ev.submitter.id === 'nAgain' && !ctx.missed) { $('amount').value = ''; $('text').value = ''; $('amount').focus(); }   // the date stays, handy when entering a statement
+  if (ev.submitter && ev.submitter.id === 'nAgain' && !ctx.missed) { $('amount').value = ''; if ($('type').value !== 'transfer') $('text').value = ''; $('amount').focus(); }   // the date stays, handy when entering a statement
   else $('newDlg').close();
   changed();
 });
@@ -2019,6 +2083,14 @@ function deleteRecord(id) {
   const now = new Date().toISOString();
   r.deleted = true; r.deletedAt = now;
   if (other && !other.deleted) { other.deleted = true; other.deletedAt = now; }
+  changed();
+}
+function undeleteRecord(id) {            // reverse a soft delete (a transfer comes back on both sides)
+  const r = state.data.records.find(x => x.id === id);
+  if (!r || !r.deleted) return;
+  const other = otherLeg(r);
+  r.deleted = false; r.deletedAt = null;
+  if (other && other.deleted) { other.deleted = false; other.deletedAt = null; }
   changed();
 }
 function postRecord(u, orig, date, amount) {

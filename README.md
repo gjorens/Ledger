@@ -36,6 +36,8 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 **Accounts**
 - Any number of accounts, each with a type (chequing, savings, credit card, line of credit, loan, investment, cash, other), institution, optional name and optional account number (only the last four digits are ever shown).
 - Credit cards, lines of credit and loans are **displayed the way the bank shows them**: amount owing is positive, a charge is positive, a payment is negative. Column headings and form labels change to match ("Owing", "Charges / payments"). The stored numbers are the same as for every other account.
+- Each account can have a **currency** (CAD, USD, EUR, GBP, MXN and a dozen more, stored as `currency` on the account). Balances, warnings and the reconciliation summary show the symbol; list rows stay plain numbers. There is **no conversion**: transferring between accounts in different currencies asks you to confirm (the same number goes into both), and an all-accounts report across several currencies carries a warning that totals are not meaningful.
+- Transfers are described automatically as `From → To` (read-only; follows account renames) and take positive amounts only: a swap button between the two account boxes reverses the direction.
 - Transfers between accounts create linked, offsetting entries in both accounts. Deleting or editing one side keeps the other in step.
 
 **Entering items** (one **+ New item** popup for everything)
@@ -79,7 +81,7 @@ A JSON file, currently `version: 4`:
   version, createdAt, savedAt,
   settings: { horizonMonths, catSort?, testData? },
   categories: [ ... ],
-  accounts:   [ { id, name, type, institution, number, startingBalance, openedOn, warnBelow, closed } ],
+  accounts:   [ { id, name, type, currency?, institution, number, startingBalance, openedOn, warnBelow, closed } ],
   recurring:  [ { id, accountId, text, category, amount, frequency, startDate, endDate,
                   skipped[], overrides{}, changes[], transferTo?, autoText? } ],
   reconciliations: { "accountId|YYYY-MM": { statementBalance, difference, itemCount, completedAt } },
@@ -114,6 +116,8 @@ The app is a web page, so "installing" means giving it an icon and its own windo
 Alternatively, in Chrome or Edge open the app and use the browser menu > **Install myLedger** (or Save and Share > Install page as app).
 
 ## Updating the app
+
+See [CHANGELOG.md](CHANGELOG.md) for the version history; add an entry at the top each time you publish a new `index.html`.
 
 1. Replace `index.html` in this repository (Add file, Upload files, Commit).
 2. Wait a minute for GitHub Pages to publish.
