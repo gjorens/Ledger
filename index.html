@@ -514,8 +514,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.18';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 17:05';
+const APP_VERSION = '4.19';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 17:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -786,11 +786,16 @@ async function saveToHandle(auto) {
   } finally { saving = false; render(); }
 }
 
+function outName() {              // save under the name the file was opened with (ledger-test.json stays ledger-test.json); Safari's " (1)" suffix is dropped
+  const n = (state.fileName || '').replace(/ \(\d+\)(?=\.json$)/i, '');
+  return /^ledger[^\\\/]*\.json$/i.test(n) ? n : PFILE;
+}
 async function exportFile() {     // Safari / iPhone / iPad path: must run from a tap
   const savedAt = new Date().toISOString();
   const out = { ...state.data, savedAt };
   const json = JSON.stringify(out, null, 2);
-  const file = new File([json], PFILE, { type:'application/json' });
+  const NAME = outName();
+  const file = new File([json], NAME, { type:'application/json' });
   let done = false;
   if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) {
     try { await navigator.share({ files:[file] }); done = true; }   // files only: a title or text makes iOS add a stray 'text' file to the save
@@ -798,7 +803,7 @@ async function exportFile() {     // Safari / iPhone / iPad path: must run from 
   }
   if (!done) {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(file); a.download = PFILE;
+    a.href = URL.createObjectURL(file); a.download = NAME;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     done = true;
@@ -874,6 +879,7 @@ $('fileInput').addEventListener('change', async ev => {
     const bad = fileProblem(d);
     if (bad) return setMsg(bad, 'err');
     adopt(d, f.name);
+    if (PROFILE === 'main' && /test/i.test(f.name)) setMsg('This looks like the test data file, but the data set is My ledger. Choose Settings \u203a Data set \u203a Test data to keep the two separate.', 'warn');
   } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
 });
 

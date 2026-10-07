@@ -15,6 +15,7 @@ Live app: https://gjorens.github.io/Ledger/
 | Browser | What happens |
 |---|---|
 | Chrome / Edge on Mac | Choose a save file once. The app then **autosaves** to it every 30 seconds, when you switch away, and when you close the page. After a restart, a **Reconnect** button re-grants access to the file. |
+| Brave | Brave switches the file-saving feature off by default, so it behaves like Safari (**Save file**). To get autosave, open `brave://flags/#file-system-access-api`, set it to Enabled and relaunch. |
 | Safari (Mac) | Changes are kept in the browser. **Save file** puts `ledger.json` in your Downloads folder; move it into your iCloud folder and replace the old one. |
 | Safari on iPhone / iPad | **Open file** loads your ledger from Files. **Save to Files** saves it back: choose the folder in the Files sheet and tap Replace. |
 
