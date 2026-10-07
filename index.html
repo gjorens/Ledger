@@ -55,8 +55,13 @@
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
+  .acctrow { display:flex; gap:10px; align-items:flex-start; }
+  .acctrow .tabs { flex:1 1 auto; }
+  .acctbtns { display:flex; flex-direction:column; align-items:flex-end; gap:5px; margin:2px 0 6px; flex:none; }
+  .horizon .primary { margin-right:10px; }
   .sparkstat { display:flex; flex-direction:column; justify-content:center; }
-  .spark { width:100%; height:30px; display:block; }
+  .sparkstat { flex:3 1 260px; }
+  .spark { width:100%; height:52px; display:block; }
   .spark path { fill:none; stroke-width:1.4; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-linejoin:round; }
   .sp-cur { stroke:var(--accent); }
   .sp-prev { stroke:var(--muted); opacity:.55; stroke-width:1 !important; }
@@ -164,11 +169,10 @@
   <section id="app" hidden>
     <div class="card acctbox">
       <div class="boxhead">Accounts</div>
-      <div class="tabs" id="acctBar"></div>
+      <div class="acctrow"><div class="tabs" id="acctBar"></div><div class="acctbtns" id="acctBtns"></div></div>
       <div class="acctpanel">
         <div class="acctline">
           <div class="small" id="acctInfo" style="margin:0"></div>
-          <button class="primary" id="btnNew" type="button">+ New item</button>
         </div>
         <div class="summary" id="summary"></div>
       </div>
@@ -228,6 +232,7 @@
     <div class="txhead">
       <div class="boxhead outer" id="txTitle" style="margin:0">Transactions</div>
       <div class="horizon small">
+        <button class="primary" id="btnNew" type="button">+ New item</button>
         <label for="horizon">Look ahead</label>
         <select id="horizon">
           <option value="1">1 month</option>
@@ -534,8 +539,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.25';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 21:40';
+const APP_VERSION = '4.26';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 22:10';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1382,8 +1387,9 @@ function renderAcctBar() {
     if (low) btn.title = isLiab(a) ? 'Projected to owe more than ' + money(cents(-a.warnBelow), a) + ' on ' + fmtDate(low.date) : 'Projected to be below ' + money(cents(a.warnBelow), a) + ' on ' + fmtDate(low.date);
     btn.textContent = acctLabel(a); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
   }
-  bar.appendChild(miniBtn('+ Add account', () => openAcct(null)));
-  bar.appendChild(miniBtn('Edit account', () => openAcct(acct())));
+  const ab = $('acctBtns'); ab.innerHTML = '';
+  ab.appendChild(miniBtn('+ Add account', () => openAcct(null)));
+  ab.appendChild(miniBtn('Edit account', () => openAcct(acct())));
   const cur = acct();
   $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? (isLiab(cur) ? ' · warning above ' + money(cents(-cur.warnBelow), cur) + ' owing' : ' · warning below ' + money(cents(cur.warnBelow), cur)) : '');
 }
@@ -1401,12 +1407,12 @@ function stat(label, value, neg, sub) {
   d.appendChild(b); d.appendChild(s); return d;
 }
 function sparkStat(a, L) {                // a very small version of the Balance graph (the Balance graph button opens the full one)
-  const G = balanceSeries(a), sg = sgn(a), NS = 'http://www.w3.org/2000/svg', W = 120, H = 30, pad = 2;
+  const G = balanceSeries(a), sg = sgn(a), NS = 'http://www.w3.org/2000/svg', W = 240, H = 46, pad = 2;
   const cv = G.cur.map(p => sg * p.bal / 100), pv = G.prev.map(p => p.bal === null ? null : sg * p.bal / 100);
   const all = cv.concat(pv).filter(v => v !== null);
   let lo = Math.min(...all), hi = Math.max(...all); if (hi - lo < 1) { hi += 1; lo -= 1; }
   const n = cv.length, X = i => pad + (W - 2 * pad) * i / Math.max(1, n - 1), Y = v => pad + (H - 2 * pad) * (1 - (v - lo) / (hi - lo));
-  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'spark'); svg.setAttribute('role', 'img');
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'spark'); svg.setAttribute('role', 'img'); svg.setAttribute('preserveAspectRatio', 'none');
   const path = (vals, from, to, cls, dash) => {
     let d = '', pen = false;
     for (let i = from; i <= to; i++) { if (vals[i] === null) { pen = false; continue; } d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(vals[i]).toFixed(1); pen = true; }
@@ -1426,11 +1432,8 @@ function sparkStat(a, L) {                // a very small version of the Balance
 function renderSummary(A, P) {
   const s = $('summary'); s.innerHTML = '';
   const a = acct(), L = isLiab(a);
-  s.appendChild(stat(LBL.balance(a), dmoney(A.final, a), lowBal(a, A.final)));
+  if (P.rows.length) s.appendChild(stat(L ? 'Highest projected owing' : 'Lowest projected', dmoney(P.low.bal, a), lowBal(a, P.low.bal), fmtDate(P.low.date)));
   s.appendChild(sparkStat(a, L));
-  if (P.rows.length) {
-    s.appendChild(stat(L ? 'Highest projected owing' : 'Lowest projected', dmoney(P.low.bal, a), lowBal(a, P.low.bal), fmtDate(P.low.date)));
-  }
 }
 
 /* ---------- Entry form ---------- */
