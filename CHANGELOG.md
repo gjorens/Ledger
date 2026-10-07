@@ -4,6 +4,14 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.35 (2026-10-07)
+- The app now checks the file every 45 seconds while open (as well as when you return to it). A newer version saved elsewhere loads automatically if you have no unsaved changes; otherwise a banner offers **Load newer file** or **Keep my version**.
+- Brave / Safari (no direct file link): opening a file that is older than the version already loaded asks for confirmation.
+
+## 4.34 (2026-10-08)
+- Search popup: **Show items exceeding threshold** lists every real and projected item after which the account balance is below its warning level (below zero when no level is set). Respects This account / All accounts.
+- Negative amounts are shown in red (search results, recurring items list, scheduled changes, archive viewer).
+
 ## 4.33 (2026-10-08)
 - The "Projected from recurring items" separator is now a bold full-width blue bar.
 - **Today** button (left of the search button) scrolls the list back to the latest entry as of today and flashes it.

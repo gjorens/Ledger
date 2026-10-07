@@ -135,6 +135,8 @@
   tr.flash td { animation:rowflash 2.6s ease-out 1; }
   .sres { display:grid; grid-template-columns:auto 1fr auto auto; gap:6px 10px; align-items:center; padding:5px 2px; border-bottom:1px solid var(--line); }
   .sres .d { color:var(--muted); font-size:.85rem; white-space:nowrap; }
+  .neg { color:#c62828; }
+  @media (prefers-color-scheme: dark) { .neg { color:#ff8a80; } }
   .sres .a { font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; }
   .sres small { color:var(--muted); display:block; }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
@@ -367,7 +369,7 @@
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
-        <li><b>Search</b> (magnifier next to New item) lists matching entries by description, category, amount, date or account (this account or all). The target button on a result scrolls the ledger to that entry and flashes it; <b>Back to ledger</b> closes without moving. Month bars in the list make it easier to find your place.</li>
+        <li><b>Search</b> (magnifier next to New item) lists matching entries by description, category, amount, date or account (this account or all). The target button on a result scrolls the ledger to that entry and flashes it; <b>Back to ledger</b> closes without moving. <b>Show items exceeding threshold</b> lists every item after which the balance is below the warning level (below zero if none is set). Negative amounts are red. Month bars in the list make it easier to find your place.</li>
         <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
@@ -406,6 +408,7 @@
   <div class="recon-top">
     <div style="grid-column:1/-1"><label class="lbl" for="sQ">Description, category, amount or date</label><input id="sQ" type="search" autocomplete="off" placeholder="e.g. rent, 58.20, Oct 2026"></div>
     <div><label class="lbl" for="sScope">Where</label><select id="sScope"><option value="one">This account</option><option value="all">All accounts</option></select></div>
+    <div style="display:flex; align-items:flex-end"><button type="button" id="sThresh" aria-pressed="false">Show items exceeding threshold</button></div>
   </div>
   <div class="small" id="sCount" style="margin:6px 0 2px"></div>
   <div id="sResults" style="max-height:52vh; overflow:auto"></div>
@@ -615,8 +618,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.33';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 22:10';
+const APP_VERSION = '4.35';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 20:10';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1018,20 +1021,32 @@ $('fileInput').addEventListener('change', async ev => {
     const d = JSON.parse(await f.text());
     const bad = fileProblem(d);
     if (bad) return setMsg(bad, 'err');
+    if (state.data && state.baseSavedAt && d.savedAt && d.savedAt < state.baseSavedAt && !confirm('This file is OLDER than the version currently loaded.\n\nFile saved: ' + fmtTime(d.savedAt) + '\nLoaded version saved: ' + fmtTime(state.baseSavedAt) + '\n\nLoad it anyway?')) return;
     adopt(d, f.name);
   } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
 });
 
-async function refreshFromFile() {   // pick up changes saved from another device
-  if (!state.handle || state.dirty || saving) return;
+async function refreshFromFile() {   // pick up changes saved from another device (also runs every minute while the app is open)
+  if (!state.handle || saving) return;
   try {
-    if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') { state.needsReconnect = true; render(); return; }
+    if (await state.handle.queryPermission({ mode:'readwrite' }) !== 'granted') { if (!state.dirty) { state.needsReconnect = true; render(); } return; }
     state.needsReconnect = false;
     const d = JSON.parse(await (await state.handle.getFile()).text());
-    if (!fileProblem(d) && d.savedAt && (!state.baseSavedAt || d.savedAt > state.baseSavedAt)) adopt(d);
-    else render();
+    if (fileProblem(d) || !d.savedAt) { render(); return; }
+    const newer = !state.baseSavedAt || d.savedAt > state.baseSavedAt;
+    if (!newer) { if (state.newerDisk) { state.newerDisk = null; render(); } return; }
+    if (!state.dirty) { adopt(d); state.msg = 'Loaded a newer version of ' + state.fileName + ' (saved ' + fmtTime(d.savedAt) + ').'; state.msgKind = 'ok'; render(); return; }
+    if (state.ignoreDisk === d.savedAt) return;                 // already told: keep my version
+    state.newerDisk = d.savedAt; state.newerData = d; render();
   } catch (e) { /* ignore */ }
 }
+function loadNewerDisk() {
+  const d = state.newerData; if (!d) return;
+  if (!confirm('Load the newer file version? Your unsaved changes here will be replaced.')) return;
+  state.dirty = false; state.newerDisk = null; state.newerData = null; adopt(d);
+}
+function keepMine() { state.ignoreDisk = state.newerDisk; state.newerDisk = null; state.newerData = null; render(); }
+setInterval(() => { if (document.visibilityState === 'visible' && FS && state.handle) refreshFromFile(); }, 45000);
 
 async function fileInDir(dir) {         // this data set's file in a folder: the standard name first, then a sensible look-alike (e.g. "ledger-test (1).json")
   try { return await dir.getFileHandle(PFILE); } catch (e) { if (e.name !== 'NotFoundError') throw e; }
@@ -1393,7 +1408,27 @@ $('sCatSort').addEventListener('change', ev => { state.data.settings.catSort = e
 $('sCatSortNow').addEventListener('click', () => { state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); });
 
 /* ---------- Search ---------- */
+function thresholdMatches() {             // every entry (real or projected) after which the balance is beyond the account's warning level
+  const q = $('sQ').value.trim().toLowerCase(), toks = q ? q.split(/\s+/) : [], all = $('sScope').value === 'all', out = [], keep = state.accountId;
+  try {
+    for (const a of state.data.accounts) {
+      if (a.closed || (!all && a.id !== keep)) continue;
+      state.accountId = a.id;
+      const lvl = typeof a.warnBelow === 'number' ? cents(a.warnBelow) : (isLiab(a) ? -Infinity : 0);
+      const A = computeActual(), P = computeProjected(A.final);
+      const add = (date, text, amount, bal, rid, note, cat) => {
+        if (!(bal < lvl)) return;
+        const hay = [text, cat || '', fmtDate(date), acctLabel(a)].join(' ').toLowerCase();
+        if (toks.every(t => hay.includes(t))) out.push({ a, date, text, amount, rid, note, balText:dmoney(bal, a), bal });
+      };
+      for (const { r, bal } of A.rows) if (!r.deleted) add(r.date, r.text, r.amount, bal, r.id, '', r.category);
+      for (const { it, bal } of P.rows) add(it.date, it.text, it.amount, bal, 'occ|' + it.ruleId + '|' + it.orig, 'projected', it.category);
+    }
+  } finally { state.accountId = keep; }
+  return out.sort((x, y) => x.date < y.date ? 1 : x.date > y.date ? -1 : 0);
+}
 function searchMatches() {
+  if (state.sThresh) return thresholdMatches();
   const q = $('sQ').value.trim().toLowerCase(); if (!q) return [];
   const toks = q.split(/\s+/), all = $('sScope').value === 'all', out = [];
   const hit = (a, text, cat, date, amt) => { const hay = [text, cat, date, fmtDate(date), monthLabel(date.slice(0, 7)), acctLabel(a), fmt(Math.abs(cents(amt))), String(Math.abs(amt)), (amt < 0 ? '-' : '') + Math.abs(amt).toFixed(2)].join(' ').toLowerCase(); return toks.every(t => hay.includes(t)); };
@@ -1410,12 +1445,13 @@ function searchMatches() {
 function renderSearch() {
   const box = $('sResults'); box.innerHTML = '';
   const q = $('sQ').value.trim(), res = searchMatches(), all = $('sScope').value === 'all';
-  $('sCount').textContent = !q ? 'Type to search. Use the target button on a result to jump to it in the ledger.' : res.length + ' match' + (res.length === 1 ? '' : 'es') + (res.length > 150 ? ' (showing the 150 newest)' : '');
+  $('sThresh').className = state.sThresh ? 'primary' : ''; $('sThresh').setAttribute('aria-pressed', state.sThresh ? 'true' : 'false');
+  $('sCount').textContent = state.sThresh ? res.length + ' item' + (res.length === 1 ? '' : 's') + ' leave' + (res.length === 1 ? 's' : '') + ' the balance beyond the warning level (below zero when no level is set)' + (res.length > 150 ? ' (showing the 150 newest)' : '') : !q ? 'Type to search. Use the target button on a result to jump to it in the ledger.' : res.length + ' match' + (res.length === 1 ? '' : 'es') + (res.length > 150 ? ' (showing the 150 newest)' : '');
   for (const m of res.slice(0, 150)) {
     const row = document.createElement('div'); row.className = 'sres';
     const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(m.date);
-    const t = document.createElement('span'); t.textContent = m.text; const sm = document.createElement('small'); sm.textContent = [all ? acctLabel(m.a) : '', m.note].filter(Boolean).join(' \u00b7 '); t.appendChild(sm);
-    const am = document.createElement('span'); am.className = 'a'; am.textContent = fmt(cents(m.amount) * sgn(m.a));
+    const t = document.createElement('span'); t.textContent = m.text; const sm = document.createElement('small'); sm.textContent = [all ? acctLabel(m.a) : '', m.note, m.balText ? 'balance ' + m.balText : ''].filter(Boolean).join(' \u00b7 '); t.appendChild(sm);
+    const am = document.createElement('span'); am.className = 'a' + (!isLiab(m.a) && m.amount < 0 ? ' neg' : ''); am.textContent = fmt(cents(m.amount) * sgn(m.a));
     row.appendChild(d); row.appendChild(t); row.appendChild(am);
     row.appendChild(iconBtn('locate', 'Show in the ledger', () => gotoItem(m.a.id, m.rid)));
     box.appendChild(row);
@@ -1550,7 +1586,7 @@ function renderArchiveView() {
   for (const r of rows.slice(0, 600)) {
     const tr = document.createElement('tr'); if (r.deleted) tr.className = 'deleted';
     add(tr, fmtDate(r.date), 'time'); add(tr, r.text + (r.deleted ? ' (deleted)' : ''), 'text'); add(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
-    add(tr, fmt(cents(r.amount) * f), 'num'); add(tr, r.balance === null || r.balance === undefined ? '' : fmt(cents(r.balance) * f), 'num');
+    add(tr, fmt(cents(r.amount) * f), 'num' + (!L && r.amount < 0 ? ' neg' : '')); add(tr, r.balance === null || r.balance === undefined ? '' : fmt(cents(r.balance) * f), 'num' + (!L && r.balance < 0 ? ' neg' : ''));
     tb.appendChild(tr);
   }
   if (rows.length > 600) $('avCount').textContent += ' (showing the first 600: use Search to narrow)';
@@ -1614,7 +1650,8 @@ function render() {
   // banner
   const b = $('banner'); b.innerHTML = '';
   let text = null, cls = 'ok', withBtn = false;
-  if (state.msg) { text = state.msg; cls = state.msgKind; withBtn = state.msgKind === 'warn'; }
+  if (state.newerDisk) { text = 'A newer version of ' + (state.fileName || PFILE) + ' was saved elsewhere (' + fmtTime(state.newerDisk) + '). You also have unsaved changes here.'; cls = 'warn'; }
+  else if (state.msg) { text = state.msg; cls = state.msgKind; withBtn = state.msgKind === 'warn'; }
   else if (state.needsReconnect && (state.handle || state.dir)) { text = 'Tap Reconnect to load the latest from ' + (state.fileName || PFILE) + '.'; cls = 'warn'; }
   else if (state.data && state.dirty) {
     cls = 'warn'; withBtn = true;
@@ -1627,7 +1664,10 @@ function render() {
   if (text) {
     b.className = 'banner ' + cls;
     const s = document.createElement('span'); s.textContent = text; b.appendChild(s);
-    if (withBtn) {
+    if (state.newerDisk) {
+      const b1 = document.createElement('button'); b1.className = 'primary'; b1.textContent = 'Load newer file'; b1.onclick = loadNewerDisk; b.appendChild(b1);
+      const b2 = document.createElement('button'); b2.textContent = 'Keep my version'; b2.onclick = keepMine; b.appendChild(b2);
+    } else if (withBtn) {
       const btn = document.createElement('button'); btn.className = 'primary';
       btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose folder') : SAVE_LABEL;
       btn.onclick = saveNow; b.appendChild(btn);
@@ -1902,7 +1942,10 @@ function renderRules() {
   for (const u of act) {
     const row = document.createElement('div'); row.className = 'rule';
     const s = document.createElement('span');
-    s.textContent = u.text + (u.transferTo ? ' · transfer ' + acctLabel(acctById(u.accountId)) + ' → ' + acctLabel(acctById(u.transferTo)) : '') + ' · est. ' + fmt(cents(u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acctById(u.accountId)))) + ' · ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' · ' + u.category : '');
+    { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !isLiab(acc) && !u.transferTo && v < 0;
+      s.appendChild(document.createTextNode(u.text + (u.transferTo ? ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo)) : '') + ' \u00b7 est. '));
+      const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
+      s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : ''))); }
     row.appendChild(s);
     const btns = document.createElement('span'); btns.className = 'btns';
     btns.appendChild(iconBtn('edit', 'Change amount from a date', () => chgRule(u.id)));
@@ -1911,7 +1954,8 @@ function renderRules() {
     box.appendChild(row);
     for (const c of [...(u.changes || [])].sort((x, y) => x.from < y.from ? -1 : 1)) {
       const cr = document.createElement('div'); cr.className = 'rule sub';
-      const cs = document.createElement('span'); cs.textContent = 'From ' + fmtDate(c.from) + ': est. ' + fmt(cents(u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acctById(u.accountId))));
+      const cs = document.createElement('span'); cs.appendChild(document.createTextNode('From ' + fmtDate(c.from) + ': est. '));
+      { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acc), am = document.createElement('span'); am.textContent = fmt(cents(v)); if (!isLiab(acc) && !u.transferTo && v < 0) am.className = 'neg'; cs.appendChild(am); }
       cr.appendChild(cs); cr.appendChild(iconBtn('x', 'Remove this scheduled change', () => removeChange(u.id, c.from)));
       box.appendChild(cr);
     }
@@ -2247,8 +2291,9 @@ $('btnToday').addEventListener('click', () => {            // back to the entry 
   if (tr) { tr.scrollIntoView({ block:'nearest' }); tr.classList.add('flash'); setTimeout(() => tr.classList.remove('flash'), 2800); }
 });
 $('btnSearch').appendChild(iconBtn('search', 'Search the ledger', () => {}).firstChild);
-$('btnSearch').addEventListener('click', () => { $('searchDlg').showModal(); renderSearch(); setTimeout(() => $('sQ').focus(), 50); });
+$('btnSearch').addEventListener('click', () => { state.sThresh = false; $('searchDlg').showModal(); renderSearch(); setTimeout(() => $('sQ').focus(), 50); });
 $('sQ').addEventListener('input', renderSearch);
+$('sThresh').addEventListener('click', () => { state.sThresh = !state.sThresh; renderSearch(); });
 $('sScope').addEventListener('change', renderSearch);
 $('sBack').addEventListener('click', () => $('searchDlg').close());
 { const sb = $('xSwap'); const ib = iconBtn('swap', 'Swap the two accounts', swapAccounts); sb.appendChild(ib.firstChild); sb.addEventListener('click', swapAccounts); }

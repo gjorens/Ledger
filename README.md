@@ -137,3 +137,11 @@ All devices should run the same version, since older versions do not understand 
 ## Development notes
 
 There is no build step. Open `index.html` in a browser to run it. The logic was checked with a Node `vm` harness against generated test data (three accounts, about 650 entries over three years, recurring items, transfers and reconciliations). Test data and scripts are not part of this repository.
+
+
+### v4.34
+Search has a **Show items exceeding threshold** button (items after which the balance is below the warning level). Negative amounts are red in search, the recurring list and the archive viewer.
+
+
+### v4.35
+The file is re-checked every 45 s; newer saved-elsewhere versions are loaded or offered via a banner. Opening an older file than the loaded one asks first.
