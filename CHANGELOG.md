@@ -4,6 +4,11 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.32 (2026-10-08)
+- Currency shown in front of balances: `US$` for US dollars (and `€`, `£`, `MX$`, `A$`...; plain `$` for CAD), so dollars are never confused.
+- **Search** popup (magnifier next to New item): matches description, category, amount, date and account, for this account or all; a target button scrolls the ledger to the entry (switching account if needed) and flashes it; Back to ledger returns without scrolling. Projected items are included for the current account.
+- Month separator bars between months in the transaction list.
+
 ## 4.31 (2026-10-08)
 - **Archive old data** (Settings): moves old reconciled (and deleted) entries into `ledger-archive-YYYY-MM.json` (test data: `ledger-test-archive-...`). Balances, running balances and projections stay exactly the same; the main file keeps a short list of its archives. A read-only **archive viewer** (account picker, search, running balances) opens one or several archive files.
 - New colour scheme: calm neutral "tonal" buttons, blue only for primary actions, soft red for destructive; icon buttons are lighter (green check for Post). Style reference: Material Design 3 button hierarchy (filled / tonal / outlined).

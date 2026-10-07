@@ -37,7 +37,7 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 **Accounts**
 - Any number of accounts, each with a type (chequing, savings, credit card, line of credit, loan, investment, cash, other), institution, optional name and optional account number (only the last four digits are ever shown).
 - Credit cards, lines of credit and loans are **displayed the way the bank shows them**: amount owing is positive, a charge is positive, a payment is negative. Column headings and form labels change to match ("Owing", "Charges / payments"). The stored numbers are the same as for every other account.
-- Each account can have a **currency** (CAD, USD, EUR, GBP, MXN and a dozen more, stored as `currency` on the account). Balances, warnings and the reconciliation summary show the symbol; list rows stay plain numbers. There is **no conversion**: transferring between accounts in different currencies asks you to confirm (the same number goes into both), and an all-accounts report across several currencies carries a warning that totals are not meaningful.
+- Each account can have a **currency** (CAD, USD, EUR, GBP, MXN and a dozen more, stored as `currency` on the account). Balances, warnings and the reconciliation summary show the currency in front (`US$` for US dollars, `$` for Canadian, `€`, `£`...); list rows stay plain numbers. There is **no conversion**: transferring between accounts in different currencies asks you to confirm (the same number goes into both), and an all-accounts report across several currencies carries a warning that totals are not meaningful.
 - Transfers are described automatically as `From → To` (read-only; follows account renames) and take positive amounts only: a swap button between the two account boxes reverses the direction.
 - Transfers between accounts create linked, offsetting entries in both accounts. Deleting or editing one side keeps the other in step.
 
@@ -48,6 +48,7 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 - Amount boxes use a **fixed decimal point**: type the digits only (1, 2, 5, 0 gives 12.50). The **±** button switches the sign.
 
 **Transactions list**
+- A **month bar** separates the months. The **magnifier** button opens a search popup (description, category, amount, date; this account or all) whose results can scroll the ledger to the entry.
 - Sorted by transaction date, credits before debits, then description.
 - Running balance, soft delete (deleted entries stay in the file and stop affecting balances), edit of any entry.
 - Opens scrolled to the latest past transaction.

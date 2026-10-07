@@ -130,6 +130,13 @@
   td.time { white-space:nowrap; color:var(--muted); font-size:.85rem; }
   td.cat { color:var(--muted); font-size:.85rem; white-space:nowrap; }
   tr.deleted td { color:var(--muted); }
+  tr.mdiv td { background:var(--tab); color:var(--fg); font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-top:2px solid var(--tab-bd); border-bottom:1px solid var(--tab-bd); }
+  @keyframes rowflash { from { background:#ffd54f; } to { background:transparent; } }
+  tr.flash td { animation:rowflash 2.6s ease-out 1; }
+  .sres { display:grid; grid-template-columns:auto 1fr auto auto; gap:6px 10px; align-items:center; padding:5px 2px; border-bottom:1px solid var(--line); }
+  .sres .d { color:var(--muted); font-size:.85rem; white-space:nowrap; }
+  .sres .a { font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; }
+  .sres small { color:var(--muted); display:block; }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
   tr:not(.deleted):not(.proj):not(.start):not(.divider) td.amt { font-weight:700; }   /* actual amounts are bold */
   tr.start td { font-style:italic; color:var(--muted); }
@@ -252,6 +259,7 @@
     <div class="txhead">
       <div class="boxhead outer" id="txTitle" style="margin:0">Transactions</div>
       <div class="horizon small">
+        <button id="btnSearch" type="button" class="icon" title="Search the ledger" aria-label="Search the ledger"></button>
         <button class="primary" id="btnNew" type="button">+ New item</button>
         <label for="horizon">Look ahead</label>
         <select id="horizon">
@@ -357,6 +365,7 @@
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
+        <li><b>Search</b> (magnifier next to New item) lists matching entries by description, category, amount, date or account (this account or all). The target button on a result scrolls the ledger to that entry and flashes it; <b>Back to ledger</b> closes without moving. Month bars in the list make it easier to find your place.</li>
         <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
@@ -388,6 +397,17 @@
   </details>
 
   <div style="display:flex; justify-content:flex-end; margin-top:10px"><button type="button" id="sClose">Close</button></div>
+</dialog>
+
+<dialog id="searchDlg" class="wide" style="max-height:92vh; overflow:auto">
+  <h3 style="margin-bottom:6px">Search</h3>
+  <div class="recon-top">
+    <div style="grid-column:1/-1"><label class="lbl" for="sQ">Description, category, amount or date</label><input id="sQ" type="search" autocomplete="off" placeholder="e.g. rent, 58.20, Oct 2026"></div>
+    <div><label class="lbl" for="sScope">Where</label><select id="sScope"><option value="one">This account</option><option value="all">All accounts</option></select></div>
+  </div>
+  <div class="small" id="sCount" style="margin:6px 0 2px"></div>
+  <div id="sResults" style="max-height:52vh; overflow:auto"></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" id="sBack">Back to ledger</button></div>
 </dialog>
 
 <dialog id="archDlg" class="wide" style="max-height:92vh; overflow:auto">
@@ -593,8 +613,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.31';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 20:00';
+const APP_VERSION = '4.32';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 21:30';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -709,8 +729,12 @@ function normTransferTexts(d) {            // keep standard transfer description
 }
 const acctLabel = a => a.name || [a.institution, a.type].filter(Boolean).join(' ') || 'Account';
 const CURRENCIES = [['CAD','Canadian dollar'],['USD','US dollar'],['EUR','Euro'],['GBP','British pound'],['MXN','Mexican peso'],['AUD','Australian dollar'],['NZD','New Zealand dollar'],['CHF','Swiss franc'],['CNY','Chinese yuan'],['INR','Indian rupee'],['HKD','Hong Kong dollar'],['SGD','Singapore dollar'],['BRL','Brazilian real'],['ZAR','South African rand'],['SEK','Swedish krona'],['NOK','Norwegian krone'],['DKK','Danish krone']];
-function money(c, a) {                    // an amount with its account's currency symbol; plain number when the account has no currency set
-  if (a && a.currency) { try { return (c / 100).toLocaleString(undefined, { style:'currency', currency:a.currency }); } catch (e) { /* unknown code: fall through */ } }
+const CUR_SYM = { USD:'US$', CAD:'$', EUR:'\u20ac', GBP:'\u00a3', MXN:'MX$', AUD:'A$', NZD:'NZ$', HKD:'HK$', SGD:'S$', BRL:'R$', CNY:'CN\u00a5', INR:'\u20b9', ZAR:'R', CHF:'CHF ', SEK:'kr ', NOK:'kr ', DKK:'kr ' };
+function money(c, a) {                    // an amount with its account's currency in front (US$ for dollars, so they are never confused with Canadian $); plain number when no currency is set
+  if (a && a.currency) {
+    const sym = CUR_SYM[a.currency] !== undefined ? CUR_SYM[a.currency] : a.currency + ' ';
+    return (c < 0 ? '-' : '') + sym + fmt(Math.abs(c));
+  }
   return fmt(c);
 }
 const dmoney = (c, a) => { a = a || acct(); return money((sgn(a) * c) || 0, a); };
@@ -1366,6 +1390,44 @@ $('sCatNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preve
 $('sCatSort').addEventListener('change', ev => { state.data.settings.catSort = ev.target.value; changed(); });
 $('sCatSortNow').addEventListener('click', () => { state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); });
 
+/* ---------- Search ---------- */
+function searchMatches() {
+  const q = $('sQ').value.trim().toLowerCase(); if (!q) return [];
+  const toks = q.split(/\s+/), all = $('sScope').value === 'all', out = [];
+  const hit = (a, text, cat, date, amt) => { const hay = [text, cat, date, fmtDate(date), monthLabel(date.slice(0, 7)), acctLabel(a), fmt(Math.abs(cents(amt))), String(Math.abs(amt)), (amt < 0 ? '-' : '') + Math.abs(amt).toFixed(2)].join(' ').toLowerCase(); return toks.every(t => hay.includes(t)); };
+  for (const r of state.data.records) {
+    const a = acctById(r.accountId); if (!a || (!all && a.id !== state.accountId)) continue;
+    if (hit(a, r.text || '', r.transferId ? 'transfer' : (r.category || ''), r.date, r.amount)) out.push({ a, date:r.date, text:r.text, amount:r.amount, rid:r.id, note:r.deleted ? 'deleted' : '' });
+  }
+  if (!all) {                                    // projected items of the account being viewed
+    const A = computeActual(), P = computeProjected(A.final), a = acct();
+    for (const { it } of P.rows) if (hit(a, it.text, it.category || '', it.date, it.amount)) out.push({ a, date:it.date, text:it.text, amount:it.amount, rid:'occ|' + it.ruleId + '|' + it.orig, note:'projected' });
+  }
+  return out.sort((x, y) => x.date < y.date ? 1 : x.date > y.date ? -1 : 0);
+}
+function renderSearch() {
+  const box = $('sResults'); box.innerHTML = '';
+  const q = $('sQ').value.trim(), res = searchMatches(), all = $('sScope').value === 'all';
+  $('sCount').textContent = !q ? 'Type to search. Use the target button on a result to jump to it in the ledger.' : res.length + ' match' + (res.length === 1 ? '' : 'es') + (res.length > 150 ? ' (showing the 150 newest)' : '');
+  for (const m of res.slice(0, 150)) {
+    const row = document.createElement('div'); row.className = 'sres';
+    const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(m.date);
+    const t = document.createElement('span'); t.textContent = m.text; const sm = document.createElement('small'); sm.textContent = [all ? acctLabel(m.a) : '', m.note].filter(Boolean).join(' \u00b7 '); t.appendChild(sm);
+    const am = document.createElement('span'); am.className = 'a'; am.textContent = fmt(cents(m.amount) * sgn(m.a));
+    row.appendChild(d); row.appendChild(t); row.appendChild(am);
+    row.appendChild(iconBtn('locate', 'Show in the ledger', () => gotoItem(m.a.id, m.rid)));
+    box.appendChild(row);
+  }
+}
+function gotoItem(accountId, rid) {
+  $('searchDlg').close();
+  if (accountId !== state.accountId) switchAccount(accountId); else render();
+  const tr = [...$('rows').querySelectorAll('tr')].find(x => x.dataset.rid === rid);
+  if (!tr) return;
+  tr.scrollIntoView({ block:'center' });
+  tr.classList.add('flash'); setTimeout(() => tr.classList.remove('flash'), 2800);
+}
+
 /* ---------- Archive: move old, reconciled entries into a separate file that stays viewable ---------- */
 const ARCH_TYPE = 'myLedger-archive';
 const lastReconMonth = a => { let m = null; for (const v of Object.values(state.data.reconciliations)) if (v.accountId === a.id && (!m || v.month > m)) m = v.month; return m; };
@@ -1730,7 +1792,9 @@ const ICONS = {                           // small line icons (stroke follows th
   skip:'M5 4l10 8-10 8zM19 5v14',
   stop:'M6 6h12v12H6z',
   x:'M18 6L6 18M6 6l12 12',
-  swap:'M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4'
+  swap:'M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4',
+  search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+  locate:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3'
 };
 function iconBtn(icon, title, fn, cls) {   // an icon-only mini button; the title is the tooltip and the screen-reader label
   const b = document.createElement('button'); b.className = 'mini icon' + (cls ? ' ' + cls : ''); b.title = title; b.setAttribute('aria-label', title); b.onclick = fn;
@@ -1757,8 +1821,11 @@ function renderTable(A, P) {
   addCell(start, '');
   tb.appendChild(start);
 
+  let lastYm = null;
+  const monthDiv = ym => { const tr = document.createElement('tr'); tr.className = 'mdiv'; const td = document.createElement('td'); td.colSpan = 6; td.textContent = monthLabel(ym); tr.appendChild(td); return tr; };
   for (const { r, bal } of A.rows) {
-    const tr = document.createElement('tr');
+    if (r.date.slice(0, 7) !== lastYm) { lastYm = r.date.slice(0, 7); tb.appendChild(monthDiv(lastYm)); }
+    const tr = document.createElement('tr'); tr.dataset.rid = r.id;
     if (r.deleted) tr.className = 'deleted';
     const dc = addCell(tr, fmtDate(r.date), 'time');
     dc.title = (r.createdAt ? 'Entered ' + fmtTime(r.createdAt) : '') + (r.editedAt ? ' · edited ' + fmtTime(r.editedAt) : '');
@@ -1790,8 +1857,10 @@ function renderTable(A, P) {
     if (dueCount) dtd.appendChild(miniBtn('Post all due (' + dueCount + ')', postAllDue));
     dv.appendChild(dtd); tb.appendChild(dv);
 
+    lastYm = null;
     for (const { it, bal } of P.rows) {
-      const tr = document.createElement('tr'); tr.className = 'proj' + (it.confirmed ? ' conf' : '');
+      if (it.date.slice(0, 7) !== lastYm) { lastYm = it.date.slice(0, 7); tb.appendChild(monthDiv(lastYm)); }
+      const tr = document.createElement('tr'); tr.className = 'proj' + (it.confirmed ? ' conf' : ''); tr.dataset.rid = 'occ|' + it.ruleId + '|' + it.orig;
       addCell(tr, fmtDate(it.date), 'time');
       const t = addCell(tr, it.text, 'text');
       tag(t, '↻');
@@ -2169,6 +2238,11 @@ $('aCancel').addEventListener('click', closeAcct);
 $('btnFirst').addEventListener('click', () => openAcct(null));
 
 /* ---------- Actions ---------- */
+$('btnSearch').appendChild(iconBtn('search', 'Search the ledger', () => {}).firstChild);
+$('btnSearch').addEventListener('click', () => { $('searchDlg').showModal(); renderSearch(); setTimeout(() => $('sQ').focus(), 50); });
+$('sQ').addEventListener('input', renderSearch);
+$('sScope').addEventListener('change', renderSearch);
+$('sBack').addEventListener('click', () => $('searchDlg').close());
 { const sb = $('xSwap'); const ib = iconBtn('swap', 'Swap the two accounts', swapAccounts); sb.appendChild(ib.firstChild); sb.addEventListener('click', swapAccounts); }
 $('xFrom').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
 $('xTo').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
