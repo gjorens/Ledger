@@ -4,6 +4,10 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.33 (2026-10-08)
+- The "Projected from recurring items" separator is now a bold full-width blue bar.
+- **Today** button (left of the search button) scrolls the list back to the latest entry as of today and flashes it.
+
 ## 4.32 (2026-10-08)
 - Currency shown in front of balances: `US$` for US dollars (and `€`, `£`, `MX$`, `A$`...; plain `$` for CAD), so dollars are never confused.
 - **Search** popup (magnifier next to New item): matches description, category, amount, date and account, for this account or all; a target button scrolls the ledger to the entry (switching account if needed) and flashes it; Back to ledger returns without scrolling. Projected items are included for the current account.

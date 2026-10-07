@@ -48,7 +48,7 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 - Amount boxes use a **fixed decimal point**: type the digits only (1, 2, 5, 0 gives 12.50). The **±** button switches the sign.
 
 **Transactions list**
-- A **month bar** separates the months. The **magnifier** button opens a search popup (description, category, amount, date; this account or all) whose results can scroll the ledger to the entry.
+- A **month bar** separates the months, a bold bar marks where the projections start, and the **Today** button returns to the entry at today's date. The **magnifier** button opens a search popup (description, category, amount, date; this account or all) whose results can scroll the ledger to the entry.
 - Sorted by transaction date, credits before debits, then description.
 - Running balance, soft delete (deleted entries stay in the file and stop affecting balances), edit of any entry.
 - Opens scrolled to the latest past transaction.

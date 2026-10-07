@@ -140,7 +140,8 @@
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
   tr:not(.deleted):not(.proj):not(.start):not(.divider) td.amt { font-weight:700; }   /* actual amounts are bold */
   tr.start td { font-style:italic; color:var(--muted); }
-  tr.divider td { background:var(--card); font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  tr.divider td { background:var(--accent); color:#fff; font-size:.85rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:7px 8px; border-top:3px solid var(--tab-on-bd); border-bottom:3px solid var(--tab-on-bd); }
+  @media (prefers-color-scheme: dark) { tr.divider td { color:#06203d; } }
   tr.divider td button { margin-left:10px; text-transform:none; letter-spacing:0; }
   tr.proj td { font-style:italic; color:var(--muted); }
   tr.proj.conf td { color:var(--fg); }
@@ -259,6 +260,7 @@
     <div class="txhead">
       <div class="boxhead outer" id="txTitle" style="margin:0">Transactions</div>
       <div class="horizon small">
+        <button id="btnToday" type="button" title="Scroll to the latest entry as of today">Today</button>
         <button id="btnSearch" type="button" class="icon" title="Search the ledger" aria-label="Search the ledger"></button>
         <button class="primary" id="btnNew" type="button">+ New item</button>
         <label for="horizon">Look ahead</label>
@@ -613,8 +615,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.32';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 21:30';
+const APP_VERSION = '4.33';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 22:10';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1844,7 +1846,7 @@ function renderTable(A, P) {
       act.appendChild(iconBtn('edit', 'Edit', () => editRecord(r)));
       if (r.recurringId) act.appendChild(iconBtn('unpost', 'Unpost: turn it back into a projected item', () => unpostRecord(r.id)));
       act.appendChild(iconBtn('trash', 'Delete', () => deleteRecord(r.id), 'danger'));
-      if (r.date < today) anchor = tr;
+      if (r.date < today) { anchor = tr; }
     } else act.appendChild(iconBtn('restore', 'Undelete: bring this entry back', () => undeleteRecord(r.id)));
     tb.appendChild(tr);
   }
@@ -1880,6 +1882,7 @@ function renderTable(A, P) {
     }
   }
 
+  if (anchor) anchor.dataset.today = '1';
   if (state.initialScroll) {            // on opening, bring the latest past transaction into view with a little context above
     state.initialScroll = false;
     const wrap = $('tablewrap');
@@ -2238,6 +2241,11 @@ $('aCancel').addEventListener('click', closeAcct);
 $('btnFirst').addEventListener('click', () => openAcct(null));
 
 /* ---------- Actions ---------- */
+$('btnToday').addEventListener('click', () => {            // back to the entry at today's date
+  state.initialScroll = true; render();
+  const tr = [...$('rows').querySelectorAll('tr')].find(x => x.dataset.today === '1');
+  if (tr) { tr.scrollIntoView({ block:'nearest' }); tr.classList.add('flash'); setTimeout(() => tr.classList.remove('flash'), 2800); }
+});
 $('btnSearch').appendChild(iconBtn('search', 'Search the ledger', () => {}).firstChild);
 $('btnSearch').addEventListener('click', () => { $('searchDlg').showModal(); renderSearch(); setTimeout(() => $('sQ').focus(), 50); });
 $('sQ').addEventListener('input', renderSearch);
