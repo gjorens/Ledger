@@ -246,18 +246,11 @@
   <h3 style="margin-bottom:6px">Settings</h3>
 
   <details class="sset" open>
-    <summary>Data set and file location</summary>
-    <div class="boxhead" style="margin-top:8px">Data set</div>
-    <select id="sData">
-      <option value="main">My ledger (ledger.json)</option>
-      <option value="test">Test data (ledger-test.json)</option>
-    </select>
-    <p class="small" style="margin:4px 0 10px">Each data set has its own file and its own saved draft, so switching never mixes them. An orange stripe and a TEST DATA tag show when the test data is in use.</p>
-
+    <summary>File location</summary>
     <div class="boxhead">Where your ledger file is kept</div>
     <div id="sWhere" style="margin-bottom:6px; font-weight:600"></div>
     <div id="sFsBlock" hidden>
-      <p class="small" style="margin:0 0 6px">Choose the folder where your ledger lives: iCloud Drive, Dropbox, OneDrive or any other folder on this computer. Both data sets use the same folder. The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
+      <p class="small" style="margin:0 0 6px">Choose the folder where your ledger lives: iCloud Drive, Dropbox, OneDrive or any other folder on this computer. The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
       <label class="lbl" for="sNewFolder">New folder name (optional)</label>
       <input id="sNewFolder" type="text" maxlength="60" autocomplete="off" placeholder="e.g. myLedger">
       <div class="filebar" style="margin:8px 0 0">
@@ -342,7 +335,7 @@
         <li>Use the same version of the app on all your devices, and open the latest file before you start entering items.</li>
       </ul>
       <h4>Test data</h4>
-      <ul><li>In Settings, switch the data set to <b>Test data</b> to practise without touching your real ledger. It uses <b>ledger-test.json</b> and shows an orange stripe and a TEST DATA tag.</li></ul>
+      <ul><li>To practise without touching your real ledger, open <b>ledger-test.json</b>. The file is marked as test data inside itself, so the app shows an orange stripe and a TEST DATA tag whenever it is open, on any device. (A file named like test data but not marked asks you to confirm once, then is marked.) It is saved under the same name.</li></ul>
     </div>
   </details>
 
@@ -494,14 +487,16 @@ const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports a
 if (TOUCH && document.documentElement) document.documentElement.classList.add('touch');   // roomier rows and buttons for fingers
 const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Save file');
 const PROFILES = { main:{ label:'My ledger', file:'ledger.json' }, test:{ label:'Test data', file:'ledger-test.json' } };
-const PROFILE = (function () { try { return localStorage.getItem('myLedger.profile') === 'test' ? 'test' : 'main'; } catch (e) { return 'main'; } })();
-const PFILE = PROFILES[PROFILE].file;                       // the file name this data set is saved under
-const ACCT_KEY = 'myLedger.account' + (PROFILE === 'test' ? '.test' : '');
-const SHARED_KV = new Set(['dir']);                         // the chosen folder is shared; everything else is per data set
-const pk = k => (PROFILE === 'test' && !SHARED_KV.has(k)) ? k + ':test' : k;
-if (PROFILE === 'test' && document.body) document.body.classList.add('test');
-if (PROFILE === 'test') $profBadge();
-function $profBadge() { const b = document.getElementById('profBadge'); if (b) b.hidden = false; }
+let PROFILE = 'main';                                       // 'test' when the open file has been confirmed as test data
+let PFILE = PROFILES.main.file;                             // the standard file name for the data in use
+const ACCT_KEY = 'myLedger.account';
+const pk = k => k;
+function setTest(on) {                                      // orange stripe + TEST DATA tag follow the file that is open
+  PROFILE = on ? 'test' : 'main'; PFILE = PROFILES[PROFILE].file;
+  if (document.body) document.body.classList.toggle('test', !!on);
+  const b = document.getElementById('profBadge'); if (b) b.hidden = !on;
+  document.title = on ? 'myLedger (test)' : 'myLedger';
+}
 const $ = id => document.getElementById(id);
 const DATA_VERSION = 4;
 const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
@@ -514,8 +509,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.19';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 17:40';
+const APP_VERSION = '4.21';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 18:50';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -552,7 +547,7 @@ async function kvSet(k, v) {
 function persistDraft() {
   if (!state.data) return Promise.resolve();
   state.draftAt = new Date().toISOString();
-  return kvSet('draft', { data: state.data, dirty: state.dirty, baseSavedAt: state.baseSavedAt, fileName: state.fileName, draftAt: state.draftAt });
+  return kvSet('draft', { data: state.data, dirty: state.dirty, baseSavedAt: state.baseSavedAt, fileName: state.fileName, draftAt: state.draftAt, isTest: PROFILE === 'test' });
 }
 
 /* ---------- Dates (all transaction dates are plain YYYY-MM-DD strings) ---------- */
@@ -846,6 +841,13 @@ function adopt(d, name) {
   state.recon = { month:null, ticked:new Set(), stmt:'' };
   state.prevLows = null;                // a freshly opened file sets the baseline; only later changes raise warnings
   if (name) state.fileName = name;
+  const st = state.data.settings;
+  if (st.testData) setTest(true);                                         // the file says it is test data
+  else if (name && /test/i.test(name)) {                                  // name looks like test data but the file does not say so: ask once, then record the answer in the file
+    if (confirm('"' + name + '" looks like test data.\n\nIs this test data? OK marks the file as test data (orange TEST DATA stripe) so it is never mistaken for your real ledger. Cancel treats it as your real ledger.')) {
+      st.testData = true; setTest(true); state.dirty = true;
+    } else setTest(false);
+  } else setTest(false);
   persistDraft(); render();
 }
 function confirmDiscard() {
@@ -879,7 +881,6 @@ $('fileInput').addEventListener('change', async ev => {
     const bad = fileProblem(d);
     if (bad) return setMsg(bad, 'err');
     adopt(d, f.name);
-    if (PROFILE === 'main' && /test/i.test(f.name)) setMsg('This looks like the test data file, but the data set is My ledger. Choose Settings \u203a Data set \u203a Test data to keep the two separate.', 'warn');
   } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
 });
 
@@ -1250,23 +1251,15 @@ $('sCatSortNow').addEventListener('click', () => { state.data.categories.sort((x
 
 function fillSettings() {
   renderCatSettings();
-  $('sData').value = PROFILE;
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
   $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome, Edge or Brave on a Mac.';
   $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
-  $('aboutData').textContent = 'Data set in use: ' + PROFILES[PROFILE].label + ' (' + PFILE + ').';
+  $('aboutData').textContent = (PROFILE === 'test' ? 'Test data is open (orange stripe).' : 'Your ledger is open.') + (state.fileName ? ' File: ' + state.fileName + '.' : '');
   $('aboutMode').textContent = modeText();
 }
 function openSettings() { fillSettings(); $('settingsDlg').showModal(); }
-async function switchProfile(p) {
-  if (p === PROFILE || !PROFILES[p]) return;
-  state.switching = true;                       // no "unsaved changes" prompt: the draft is kept per data set
-  try { await persistDraft(); if (FS && state.handle && state.dirty) await saveToHandle(true); } catch (e) { /* draft already kept */ }
-  lsSet('myLedger.profile', p);
-  location.reload();
-}
 async function chooseFolder() {
   try {
     const parent = await window.showDirectoryPicker({ mode:'readwrite', id:'myledger' });
@@ -1293,7 +1286,6 @@ async function chooseFolder() {
 }
 $('btnGear').addEventListener('click', openSettings);
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
-$('sData').addEventListener('change', ev => switchProfile(ev.target.value));
 $('sChooseFolder').addEventListener('click', chooseFolder);
 $('sOpenFile').addEventListener('click', async () => { $('settingsDlg').close(); await openFile(); });
 $('sChooseFile').addEventListener('click', async () => { await chooseSaveFile(); $('sWhere').textContent = whereText(); });
@@ -1303,7 +1295,6 @@ function render() {
   $('btnAny').hidden = FS;
   $('btnSave').hidden = !state.data;
   $('btnSave').textContent = SAVE_LABEL;
-  document.title = PROFILE === 'test' ? 'myLedger (test)' : 'myLedger';
 
   // banner
   const b = $('banner'); b.innerHTML = '';
@@ -2033,7 +2024,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   const draft = await kvGet('draft');
   if (draft && valid(draft.data)) {
     state.data = migrate(draft.data); state.dirty = !!draft.dirty; state.baseSavedAt = draft.baseSavedAt || null;
-    state.fileName = draft.fileName || null; state.draftAt = draft.draftAt || null;
+    state.fileName = draft.fileName || null; state.draftAt = draft.draftAt || null; setTest(!!draft.isTest);
   }
   if (FS) {
     const h = await kvGet('handle'); if (h) { state.handle = h; state.fileName = h.name; }
