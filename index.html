@@ -509,8 +509,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.21';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 18:50';
+const APP_VERSION = '4.22';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 19:10';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -866,7 +866,8 @@ async function openFile() {
       adopt(d, h.name);
     } catch (e) { if (e.name !== 'AbortError') setMsg('Could not open file: ' + e.message, 'err'); }
   } else {
-    $('fileInput').accept = ACCEPT; $('fileInput').click();
+    if (TOUCH) $('fileInput').accept = ACCEPT; else $('fileInput').removeAttribute('accept');   // iPhone/iPad: the filter avoids the Photo Library popup; on a computer a filter only greys files out
+    $('fileInput').click();
   }
 }
 function openAnyFile() {                  // fallback when a ledger file is greyed out: no filter, so every file can be picked
@@ -1292,7 +1293,7 @@ $('sChooseFile').addEventListener('click', async () => { await chooseSaveFile();
 
 function render() {
   if ($('settingsDlg').open) fillSettings();
-  $('btnAny').hidden = FS;
+  $('btnAny').hidden = FS || !TOUCH;
   $('btnSave').hidden = !state.data;
   $('btnSave').textContent = SAVE_LABEL;
 
