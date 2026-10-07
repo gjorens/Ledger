@@ -257,11 +257,12 @@
     <div class="boxhead">Where your ledger file is kept</div>
     <div id="sWhere" style="margin-bottom:6px; font-weight:600"></div>
     <div id="sFsBlock" hidden>
-      <p class="small" style="margin:0 0 6px">Choose a folder (for example iCloud Drive). The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
+      <p class="small" style="margin:0 0 6px">Choose the folder where your ledger lives: iCloud Drive, Dropbox, OneDrive or any other folder on this computer. Both data sets use the same folder. The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
       <label class="lbl" for="sNewFolder">New folder name (optional)</label>
       <input id="sNewFolder" type="text" maxlength="60" autocomplete="off" placeholder="e.g. myLedger">
       <div class="filebar" style="margin:8px 0 0">
         <button id="sChooseFolder" class="primary" type="button">Choose folder…</button>
+        <button id="sOpenFile" type="button">Open a file…</button>
         <button id="sChooseFile" type="button">Use a single file instead…</button>
       </div>
       <p class="small" style="margin:6px 0 0">Browsers only tell the app the name of the folder you chose, not its full path.</p>
@@ -269,6 +270,22 @@
     <div id="sManualBlock" hidden>
       <p class="small" style="margin:0 0 6px" id="sManualText"></p>
     </div>
+  </details>
+
+  <details class="sset">
+    <summary>Categories</summary>
+    <div class="boxhead" style="margin-top:8px">Dropdown order</div>
+    <select id="sCatSort">
+      <option value="manual">My own order (use the arrows)</option>
+      <option value="alpha">A to Z</option>
+      <option value="used">Most used first</option>
+    </select>
+    <div class="filebar" style="margin:6px 0 0"><button class="mini" id="sCatSortNow" type="button">Sort my list A to Z</button></div>
+    <div class="boxhead" style="margin-top:10px">Add a category</div>
+    <div style="display:flex; gap:6px"><input id="sCatNew" type="text" maxlength="40" autocomplete="off" placeholder="New category name"><button id="sCatAdd" type="button" class="primary">Add</button></div>
+    <div class="boxhead" style="margin-top:10px">Your categories</div>
+    <div id="sCatList"></div>
+    <p class="small" style="margin:6px 0 0">Renaming updates every entry and recurring item that uses the category. Renaming one to the name of another merges them. Deleting leaves the affected entries uncategorised.</p>
   </details>
 
   <details class="sset">
@@ -497,8 +514,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.16';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 15:40';
+const APP_VERSION = '4.18';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 17:05';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -871,6 +888,16 @@ async function refreshFromFile() {   // pick up changes saved from another devic
   } catch (e) { /* ignore */ }
 }
 
+async function fileInDir(dir) {         // this data set's file in a folder: the standard name first, then a sensible look-alike (e.g. "ledger-test (1).json")
+  try { return await dir.getFileHandle(PFILE); } catch (e) { if (e.name !== 'NotFoundError') throw e; }
+  const names = [];
+  for await (const [n, h] of dir.entries()) if (h.kind === 'file' && /\.json$/i.test(n) && !/\.bak$/i.test(n)) names.push(n);
+  const isTest = n => /test/i.test(n), isLedger = n => /ledger/i.test(n);
+  const pool = names.filter(n => PROFILE === 'test' ? isTest(n) : !isTest(n));
+  const best = pool.filter(isLedger).sort((a, b) => a.length - b.length)[0] || (pool.length === 1 ? pool[0] : null);
+  state.dirNames = names;
+  return best ? await dir.getFileHandle(best) : null;
+}
 async function findInDir(ask) {          // locate this data set's file inside the chosen folder
   const dir = state.dir; if (!dir) return false;
   try {
@@ -880,7 +907,8 @@ async function findInDir(ask) {          // locate this data set's file inside t
       p = await dir.requestPermission({ mode:'readwrite' });
       if (p !== 'granted') return false;
     }
-    const fh = await dir.getFileHandle(PFILE);          // throws NotFoundError when it is not there
+    const fh = await fileInDir(dir);
+    if (!fh) { state.dirMissing = true; return false; }
     state.handle = fh; state.fileName = fh.name; await kvSet('handle', fh);
     return true;
   } catch (e) { state.dirMissing = e.name === 'NotFoundError'; return false; }
@@ -888,7 +916,7 @@ async function findInDir(ask) {          // locate this data set's file inside t
 async function reconnect() {          // needs a tap: browsers only allow the permission prompt from a click
   if (!state.handle && state.dir) {
     const found = await findInDir(true); state.needsReconnect = false;
-    if (!found) { setMsg(state.dirMissing ? PFILE + ' is not in the folder "' + (state.dirLabel || state.dir.name) + '" yet. Put the file there, or use Open file.' : 'Folder access was not granted.', 'warn'); return; }
+    if (!found) { setMsg(state.dirMissing ? 'No ' + PROFILES[PROFILE].label + ' file (' + PFILE + ') found in the folder "' + (state.dirLabel || state.dir.name) + '"' + (state.dirNames && state.dirNames.length ? ' (it holds: ' + state.dirNames.join(', ') + ')' : '') + '. Use Open file to pick the right one.' : 'Folder access was not granted.', 'warn'); return; }
   }
   const h = state.handle;
   if (!h) return;
@@ -907,8 +935,19 @@ async function reconnect() {          // needs a tap: browsers only allow the pe
 }
 
 /* ---------- Categories ---------- */
+function catUsage() {                 // how many live entries and recurring items use each category
+  const m = new Map(), d = state.data;
+  for (const r of d.records.concat(d.recurring)) if (!r.deleted && r.category) m.set(r.category, (m.get(r.category) || 0) + 1);
+  return m;
+}
+function catList() {                  // the categories in the order the dropdowns show them
+  const d = state.data, mode = d.settings.catSort || 'manual', base = d.categories.slice();
+  if (mode === 'alpha') return base.sort((a, b) => a.localeCompare(b));
+  if (mode === 'used') { const u = catUsage(); return base.sort((a, b) => ((u.get(b) || 0) - (u.get(a) || 0)) || a.localeCompare(b)); }
+  return base;
+}
 function syncCats(sel, value) {       // (re)build a category dropdown; keeps the current choice unless a value is given
-  const cats = state.data.categories, key = cats.join('|');
+  const cats = catList(), key = cats.join('|');
   const cur = value !== undefined ? value : sel.value;
   if (sel.dataset.key !== key) {
     sel.innerHTML = '';
@@ -922,7 +961,7 @@ function onCatChange(sel) {
   if (sel.value !== NEWCAT) return;
   const n = (prompt('New category name:') || '').trim();
   const dup = n && state.data.categories.find(c => c.toLowerCase() === n.toLowerCase());
-  if (n && !dup) { state.data.categories.push(n); state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); syncCats(sel, n); }
+  if (n && !dup) { state.data.categories.push(n); changed(); syncCats(sel, n); }
   else syncCats(sel, dup || '');
 }
 const catValue = sel => (sel.value === NEWCAT ? '' : sel.value);
@@ -1145,12 +1184,71 @@ function modeText() {
 }
 
 /* ---------- Settings ---------- */
+/* ---------- Category settings ---------- */
+function reassignCategory(from, to) {
+  const d = state.data;
+  for (const r of d.records.concat(d.recurring)) if (r.category === from) r.category = to;
+}
+function renderCatSettings() {
+  if (!state.data) return;
+  const d = state.data, mode = d.settings.catSort || 'manual', use = catUsage(), box = $('sCatList');
+  $('sCatSort').value = mode;
+  $('sCatSortNow').hidden = mode !== 'manual';
+  box.innerHTML = '';
+  const list = catList();
+  if (!list.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No categories yet.'; box.appendChild(p); return; }
+  list.forEach((c, i) => {
+    const row = document.createElement('div'); row.className = 'rule';
+    const nm = document.createElement('span'); nm.textContent = c + ' \u00b7 ' + (use.get(c) || 0) + ' in use';
+    const btns = document.createElement('span'); btns.className = 'btns';
+    if (mode === 'manual') {
+      const up = miniBtn('\u25b2', () => moveCategory(c, -1)); up.title = 'Move up'; up.disabled = i === 0;
+      const dn = miniBtn('\u25bc', () => moveCategory(c, 1)); dn.title = 'Move down'; dn.disabled = i === list.length - 1;
+      btns.appendChild(up); btns.appendChild(dn);
+    }
+    btns.appendChild(miniBtn('Rename', () => renameCategory(c)));
+    btns.appendChild(miniBtn('Delete', () => deleteCategory(c), 'danger'));
+    row.appendChild(nm); row.appendChild(btns); box.appendChild(row);
+  });
+}
+function addCategory() {
+  const n = $('sCatNew').value.trim(); if (!n || !state.data) return;
+  if (state.data.categories.some(c => c.toLowerCase() === n.toLowerCase())) { alert('That category already exists.'); return; }
+  state.data.categories.push(n); $('sCatNew').value = ''; changed();
+}
+function renameCategory(old) {
+  const n = (prompt('Rename category "' + old + '" to:', old) || '').trim();
+  if (!n || n === old) return;
+  const d = state.data, dup = d.categories.find(c => c.toLowerCase() === n.toLowerCase() && c !== old);
+  if (dup) {
+    if (!confirm('"' + dup + '" already exists. Merge "' + old + '" into it? Everything using "' + old + '" will move to "' + dup + '".')) return;
+    reassignCategory(old, dup); d.categories = d.categories.filter(c => c !== old);
+  } else { reassignCategory(old, n); d.categories = d.categories.map(c => c === old ? n : c); }
+  changed();
+}
+function deleteCategory(name) {
+  const n = catUsage().get(name) || 0;
+  if (!confirm('Delete the category "' + name + '"?' + (n ? '\n\n' + n + ' entr' + (n === 1 ? 'y' : 'ies') + ' or recurring item' + (n === 1 ? '' : 's') + ' use it and will become uncategorised.' : ''))) return;
+  reassignCategory(name, ''); state.data.categories = state.data.categories.filter(c => c !== name);
+  changed();
+}
+function moveCategory(name, dir) {        // manual order only: swap with the neighbour in the stored list
+  const a = state.data.categories, i = a.indexOf(name), j = i + dir;
+  if (i < 0 || j < 0 || j >= a.length) return;
+  [a[i], a[j]] = [a[j], a[i]]; changed();
+}
+$('sCatAdd').addEventListener('click', addCategory);
+$('sCatNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
+$('sCatSort').addEventListener('change', ev => { state.data.settings.catSort = ev.target.value; changed(); });
+$('sCatSortNow').addEventListener('click', () => { state.data.categories.sort((x, y) => x.localeCompare(y)); changed(); });
+
 function fillSettings() {
+  renderCatSettings();
   $('sData').value = PROFILE;
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
-  $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive \u203a myLedger) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome, Edge or Brave on a Mac.';
+  $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome, Edge or Brave on a Mac.';
   $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
   $('aboutData').textContent = 'Data set in use: ' + PROFILES[PROFILE].label + ' (' + PFILE + ').';
   $('aboutMode').textContent = modeText();
@@ -1170,8 +1268,7 @@ async function chooseFolder() {
     let dir = parent, label = parent.name || 'chosen folder';
     if (name) { dir = await parent.getDirectoryHandle(name, { create:true }); label = (parent.name || 'chosen folder') + ' \u203a ' + name; }
     let existing = null, text = '';
-    try { existing = await dir.getFileHandle(PFILE); text = await (await existing.getFile()).text(); }
-    catch (e) { if (e.name !== 'NotFoundError') throw e; }
+    existing = await fileInDir(dir); if (existing) text = await (await existing.getFile()).text();
     let loaded = null;
     if (text.trim()) {
       loaded = JSON.parse(text);
@@ -1192,6 +1289,7 @@ $('btnGear').addEventListener('click', openSettings);
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
 $('sData').addEventListener('change', ev => switchProfile(ev.target.value));
 $('sChooseFolder').addEventListener('click', chooseFolder);
+$('sOpenFile').addEventListener('click', async () => { $('settingsDlg').close(); await openFile(); });
 $('sChooseFile').addEventListener('click', async () => { await chooseSaveFile(); $('sWhere').textContent = whereText(); });
 
 function render() {

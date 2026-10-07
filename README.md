@@ -27,7 +27,8 @@ Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json`
 - **Data set.** Switch between **My ledger** (`ledger.json`) and **Test data** (`ledger-test.json`). Each data set has its own file and its own saved draft, so they never mix. When the test data is active the page shows an orange stripe and a **TEST DATA** tag. To try the test data, put `ledger-test.json` in the same folder as your ledger (or use Open file), then switch.
 - **About myLedger.** The version and build time, which data set is in use, and where the app is saving.
 - **User guide.** A short built-in guide to every feature.
-- **Where your ledger file is kept.** On Chrome, Edge and Brave (Mac) choose a folder, and optionally type a name to create a new folder inside it. The app saves the ledger file in that folder and autosaves there. The page always shows the folder name and file name it is saving to. Browsers only reveal the folder's name, not its full path. On Safari and iOS the browser cannot remember a folder, so you pick the folder each time in the Files sheet when you tap **Save to Files** or **Save file**.
+- **Categories.** Add, rename, delete (entries become uncategorised) or merge categories (renaming to an existing name offers to merge). Choose the dropdown order: your own order (with up/down arrows), A–Z, or most used first.
+- **Where your ledger file is kept.** Any folder you like: iCloud Drive, Dropbox, OneDrive or a local folder. Both data sets share it. If the standard file name is not there, the app uses a look-alike (for example `ledger-test (1).json`; the test data set only considers names containing "test"), and **Open a file...** in Settings lets you pick one directly. On Chrome, Edge and Brave (Mac) choose a folder, and optionally type a name to create a new folder inside it. The app saves the ledger file in that folder and autosaves there. The page always shows the folder name and file name it is saving to. Browsers only reveal the folder's name, not its full path. On Safari and iOS the browser cannot remember a folder, so you pick the folder each time in the Files sheet when you tap **Save to Files** or **Save file**.
 
 ## Features
 
@@ -121,7 +122,6 @@ All devices should run the same version, since older versions do not understand 
 
 ## Known limits
 
-- Categories can be added but not yet renamed or deleted.
 - Ticks made during a reconciliation are not stored until you press **Mark month reconciled**.
 - Reports use the stored signs, so spending always counts as "out", including on credit cards.
 - Safari on Mac and iOS cannot autosave to a file; use Save file (Mac) or Save to Files (iPhone/iPad).
