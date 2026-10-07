@@ -84,6 +84,26 @@ A JSON file, currently `version: 4`:
 - Older files (v1 to v3) are upgraded in memory when opened and saved as v4 on the next save. Files from a **newer** version than the app understands are refused, so a stale cached copy of the app cannot damage them.
 - With roughly 500 records a year the file stays small, so a single JSON file is a good fit.
 
+## Installing it as an app
+
+The app is a web page, so "installing" means giving it an icon and its own window. All of these files need to sit in the repository root: `index.html`, `manifest.webmanifest`, `sw.js`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.png` and `install-mac.command`.
+
+**iPhone and iPad** (there is no script on iOS; Apple only allows this through Safari)
+1. Open https://gjorens.github.io/Ledger/ in **Safari**.
+2. Tap the Share button, then **Add to Home Screen**, then **Add**.
+3. Open myLedger from the home screen icon. It runs full screen without Safari's address bar, and opens offline once it has been loaded once.
+4. Tap **Open file** and pick `ledger.json` from iCloud Drive > myLedger. Use **Share to Files** to save it back.
+
+**Mac** (installer script)
+1. Download `install-mac.command` from this repository, then right-click it and choose **Open** (the first time only, because macOS is cautious about downloaded scripts). Or paste this into Terminal:
+   `curl -fsSL https://raw.githubusercontent.com/gjorens/Ledger/main/install-mac.command | bash`
+2. The script creates an **iCloud Drive > myLedger** folder for your data, keeps an offline copy of the app in `~/Library/Application Support/myLedger`, and builds **~/Applications/myLedger.app** with the myLedger icon. Drag it to the Dock.
+3. The app opens in its own window using Chrome, Edge or Brave if installed (these can autosave), otherwise your default browser. With no internet it opens the offline copy.
+4. First run: click **Choose save file...** and save `ledger.json` in the iCloud Drive myLedger folder.
+5. To remove it: `bash install-mac.command --uninstall`. Your `ledger.json` is never touched.
+
+Alternatively, in Chrome or Edge open the app and use the browser menu > **Install myLedger** (or Save and Share > Install page as app).
+
 ## Updating the app
 
 1. Replace `index.html` in this repository (Add file, Upload files, Commit).

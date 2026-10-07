@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>myLedger</title>
+<meta name="theme-color" content="#1f3a8f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="myLedger">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
   :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#d9d9e0; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; }
   @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#33333b; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; } }
@@ -65,6 +73,11 @@
   .txhead .horizon { margin:0; }
   .horizon { display:flex; align-items:center; gap:8px; margin:6px 0 0; }
   .horizon select { width:auto; }
+  .touch th, .touch td { padding:7px 8px; }
+  .touch button.mini { padding:5px 10px; }
+  .touch td.act button + button { margin-left:6px; }
+  .touch .ritem { padding:6px 0; }
+  .touch .rule { padding:6px 0; }
   dialog.wide { width:min(560px, calc(100% - 24px)); }
   #gChart svg { width:100%; height:auto; display:block; }
   .gl { display:inline-block; width:18px; height:0; border-top:2.5px solid; vertical-align:middle; margin:0 4px 0 8px; }
@@ -119,13 +132,15 @@
     <div class="filebar">
       <button id="btnOpen">Open file</button>
       <button id="btnChoose" hidden>Choose save file…</button>
+      <button id="btnAny" class="mini" hidden title="Use this if your ledger file is greyed out in the file list">Open any file…</button>
       <button id="btnSave" class="primary" hidden>Save now</button>
     </div>
   </div>
   <div class="small" id="mode"></div>
 
   <div id="banner"></div>
-  <input type="file" id="fileInput" hidden>   <!-- no type filter: Safari and Chrome grey out a ledger file whose name or type they do not recognise as JSON -->
+  <!-- On iPhone/iPad an accept list with no image types goes straight to the Files browser; an unfiltered input asks Photo Library / Take Photo / Choose File first -->
+  <input type="file" id="fileInput" accept=".json,.txt,application/json,text/plain" hidden>
 
   <section id="setup" class="card" hidden>
     <strong>First use</strong>
@@ -361,6 +376,7 @@
 'use strict';
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
 const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
+if (TOUCH && document.documentElement) document.documentElement.classList.add('touch');   // roomier rows and buttons for fingers
 const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
 const $ = id => document.getElementById(id);
 const DATA_VERSION = 4;
@@ -374,8 +390,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.10';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-06 20:05';
+const APP_VERSION = '4.13';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 10:30';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -564,7 +580,7 @@ function computeActual() {
 
 function handledSet() {               // occurrences already posted (even if that entry was later deleted) or skipped
   const s = new Set();
-  for (const r of state.data.records) if (r.recurringId) s.add(r.recurringId + '|' + r.recurringDate);
+  for (const r of state.data.records) if (r.recurringId && !r.unposted) s.add(r.recurringId + '|' + r.recurringDate);
   for (const u of state.data.recurring) for (const x of (u.skipped || [])) s.add(u.id + '|' + x);
   return s;
 }
@@ -696,6 +712,7 @@ function adopt(d, name) {
 function confirmDiscard() {
   return !state.dirty || confirm('You have unsaved changes. Opening a file will replace them. Continue?');
 }
+const ACCEPT = '.json,.txt,application/json,text/plain';
 async function openFile() {
   if (!confirmDiscard()) return;
   if (FS) {
@@ -708,8 +725,12 @@ async function openFile() {
       adopt(d, h.name);
     } catch (e) { if (e.name !== 'AbortError') setMsg('Could not open file: ' + e.message, 'err'); }
   } else {
-    $('fileInput').click();
+    $('fileInput').accept = ACCEPT; $('fileInput').click();
   }
+}
+function openAnyFile() {                  // fallback when a ledger file is greyed out: no filter, so every file can be picked
+  if (!confirmDiscard()) return;
+  $('fileInput').removeAttribute('accept'); $('fileInput').click();
 }
 $('fileInput').addEventListener('change', async ev => {
   const f = ev.target.files[0]; ev.target.value = '';
@@ -977,6 +998,7 @@ function render() {
     : 'Manual mode (this browser cannot write files directly): changes are kept in the browser; use ' + SAVE_LABEL + (TOUCH ? ' to update your file.' : ', then move the downloaded ledger.json into your iCloud folder (replace the old one).');
 
   $('btnChoose').hidden = !FS;
+  $('btnAny').hidden = FS;
   $('btnChoose').textContent = state.handle ? 'Change save file…' : 'Choose save file…';
   $('btnSave').hidden = !state.data;
   $('btnSave').textContent = SAVE_LABEL;
@@ -1158,6 +1180,7 @@ function renderTable(A, P) {
     const act = addCell(tr, '', 'act');
     if (!r.deleted) {
       act.appendChild(miniBtn('Edit', () => editRecord(r)));
+      if (r.recurringId) act.appendChild(miniBtn('Unpost', () => unpostRecord(r.id)));
       act.appendChild(miniBtn('Delete', () => deleteRecord(r.id), 'danger'));
       if (r.date < today) anchor = tr;
     }
@@ -1607,6 +1630,16 @@ $('pView').addEventListener('change', ev => { state.rep.view = ev.target.value; 
 $('pFrom').addEventListener('change', ev => { state.rep.from = ev.target.value; renderReport(); });
 $('pTo').addEventListener('change', ev => { state.rep.to = ev.target.value; renderReport(); });
 
+function unpostRecord(id) {              // undo a Post: the entry is removed and the occurrence comes back as a projection
+  const r = state.data.records.find(x => x.id === id);
+  if (!r || r.deleted || !r.recurringId) return;
+  const other = otherLeg(r);
+  const msg = 'Unpost "' + r.text + '" on ' + fmtDate(r.date) + '? It goes back to the projected list' + (other ? ' (both sides of the transfer)' : '') + ' and balances adjust.';
+  if (!confirm(msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  const now = new Date().toISOString();
+  for (const x of [r, other]) if (x && !x.deleted) { x.deleted = true; x.deletedAt = now; x.unposted = true; }
+  changed();
+}
 function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted) return;
@@ -1676,6 +1709,7 @@ function removeChange(id, from) {
 
 $('btnOpen').onclick = openFile;
 $('btnChoose').onclick = chooseSaveFile;
+$('btnAny').onclick = openAnyFile;
 $('btnSave').onclick = saveNow;
 
 /* ---------- Safety nets ---------- */
@@ -1689,6 +1723,10 @@ window.addEventListener('blur', flush);
 window.addEventListener('beforeunload', ev => { if (state.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
 
 /* ---------- Startup ---------- */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {      // lets the installed app open offline
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
 (async () => {
   if (navigator.storage && navigator.storage.persist) { try { await navigator.storage.persist(); } catch (e) {} }
   const draft = await kvGet('draft');
