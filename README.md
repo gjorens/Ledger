@@ -15,12 +15,19 @@ Live app: https://gjorens.github.io/Ledger/
 | Browser | What happens |
 |---|---|
 | Chrome / Edge on Mac | Choose a save file once. The app then **autosaves** to it every 30 seconds, when you switch away, and when you close the page. After a restart, a **Reconnect** button re-grants access to the file. |
-| Safari (Mac) | Changes are kept in the browser. **Download file** saves `ledger.json`; move it into your iCloud folder and replace the old one. |
-| Safari on iPhone / iPad | **Open file** loads your ledger from Files. **Share to Files** saves it back. |
+| Safari (Mac) | Changes are kept in the browser. **Save file** puts `ledger.json` in your Downloads folder; move it into your iCloud folder and replace the old one. |
+| Safari on iPhone / iPad | **Open file** loads your ledger from Files. **Save to Files** saves it back: choose the folder in the Files sheet and tap Replace. |
 
 Safety features: unsaved-changes banner, warning before closing with unsaved changes, a browser-side draft copy after every change, and a check that stops you overwriting a file that was changed from another device (`savedAt` comparison).
 
-Tip: Safari's download setting "Ask for each download" avoids a pile of `ledger (1).json` copies. On a Mac you can also script moving the download into iCloud with Automator.
+Tip: Safari's setting "Ask for each download" avoids a pile of `ledger (1).json` copies. On a Mac you can also script moving the download into iCloud with Automator.
+
+## Settings (the gear icon)
+
+- **Data set.** Switch between **My ledger** (`ledger.json`) and **Test data** (`ledger-test.json`). Each data set has its own file and its own saved draft, so they never mix. When the test data is active the page shows an orange stripe and a **TEST DATA** tag. To try the test data, put `ledger-test.json` in the same folder as your ledger (or use Open file), then switch.
+- **About myLedger.** The version and build time, which data set is in use, and where the app is saving.
+- **User guide.** A short built-in guide to every feature.
+- **Where your ledger file is kept.** On Chrome, Edge and Brave (Mac) choose a folder, and optionally type a name to create a new folder inside it. The app saves the ledger file in that folder and autosaves there. The page always shows the folder name and file name it is saving to. Browsers only reveal the folder's name, not its full path. On Safari and iOS the browser cannot remember a folder, so you pick the folder each time in the Files sheet when you tap **Save to Files** or **Save file**.
 
 ## Features
 
@@ -117,7 +124,7 @@ All devices should run the same version, since older versions do not understand 
 - Categories can be added but not yet renamed or deleted.
 - Ticks made during a reconciliation are not stored until you press **Mark month reconciled**.
 - Reports use the stored signs, so spending always counts as "out", including on credit cards.
-- Safari on Mac and iOS cannot autosave to a file; use Download or Share.
+- Safari on Mac and iOS cannot autosave to a file; use Save file (Mac) or Save to Files (iPhone/iPad).
 
 ## Development notes
 

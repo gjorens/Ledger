@@ -59,6 +59,15 @@
   .rule.sub { border-top:none; padding:1px 0 1px 16px; color:var(--muted); font-size:.85rem; }
   .rule .btns { white-space:nowrap; }
   .rule .btns button + button { margin-left:4px; }
+  details.sset { border-top:1px solid var(--line); padding:8px 0; }
+  details.sset summary { cursor:pointer; font-weight:600; }
+  .guide { font-size:.9rem; margin-top:6px; }
+  .guide h4 { margin:10px 0 2px; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+  .guide ul { margin:2px 0 0; padding-left:18px; }
+  .guide li { margin:3px 0; }
+  button.icon { padding:6px 9px; display:inline-flex; align-items:center; }
+  .badge { font-size:.68rem; font-weight:700; letter-spacing:.05em; color:#fff; background:#e08a00; border-radius:6px; padding:2px 7px; vertical-align:middle; white-space:nowrap; }
+  body.test { border-top:5px solid #e08a00; }
   .top { display:flex; justify-content:space-between; align-items:center; gap:6px 12px; flex-wrap:wrap; }
   .top .filebar { margin:0; }
   .boxhead { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:4px; }
@@ -128,15 +137,14 @@
 <body>
 <main>
   <div class="top">
-    <h1>myLedger <small id="ver"></small></h1>
+    <h1>myLedger <small id="ver"></small> <span class="badge" id="profBadge" hidden>TEST DATA</span></h1>
     <div class="filebar">
       <button id="btnOpen">Open file</button>
-      <button id="btnChoose" hidden>Choose save file…</button>
       <button id="btnAny" class="mini" hidden title="Use this if your ledger file is greyed out in the file list">Open any file…</button>
-      <button id="btnSave" class="primary" hidden>Save now</button>
+      <button id="btnSave" class="primary" hidden>Save file</button>
+      <button id="btnGear" class="icon" type="button" title="Settings" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
-  <div class="small" id="mode"></div>
 
   <div id="banner"></div>
   <!-- On iPhone/iPad an accept list with no image types goes straight to the Files browser; an unfiltered input asks Photo Library / Take Photo / Choose File first -->
@@ -233,6 +241,96 @@
     </div>
   </section>
 </main>
+
+<dialog id="settingsDlg" class="wide" style="max-height:90vh; overflow:auto">
+  <h3 style="margin-bottom:6px">Settings</h3>
+
+  <details class="sset" open>
+    <summary>Data set and file location</summary>
+    <div class="boxhead" style="margin-top:8px">Data set</div>
+    <select id="sData">
+      <option value="main">My ledger (ledger.json)</option>
+      <option value="test">Test data (ledger-test.json)</option>
+    </select>
+    <p class="small" style="margin:4px 0 10px">Each data set has its own file and its own saved draft, so switching never mixes them. An orange stripe and a TEST DATA tag show when the test data is in use.</p>
+
+    <div class="boxhead">Where your ledger file is kept</div>
+    <div id="sWhere" style="margin-bottom:6px; font-weight:600"></div>
+    <div id="sFsBlock" hidden>
+      <p class="small" style="margin:0 0 6px">Choose a folder (for example iCloud Drive). The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
+      <label class="lbl" for="sNewFolder">New folder name (optional)</label>
+      <input id="sNewFolder" type="text" maxlength="60" autocomplete="off" placeholder="e.g. myLedger">
+      <div class="filebar" style="margin:8px 0 0">
+        <button id="sChooseFolder" class="primary" type="button">Choose folder…</button>
+        <button id="sChooseFile" type="button">Use a single file instead…</button>
+      </div>
+      <p class="small" style="margin:6px 0 0">Browsers only tell the app the name of the folder you chose, not its full path.</p>
+    </div>
+    <div id="sManualBlock" hidden>
+      <p class="small" style="margin:0 0 6px" id="sManualText"></p>
+    </div>
+  </details>
+
+  <details class="sset">
+    <summary>About myLedger</summary>
+    <div style="margin-top:8px"><b>myLedger</b> <span id="aboutVer"></span></div>
+    <div class="small" id="aboutData" style="margin:4px 0 0"></div>
+    <div class="small" id="aboutMode" style="margin:4px 0 0"></div>
+    <p class="small" style="margin:8px 0 0">A personal bank-transaction ledger that runs entirely on your device. Your data is only ever stored in the file you choose and in a safety copy inside this browser; nothing is sent anywhere.</p>
+  </details>
+
+  <details class="sset">
+    <summary>User guide</summary>
+    <div class="guide">
+      <h4>Getting started</h4>
+      <ul>
+        <li>First time: tap <b>Create first account</b>, or <b>Open file</b> to load a ledger you already have.</li>
+        <li>Add more accounts with <b>+ Add account</b> (chequing, savings, credit card, loan, and so on). <b>Edit account</b> changes its details, opening balance and low-balance warning.</li>
+        <li>Switch accounts with the tabs. Each account has its own balance, recurring items and reconciliation.</li>
+      </ul>
+      <h4>Adding items (+ New item)</h4>
+      <ul>
+        <li><b>Type:</b> a payment or deposit, or a transfer between two of your accounts (it creates matching entries in both).</li>
+        <li><b>Repeats:</b> choose weekly, every 2 weeks, monthly, every 3 months or yearly to make a recurring item. The amount is then an estimate.</li>
+        <li><b>Amounts:</b> type digits only; the decimal point is fixed (1 2 5 0 gives 12.50). The <b>±</b> button, or typing a minus sign, switches between money in and money out. On a credit card or loan, + means a charge and − means a payment.</li>
+        <li>Start typing a description to pick an earlier one; its category and amount are filled in.</li>
+        <li><b>Add another</b> keeps the window open and the date unchanged, which is handy for entering a statement.</li>
+      </ul>
+      <h4>The transaction list</h4>
+      <ul>
+        <li>Sorted by date, then credits before debits, then description. The list opens at your latest past transaction.</li>
+        <li><b>Edit</b> changes any entry. <b>Delete</b> marks it deleted: it stays in the file but no longer counts.</li>
+        <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
+        <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
+        <li>In <b>Recurring items</b>: <b>Change amount</b> schedules a new estimate from a future date, and <b>Stop</b> ends the item.</li>
+        <li><b>Look ahead</b> sets how far projections run. <b>Balance graph</b> compares the 12 months ending at that date with the same 12 months a year earlier.</li>
+      </ul>
+      <h4>Monthly reconciliation</h4>
+      <ul>
+        <li>Open <b>Monthly reconciliation</b>, pick the statement month, enter the closing balance from your bank statement, and tick every item that appears on it.</li>
+        <li>When the difference is zero, press <b>Mark month reconciled</b>. Use <b>Edit</b> on unticked items, or <b>Add missed item</b> for something on the statement that is not in your ledger.</li>
+        <li>After the first reconciled month, balances count from the latest statement balance; the opening balance is only the starting point until then.</li>
+      </ul>
+      <h4>Credit cards and loans</h4>
+      <ul><li>These show the <b>amount owing</b> as a positive number, charges as positive and payments as negative. Behind the scenes the numbers are stored the same way as other accounts.</li></ul>
+      <h4>Low-balance warning</h4>
+      <ul><li>Set a level in <b>Edit account</b>. If a change makes a future balance drop below it, a popup appears and the account tab gets a <b>red ring</b> for as long as that stays true. For a card, the level is an amount owing that you do not want to exceed.</li></ul>
+      <h4>Reports</h4>
+      <ul><li>Open <b>Reports</b> to see spending and income by category (or by category and month) for a period you choose, for one account or all of them. Transfers, deleted items and projections are left out.</li></ul>
+      <h4>Saving</h4>
+      <ul>
+        <li><b>Chrome, Edge or Brave on a Mac:</b> choose a folder in Settings. The app then autosaves to it every 30 seconds and when you leave the page. If it asks you to <b>Reconnect</b> after a restart, tap it once.</li>
+        <li><b>Safari, iPhone and iPad:</b> press <b>Save file</b> (or <b>Save to Files</b>) after making changes, choose the folder, and choose Replace. Press <b>Open file</b> to load your ledger on another device.</li>
+        <li>An unsaved-changes banner shows when there is anything not yet saved. A safety copy is also kept inside the browser.</li>
+        <li>Use the same version of the app on all your devices, and open the latest file before you start entering items.</li>
+      </ul>
+      <h4>Test data</h4>
+      <ul><li>In Settings, switch the data set to <b>Test data</b> to practise without touching your real ledger. It uses <b>ledger-test.json</b> and shows an orange stripe and a TEST DATA tag.</li></ul>
+    </div>
+  </details>
+
+  <div style="display:flex; justify-content:flex-end; margin-top:10px"><button type="button" id="sClose">Close</button></div>
+</dialog>
 
 <dialog id="graphDlg" class="wide">
   <h3 id="gTitle" style="margin-bottom:4px">Balance</h3>
@@ -377,21 +475,30 @@
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
 const TOUCH = navigator.maxTouchPoints > 1;   // iPhone / iPad (iPadOS reports as Mac but has touch)
 if (TOUCH && document.documentElement) document.documentElement.classList.add('touch');   // roomier rows and buttons for fingers
-const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Download file');
+const SAVE_LABEL = FS ? 'Save now' : (TOUCH ? 'Save to Files' : 'Save file');
+const PROFILES = { main:{ label:'My ledger', file:'ledger.json' }, test:{ label:'Test data', file:'ledger-test.json' } };
+const PROFILE = (function () { try { return localStorage.getItem('myLedger.profile') === 'test' ? 'test' : 'main'; } catch (e) { return 'main'; } })();
+const PFILE = PROFILES[PROFILE].file;                       // the file name this data set is saved under
+const ACCT_KEY = 'myLedger.account' + (PROFILE === 'test' ? '.test' : '');
+const SHARED_KV = new Set(['dir']);                         // the chosen folder is shared; everything else is per data set
+const pk = k => (PROFILE === 'test' && !SHARED_KV.has(k)) ? k + ':test' : k;
+if (PROFILE === 'test' && document.body) document.body.classList.add('test');
+if (PROFILE === 'test') $profBadge();
+function $profBadge() { const b = document.getElementById('profBadge'); if (b) b.hidden = false; }
 const $ = id => document.getElementById(id);
 const DATA_VERSION = 4;
 const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
 const DEFAULT_CATEGORIES = ['Income', 'Housing', 'Utilities', 'Groceries', 'Dining', 'Transport', 'Health', 'Shopping', 'Subscriptions', 'Entertainment', 'Gifts', 'Insurance', 'Other'];
 const NEWCAT = '__new__';
 const state = {
-  data:null, dirty:false, handle:null, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false,
+  data:null, dirty:false, handle:null, dir:null, dirLabel:null, switching:false, fileName:null, baseSavedAt:null, draftAt:null, msg:null, msgKind:'err', needsReconnect:false,
   initialScroll:true, edit:null, acctEdit:null, accountId:null,
   recon:{ month:null, ticked:new Set(), stmt:'' },
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.13';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 10:30';
+const APP_VERSION = '4.16';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 15:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -410,7 +517,7 @@ async function kvGet(k) {
   try {
     const db = await idb();
     return await new Promise((res, rej) => {
-      const q = db.transaction('kv').objectStore('kv').get(k);
+      const q = db.transaction('kv').objectStore('kv').get(pk(k));
       q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
     });
   } catch (e) { return undefined; }
@@ -420,7 +527,7 @@ async function kvSet(k, v) {
     const db = await idb();
     await new Promise((res, rej) => {
       const tx = db.transaction('kv', 'readwrite');
-      tx.objectStore('kv').put(v, k);
+      tx.objectStore('kv').put(v, pk(k));
       tx.oncomplete = res; tx.onerror = () => rej(tx.error);
     });
   } catch (e) { /* storage unavailable: app still works, just no draft */ }
@@ -502,7 +609,7 @@ const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(
 
 function ensureAccount() {
   const ids = state.data.accounts.map(a => a.id);
-  if (!ids.includes(state.accountId)) { const saved = lsGet('myLedger.account'); state.accountId = ids.includes(saved) ? saved : ids[0]; }
+  if (!ids.includes(state.accountId)) { const saved = lsGet(ACCT_KEY); state.accountId = ids.includes(saved) ? saved : ids[0]; }
 }
 function acct() { ensureAccount(); return acctById(state.accountId); }
 
@@ -666,15 +773,15 @@ async function exportFile() {     // Safari / iPhone / iPad path: must run from 
   const savedAt = new Date().toISOString();
   const out = { ...state.data, savedAt };
   const json = JSON.stringify(out, null, 2);
-  const file = new File([json], 'ledger.json', { type:'application/json' });
+  const file = new File([json], PFILE, { type:'application/json' });
   let done = false;
   if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) {
-    try { await navigator.share({ files:[file], title:'Ledger' }); done = true; }
+    try { await navigator.share({ files:[file] }); done = true; }   // files only: a title or text makes iOS add a stray 'text' file to the save
     catch (e) { if (e.name === 'AbortError') return; }
   }
   if (!done) {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(file); a.download = 'ledger.json';
+    a.href = URL.createObjectURL(file); a.download = PFILE;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     done = true;
@@ -687,14 +794,24 @@ async function exportFile() {     // Safari / iPhone / iPad path: must run from 
 
 async function saveNow() {
   if (!state.data) return;
-  if (FS) { if (!state.handle) return chooseSaveFile(); await saveToHandle(false); }
+  if (FS) {
+    if (!state.handle && state.dir) {            // a folder is chosen but this data set's file is not there yet: create it
+      try {
+        if (await state.dir.requestPermission({ mode:'readwrite' }) !== 'granted') return;
+        state.handle = await state.dir.getFileHandle(PFILE, { create:true }); state.fileName = PFILE; state.baseSavedAt = null; await kvSet('handle', state.handle);
+      } catch (e) { return setMsg('Could not create ' + PFILE + ': ' + e.message, 'err'); }
+    }
+    if (!state.handle) return openSettings();     // nothing chosen yet: the gear is where the folder is chosen
+    await saveToHandle(false);
+  }
   else await exportFile();
 }
 
 async function chooseSaveFile() {
   try {
-    const h = await window.showSaveFilePicker({ suggestedName:'ledger.json', types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
+    const h = await window.showSaveFilePicker({ suggestedName:PFILE, types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }] });
     state.handle = h; state.fileName = h.name; state.baseSavedAt = null;
+    state.dir = null; state.dirLabel = null; await kvSet('dir', null);
     await kvSet('handle', h);
     if (state.data) await saveToHandle(false); else render();
   } catch (e) { if (e.name !== 'AbortError') setMsg('Could not choose file: ' + e.message, 'err'); }
@@ -754,7 +871,25 @@ async function refreshFromFile() {   // pick up changes saved from another devic
   } catch (e) { /* ignore */ }
 }
 
+async function findInDir(ask) {          // locate this data set's file inside the chosen folder
+  const dir = state.dir; if (!dir) return false;
+  try {
+    let p = await dir.queryPermission({ mode:'readwrite' });
+    if (p !== 'granted') {
+      if (!ask) { state.needsReconnect = true; return false; }
+      p = await dir.requestPermission({ mode:'readwrite' });
+      if (p !== 'granted') return false;
+    }
+    const fh = await dir.getFileHandle(PFILE);          // throws NotFoundError when it is not there
+    state.handle = fh; state.fileName = fh.name; await kvSet('handle', fh);
+    return true;
+  } catch (e) { state.dirMissing = e.name === 'NotFoundError'; return false; }
+}
 async function reconnect() {          // needs a tap: browsers only allow the permission prompt from a click
+  if (!state.handle && state.dir) {
+    const found = await findInDir(true); state.needsReconnect = false;
+    if (!found) { setMsg(state.dirMissing ? PFILE + ' is not in the folder "' + (state.dirLabel || state.dir.name) + '" yet. Put the file there, or use Open file.' : 'Folder access was not granted.', 'warn'); return; }
+  }
   const h = state.handle;
   if (!h) return;
   try {
@@ -992,22 +1127,85 @@ function openGraph() {
 $('btnGraph').addEventListener('click', openGraph);
 $('gClose').addEventListener('click', () => $('graphDlg').close());
 
-function render() {
-  $('mode').textContent = FS
-    ? 'Folder access supported: autosaves to your chosen file every 30 s, and when you leave the page.'
-    : 'Manual mode (this browser cannot write files directly): changes are kept in the browser; use ' + SAVE_LABEL + (TOUCH ? ' to update your file.' : ', then move the downloaded ledger.json into your iCloud folder (replace the old one).');
+function whereText() {                    // where the ledger file lives, as far as the browser lets us know
+  if (FS) {
+    if (state.handle) return (state.dir ? (state.dirLabel || state.dir.name) + ' \u203a ' : '') + (state.fileName || PFILE);
+    if (state.dir) return (state.dirLabel || state.dir.name) + ' \u203a ' + PFILE + ' (not found yet)';
+    return 'No folder or file chosen yet';
+  }
+  return state.fileName ? 'Last opened: ' + state.fileName : 'No file opened yet';
+}
+function modeText() {
+  if (FS) return state.handle || state.dir
+    ? 'Saving to ' + whereText() + '. Autosaves every 30 s and when you leave the page.'
+    : 'No save location yet. Open Settings (the gear) to choose a folder.';
+  return 'Use ' + SAVE_LABEL + ' to update your file (' + PFILE + '). ' + (TOUCH
+    ? 'Pick the folder in the Files sheet, for example iCloud Drive \u203a myLedger, and choose Replace.'
+    : 'It is saved to your Downloads folder: move it to your iCloud folder and replace the old copy.');
+}
 
-  $('btnChoose').hidden = !FS;
+/* ---------- Settings ---------- */
+function fillSettings() {
+  $('sData').value = PROFILE;
+  $('sWhere').textContent = whereText();
+  $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
+  $('sFileName').textContent = PFILE;
+  $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive \u203a myLedger) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome, Edge or Brave on a Mac.';
+  $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
+  $('aboutData').textContent = 'Data set in use: ' + PROFILES[PROFILE].label + ' (' + PFILE + ').';
+  $('aboutMode').textContent = modeText();
+}
+function openSettings() { fillSettings(); $('settingsDlg').showModal(); }
+async function switchProfile(p) {
+  if (p === PROFILE || !PROFILES[p]) return;
+  state.switching = true;                       // no "unsaved changes" prompt: the draft is kept per data set
+  try { await persistDraft(); if (FS && state.handle && state.dirty) await saveToHandle(true); } catch (e) { /* draft already kept */ }
+  lsSet('myLedger.profile', p);
+  location.reload();
+}
+async function chooseFolder() {
+  try {
+    const parent = await window.showDirectoryPicker({ mode:'readwrite', id:'myledger' });
+    const name = $('sNewFolder').value.trim().replace(/[\\/:*?"<>|]/g, '-');
+    let dir = parent, label = parent.name || 'chosen folder';
+    if (name) { dir = await parent.getDirectoryHandle(name, { create:true }); label = (parent.name || 'chosen folder') + ' \u203a ' + name; }
+    let existing = null, text = '';
+    try { existing = await dir.getFileHandle(PFILE); text = await (await existing.getFile()).text(); }
+    catch (e) { if (e.name !== 'NotFoundError') throw e; }
+    let loaded = null;
+    if (text.trim()) {
+      loaded = JSON.parse(text);
+      const bad = fileProblem(loaded); if (bad) return setMsg(bad, 'err');
+      if (!confirmDiscard()) return;
+    }
+    state.dir = dir; state.dirLabel = label; await kvSet('dir', dir); lsSet('myLedger.dirLabel', label);
+    if (loaded) { state.handle = existing; await kvSet('handle', existing); adopt(loaded, existing.name); }
+    else {
+      const fh = await dir.getFileHandle(PFILE, { create:true });
+      state.handle = fh; state.fileName = fh.name; state.baseSavedAt = null; await kvSet('handle', fh);
+      if (state.data) await saveToHandle(false); else render();
+    }
+    $('sWhere').textContent = whereText(); $('sNewFolder').value = '';
+  } catch (e) { if (e.name !== 'AbortError') setMsg('Could not choose folder: ' + e.message, 'err'); }
+}
+$('btnGear').addEventListener('click', openSettings);
+$('sClose').addEventListener('click', () => $('settingsDlg').close());
+$('sData').addEventListener('change', ev => switchProfile(ev.target.value));
+$('sChooseFolder').addEventListener('click', chooseFolder);
+$('sChooseFile').addEventListener('click', async () => { await chooseSaveFile(); $('sWhere').textContent = whereText(); });
+
+function render() {
+  if ($('settingsDlg').open) fillSettings();
   $('btnAny').hidden = FS;
-  $('btnChoose').textContent = state.handle ? 'Change save file…' : 'Choose save file…';
   $('btnSave').hidden = !state.data;
   $('btnSave').textContent = SAVE_LABEL;
+  document.title = PROFILE === 'test' ? 'myLedger (test)' : 'myLedger';
 
   // banner
   const b = $('banner'); b.innerHTML = '';
   let text = null, cls = 'ok', withBtn = false;
   if (state.msg) { text = state.msg; cls = state.msgKind; withBtn = state.msgKind === 'warn'; }
-  else if (state.needsReconnect && state.handle) { text = 'Tap Reconnect to load the latest from ' + state.fileName + '.'; cls = 'warn'; }
+  else if (state.needsReconnect && (state.handle || state.dir)) { text = 'Tap Reconnect to load the latest from ' + (state.fileName || PFILE) + '.'; cls = 'warn'; }
   else if (state.data && state.dirty) {
     cls = 'warn'; withBtn = true;
     if (FS && state.handle) text = 'Unsaved changes. Autosave in progress (' + state.fileName + ').';
@@ -1021,9 +1219,9 @@ function render() {
     const s = document.createElement('span'); s.textContent = text; b.appendChild(s);
     if (withBtn) {
       const btn = document.createElement('button'); btn.className = 'primary';
-      btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose file') : SAVE_LABEL;
+      btn.textContent = FS ? (state.handle ? 'Save now' : 'Choose folder') : SAVE_LABEL;
       btn.onclick = saveNow; b.appendChild(btn);
-    } else if (!state.msg && state.needsReconnect && state.handle) {
+    } else if (!state.msg && state.needsReconnect && (state.handle || state.dir)) {
       const btn = document.createElement('button'); btn.className = 'primary';
       btn.textContent = 'Reconnect'; btn.onclick = reconnect; b.appendChild(btn);
     }
@@ -1063,7 +1261,7 @@ function renderAcctBar() {
   $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? (isLiab(cur) ? ' · warning above ' + fmt(cents(-cur.warnBelow)) + ' owing' : ' · warning below ' + fmt(cents(cur.warnBelow))) : '');
 }
 function switchAccount(id) {
-  state.accountId = id; lsSet('myLedger.account', id);
+  state.accountId = id; lsSet(ACCT_KEY, id);
   state.initialScroll = true;
   state.recon = { month:null, ticked:new Set(), stmt:'' };
   render();
@@ -1558,7 +1756,7 @@ $('acctForm').addEventListener('submit', ev => {
     if (!state.data) state.data = newData();
     const a = { id:uid(), name, type, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
     state.data.accounts.push(a);
-    state.accountId = a.id; lsSet('myLedger.account', a.id);
+    state.accountId = a.id; lsSet(ACCT_KEY, a.id);
     state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' };
   }
   closeAcct(); changed();
@@ -1708,7 +1906,6 @@ function removeChange(id, from) {
 }
 
 $('btnOpen').onclick = openFile;
-$('btnChoose').onclick = chooseSaveFile;
 $('btnAny').onclick = openAnyFile;
 $('btnSave').onclick = saveNow;
 
@@ -1720,7 +1917,7 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', flush);
 window.addEventListener('blur', flush);
-window.addEventListener('beforeunload', ev => { if (state.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+window.addEventListener('beforeunload', ev => { if (state.dirty && !state.switching) { ev.preventDefault(); ev.returnValue = ''; } });
 
 /* ---------- Startup ---------- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {      // lets the installed app open offline
@@ -1734,7 +1931,11 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     state.data = migrate(draft.data); state.dirty = !!draft.dirty; state.baseSavedAt = draft.baseSavedAt || null;
     state.fileName = draft.fileName || null; state.draftAt = draft.draftAt || null;
   }
-  if (FS) { const h = await kvGet('handle'); if (h) { state.handle = h; state.fileName = h.name; } }
+  if (FS) {
+    const h = await kvGet('handle'); if (h) { state.handle = h; state.fileName = h.name; }
+    const dir = await kvGet('dir'); if (dir) { state.dir = dir; state.dirLabel = lsGet('myLedger.dirLabel') || dir.name; }
+    if (!state.handle && state.dir) await findInDir(false);
+  }
   render();
   await refreshFromFile();
 })();
