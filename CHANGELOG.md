@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.39 (2026-10-07)
+- Transfers can now be edited fully: the edit dialog has **From / To account** drop-downs with a swap button. Changing an account moves that side of the transfer; swapping reverses the direction. The description updates to "From -> To", both accounts are recalculated, and a leg that moves accounts is unreconciled. Currency mismatch asks to confirm.
+
 ## 4.38 (2026-10-07)
 - Reports: categories are sorted A-Z (Uncategorized last), and the category column stays in place when scrolling sideways.
 

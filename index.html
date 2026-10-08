@@ -535,6 +535,17 @@
       <label for="eAmount" id="eAmtLbl">Amount</label>
       <input id="eAmount" class="money" type="text" inputmode="numeric" autocomplete="off" required>
     </div>
+    <div class="full xrow" id="eXferWrap" hidden>
+      <div>
+        <label for="eFrom">From account</label>
+        <select id="eFrom"></select>
+      </div>
+      <button type="button" class="icon" id="eSwap" title="Swap the two accounts (reverses the direction)" aria-label="Swap the two accounts"></button>
+      <div>
+        <label for="eTo">To account</label>
+        <select id="eTo"></select>
+      </div>
+    </div>
     <div class="full" id="eTextWrap">
       <label for="eText">Description</label>
       <input id="eText" type="text" maxlength="60" autocomplete="off">
@@ -630,8 +641,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.38';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 21:20';
+const APP_VERSION = '4.39';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 21:50';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2214,6 +2225,12 @@ function openEdit(ctx, o) {
   $('eAmtLbl').textContent = o.flip ? 'Amount (+ = charge, − = payment)' : 'Amount';
   $('eText').value = o.text || ''; $('eText').required = !!o.withText;
   $('eTextWrap').hidden = !o.withText;
+  $('eXferWrap').hidden = !o.xfer;
+  if (o.xfer) for (const [id, cur] of [['eFrom', o.xfer.from], ['eTo', o.xfer.to]]) {
+    const sel = $(id); sel.innerHTML = '';
+    for (const a of state.data.accounts) if (!a.closed || a.id === o.xfer.from || a.id === o.xfer.to) { const op = document.createElement('option'); op.value = a.id; op.textContent = acctLabel(a); sel.appendChild(op); }
+    sel.value = cur;
+  }
   $('eCatWrap').hidden = !o.withCat;
   if (o.withCat) syncCats($('eCat'), o.cat || '');
   $('eNote').textContent = o.note || '';
@@ -2226,9 +2243,9 @@ const otherLeg = r => r.transferId ? state.data.records.find(x => x.transferId =
 function editRecord(r) {
   const isT = !!r.transferId;
   let note = '';
-  if (isT) note = 'This is one side of a transfer. A new date or amount is applied to the matching entry in the other account too.';
+  if (isT) note = 'A transfer is one entry in each account. Changes to the date, amount or accounts are applied to both. Swapping the accounts reverses the direction.';
   if (r.reconciled || (otherLeg(r) && otherLeg(r).reconciled)) note += (note ? ' ' : '') + 'Reconciled with a statement: changing the date or amount marks it as not reconciled.';
-  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()) });
+  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()), xfer:isT && otherLeg(r) ? { from:(r.amount < 0 ? r : otherLeg(r)).accountId, to:(r.amount < 0 ? otherLeg(r) : r).accountId } : null });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
   openNew({ missed:true, title:'Add missed item', date:monthEnd(state.recon.month),
@@ -2261,14 +2278,31 @@ $('editForm').addEventListener('submit', async ev => {
     const r = state.data.records.find(x => x.id === E.id); if (!r) return;
     const text = r.transferId ? r.text : $('eText').value.trim(); if (!text) return;
     const other = otherLeg(r);
-    const newAmt = r.transferId ? (r.amount < 0 ? -Math.abs(amount) : Math.abs(amount)) : amount;
-    const moved = r.date !== date || cents(r.amount) !== cents(newAmt);
+    let newAmt = r.transferId ? (r.amount < 0 ? -Math.abs(amount) : Math.abs(amount)) : amount;
+    let xf = null;
+    if (other && !$('eXferWrap').hidden) {
+      const from = $('eFrom').value, to = $('eTo').value;
+      if (from === to) { await ask({alert:1}, 'Choose two different accounts for a transfer.'); return; }
+      const fa = acctById(from), ta = acctById(to), oldFrom = (r.amount < 0 ? r : other).accountId, oldTo = (r.amount < 0 ? other : r).accountId;
+      if ((from !== oldFrom || to !== oldTo) && fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !await ask({ok:'Continue'}, 'These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return;
+      xf = { from, to, changed: from !== oldFrom || to !== oldTo };
+      newAmt = Math.abs(amount) * (r.amount < 0 ? -1 : 1);
+    }
+    const moved = r.date !== date || cents(r.amount) !== cents(newAmt) || !!(xf && xf.changed);
     const anyRec = r.reconciled || (other && other.reconciled);
     if (anyRec && moved && !await ask({ok:'Change it'}, 'This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
     r.date = date; r.amount = newAmt; r.text = text; r.editedAt = now;
     if (!r.transferId) r.category = catValue($('eCat'));
     if (r.reconciled && moved) delete r.reconciled;
     if (other) { other.date = date; other.amount = -newAmt; other.editedAt = now; if (other.reconciled && moved) delete other.reconciled; }
+    if (xf) {
+      const neg = r.amount < 0 ? r : other, pos = r.amount < 0 ? other : r;
+      if (xf.changed) {
+        neg.accountId = xf.from; pos.accountId = xf.to;
+        for (const x of [neg, pos]) { delete x.reconciled; delete x.reconAmt; }      // a leg that moves to another account is no longer on that account's statement
+        const A = acctById(xf.from), B = acctById(xf.to); neg.text = pos.text = xferText(A, B);
+      }
+    }
   }
   closeEdit(); changed();
 });
@@ -2344,6 +2378,7 @@ $('sQ').addEventListener('input', renderSearch);
 $('sThresh').addEventListener('click', () => { state.sThresh = !state.sThresh; renderSearch(); });
 $('sScope').addEventListener('change', renderSearch);
 $('sBack').addEventListener('click', () => $('searchDlg').close());
+{ const eb = $('eSwap'); eb.appendChild(iconBtn('swap', 'Swap the two accounts', () => {}).firstChild); eb.addEventListener('click', () => { const f = $('eFrom').value; $('eFrom').value = $('eTo').value; $('eTo').value = f; }); }
 { const sb = $('xSwap'); const ib = iconBtn('swap', 'Swap the two accounts', swapAccounts); sb.appendChild(ib.firstChild); sb.addEventListener('click', swapAccounts); }
 $('xFrom').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
 $('xTo').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
