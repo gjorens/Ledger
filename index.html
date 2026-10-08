@@ -123,6 +123,9 @@
   .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
   table { border-collapse:collapse; width:100%; min-width:720px; }
   #repTable { min-width:0; }
+  #repTable th:first-child, #repTable td:first-child { position:sticky; left:0; background:var(--bg); z-index:1; box-shadow:1px 0 0 var(--line); white-space:nowrap; }
+  #repTable th:first-child { background:var(--card); z-index:3; }
+  #repTable tr.total td:first-child { background:var(--bg); }
   th, td { padding:3px 8px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
   th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--card); position:sticky; top:0; z-index:2; box-shadow:0 1px 0 var(--line); }
   tr:last-child td { border-bottom:none; }
@@ -627,8 +630,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.37';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 21:00';
+const APP_VERSION = '4.38';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 21:20';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2153,7 +2156,7 @@ function reportByCategory(recs) {
     const ym = r.date.slice(0, 7); e.byMonth.set(ym, (e.byMonth.get(ym) || 0) + c);
     m.set(k, e);
   }
-  return [...m.values()].sort((a, b) => (b.outC - a.outC) || (b.inC - a.inC) || a.cat.localeCompare(b.cat));
+  return [...m.values()].sort((a, b) => (a.cat === 'Uncategorized') - (b.cat === 'Uncategorized') || a.cat.localeCompare(b.cat));   // A-Z, Uncategorized last
 }
 function renderReport() {
   const R = state.rep, tbl = $('repTable'); tbl.innerHTML = '';

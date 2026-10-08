@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.38 (2026-10-07)
+- Reports: categories are sorted A-Z (Uncategorized last), and the category column stays in place when scrolling sideways.
+
 ## 4.37 (2026-10-07)
 - **Start a new, empty ledger** (Settings > File location): clears the open data (test or real), removes the TEST DATA stripe and opens "Create your first account". The previously open file is not touched; the new ledger saves as ledger.json.
 - Safety: saving a new ledger into a folder that already contains ledger.json now asks before replacing it.
