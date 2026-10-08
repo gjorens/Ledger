@@ -149,3 +149,10 @@ The file is re-checked every 45 s; newer saved-elsewhere versions are loaded or 
 
 ### v4.36
 Browser confirm/alert boxes replaced with in-app dialogs titled "myLedger".
+
+
+### v4.37
+Settings > File location > **Start a new, empty ledger**. Saving over an existing ledger.json in the chosen folder asks first.
+
+
+See ROADMAP.md for ideas that are not built yet.
