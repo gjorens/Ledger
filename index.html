@@ -403,6 +403,11 @@
   <div style="display:flex; justify-content:flex-end; margin-top:10px"><button type="button" id="sClose">Close</button></div>
 </dialog>
 
+<dialog id="askDlg">
+  <h3 style="margin:0 0 8px">myLedger</h3>
+  <p id="askMsg" style="white-space:pre-line; margin:0 0 14px; line-height:1.45"></p>
+  <div style="display:flex; justify-content:flex-end; gap:10px"><button type="button" id="askNo">Cancel</button><button type="button" id="askOk" class="primary">OK</button></div>
+</dialog>
 <dialog id="searchDlg" class="wide" style="max-height:92vh; overflow:auto">
   <h3 style="margin-bottom:6px">Search</h3>
   <div class="recon-top">
@@ -618,8 +623,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.35';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 20:10';
+const APP_VERSION = '4.36';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 20:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -898,7 +903,7 @@ async function saveToHandle(auto) {
           const disk = JSON.parse(t);
           if (disk.savedAt && disk.savedAt > state.baseSavedAt) {
             if (auto) { setMsg('The file on disk is newer (saved elsewhere). Tap Save now to decide.', 'warn'); return false; }
-            if (!confirm('The file was saved more recently from another device (' + fmtTime(disk.savedAt) + ').\n\nOverwrite it with this version?\n\nCancel, then use "Open file" to load the newer one.')) return false;
+            if (!await ask({ok:'Overwrite',danger:1}, 'The file was saved more recently from another device (' + fmtTime(disk.savedAt) + ').\n\nOverwrite it with this version?\n\nCancel, then use "Open file" to load the newer one.')) return false;
           }
         }
       } catch (e) { /* unreadable/empty file: proceed */ }
@@ -984,18 +989,19 @@ function adopt(d, name) {
   const st = state.data.settings;
   if (st.testData) setTest(true);                                         // the file says it is test data
   else if (name && /test/i.test(name)) {                                  // name looks like test data but the file does not say so: ask once, then record the answer in the file
-    if (confirm('"' + name + '" looks like test data.\n\nIs this test data? OK marks the file as test data (orange TEST DATA stripe) so it is never mistaken for your real ledger. Cancel treats it as your real ledger.')) {
-      st.testData = true; setTest(true); state.dirty = true;
-    } else setTest(false);
+    setTest(false);
+    ask({ ok:'Yes, test data', cancel:'No, my real ledger' }, '"' + name + '" looks like test data.\n\nIs this test data? Yes marks the file as test data (orange TEST DATA stripe) so it is never mistaken for your real ledger.').then(yes => {
+      if (yes && state.fileName === name) { state.data.settings.testData = true; setTest(true); state.dirty = true; persistDraft(); render(); }
+    });
   } else setTest(false);
   persistDraft(); render();
 }
-function confirmDiscard() {
-  return !state.dirty || confirm('You have unsaved changes. Opening a file will replace them. Continue?');
+async function confirmDiscard() {
+  return !state.dirty || await ask({ok:'Discard changes',danger:1}, 'You have unsaved changes. Opening a file will replace them. Continue?');
 }
 const ACCEPT = '.json,.txt,application/json,text/plain';
 async function openFile() {
-  if (!confirmDiscard()) return;
+  if (!await confirmDiscard()) return;
   if (FS) {
     try {
       const [h] = await window.showOpenFilePicker();   // no filter, so every file is selectable; a file that is not a ledger gets a clear message below
@@ -1010,8 +1016,8 @@ async function openFile() {
     $('fileInput').click();
   }
 }
-function openAnyFile() {                  // fallback when a ledger file is greyed out: no filter, so every file can be picked
-  if (!confirmDiscard()) return;
+async function openAnyFile() {                  // fallback when a ledger file is greyed out: no filter, so every file can be picked
+  if (!await confirmDiscard()) return;
   $('fileInput').removeAttribute('accept'); $('fileInput').click();
 }
 $('fileInput').addEventListener('change', async ev => {
@@ -1021,7 +1027,7 @@ $('fileInput').addEventListener('change', async ev => {
     const d = JSON.parse(await f.text());
     const bad = fileProblem(d);
     if (bad) return setMsg(bad, 'err');
-    if (state.data && state.baseSavedAt && d.savedAt && d.savedAt < state.baseSavedAt && !confirm('This file is OLDER than the version currently loaded.\n\nFile saved: ' + fmtTime(d.savedAt) + '\nLoaded version saved: ' + fmtTime(state.baseSavedAt) + '\n\nLoad it anyway?')) return;
+    if (state.data && state.baseSavedAt && d.savedAt && d.savedAt < state.baseSavedAt && !await ask({ok:'Load anyway'}, 'This file is OLDER than the version currently loaded.\n\nFile saved: ' + fmtTime(d.savedAt) + '\nLoaded version saved: ' + fmtTime(state.baseSavedAt) + '\n\nLoad it anyway?')) return;
     adopt(d, f.name);
   } catch (e) { setMsg('Could not read file: ' + e.message, 'err'); }
 });
@@ -1040,9 +1046,9 @@ async function refreshFromFile() {   // pick up changes saved from another devic
     state.newerDisk = d.savedAt; state.newerData = d; render();
   } catch (e) { /* ignore */ }
 }
-function loadNewerDisk() {
+async function loadNewerDisk() {
   const d = state.newerData; if (!d) return;
-  if (!confirm('Load the newer file version? Your unsaved changes here will be replaced.')) return;
+  if (!await ask({ok:'Load newer file',danger:1}, 'Load the newer file version? Your unsaved changes here will be replaced.')) return;
   state.dirty = false; state.newerDisk = null; state.newerData = null; adopt(d);
 }
 function keepMine() { state.ignoreDisk = state.newerDisk; state.newerDisk = null; state.newerData = null; render(); }
@@ -1089,7 +1095,7 @@ async function reconnect() {          // needs a tap: browsers only allow the pe
     const newer = !state.baseSavedAt || (d.savedAt && d.savedAt > state.baseSavedAt);
     if (!state.data) return adopt(d, h.name);
     if (!newer) return render();
-    if (state.dirty && !confirm('The file has newer changes, and you also have unsaved changes here.\n\nLoad the file version? Your unsaved changes here will be replaced.')) return render();
+    if (state.dirty && !await ask({ok:'Load file version',danger:1}, 'The file has newer changes, and you also have unsaved changes here.\n\nLoad the file version? Your unsaved changes here will be replaced.')) return render();
     adopt(d, h.name);
   } catch (e) { setMsg('Could not reconnect: ' + e.message, 'err'); }
 }
@@ -1214,6 +1220,23 @@ function attachSuggest(input, onPick) {
 }
 
 /* ---------- Messages & render ---------- */
+
+/* ---------- In-app confirm / alert dialogs (the browser's own boxes say "<site> says") ---------- */
+function ask(o, msg) {                 // resolves true (OK) or false (Cancel); {alert:1} shows a single OK button
+  if (globalThis.__askHook) return Promise.resolve(globalThis.__askHook(msg, o));
+  return new Promise(res => {
+    const dlg = $('askDlg');
+    $('askMsg').textContent = msg;
+    const ok = $('askOk'), no = $('askNo');
+    ok.textContent = o.alert ? 'OK' : (o.ok || 'OK'); ok.className = o.danger ? 'danger' : 'primary';
+    no.textContent = o.cancel || 'Cancel'; no.hidden = !!o.alert;
+    let done = false;
+    const fin = v => { if (done) return; done = true; ok.onclick = no.onclick = null; dlg.onclose = null; if (dlg.open) dlg.close(); res(v); };
+    ok.onclick = () => fin(true); no.onclick = () => fin(false); dlg.onclose = () => fin(false);
+    dlg.showModal(); (o.danger ? no : ok).focus();
+  });
+}
+
 function setMsg(m, kind) { state.msg = m; state.msgKind = kind || 'err'; render(); }
 
 /* ---------- Low-balance warning ---------- */
@@ -1376,24 +1399,24 @@ function renderCatSettings() {
     row.appendChild(nm); row.appendChild(btns); box.appendChild(row);
   });
 }
-function addCategory() {
+async function addCategory() {
   const n = $('sCatNew').value.trim(); if (!n || !state.data) return;
-  if (state.data.categories.some(c => c.toLowerCase() === n.toLowerCase())) { alert('That category already exists.'); return; }
+  if (state.data.categories.some(c => c.toLowerCase() === n.toLowerCase())) { await ask({alert:1}, 'That category already exists.'); return; }
   state.data.categories.push(n); $('sCatNew').value = ''; changed();
 }
-function renameCategory(old) {
+async function renameCategory(old) {
   const n = (prompt('Rename category "' + old + '" to:', old) || '').trim();
   if (!n || n === old) return;
   const d = state.data, dup = d.categories.find(c => c.toLowerCase() === n.toLowerCase() && c !== old);
   if (dup) {
-    if (!confirm('"' + dup + '" already exists. Merge "' + old + '" into it? Everything using "' + old + '" will move to "' + dup + '".')) return;
+    if (!await ask({ok:'Merge'}, '"' + dup + '" already exists. Merge "' + old + '" into it? Everything using "' + old + '" will move to "' + dup + '".')) return;
     reassignCategory(old, dup); d.categories = d.categories.filter(c => c !== old);
   } else { reassignCategory(old, n); d.categories = d.categories.map(c => c === old ? n : c); }
   changed();
 }
-function deleteCategory(name) {
+async function deleteCategory(name) {
   const n = catUsage().get(name) || 0;
-  if (!confirm('Delete the category "' + name + '"?' + (n ? '\n\n' + n + ' entr' + (n === 1 ? 'y' : 'ies') + ' or recurring item' + (n === 1 ? '' : 's') + ' use it and will become uncategorised.' : ''))) return;
+  if (!await ask({ok:'Delete',danger:1}, 'Delete the category "' + name + '"?' + (n ? '\n\n' + n + ' entr' + (n === 1 ? 'y' : 'ies') + ' or recurring item' + (n === 1 ? '' : 's') + ' use it and will become uncategorised.' : ''))) return;
   reassignCategory(name, ''); state.data.categories = state.data.categories.filter(c => c !== name);
   changed();
 }
@@ -1520,13 +1543,13 @@ async function saveArchiveFile(arch, name) {     // returns true only when the f
   let shared = false;
   if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) { try { await navigator.share({ files:[file] }); shared = true; } catch (e) { if (e.name === 'AbortError') return false; } }
   if (!shared) { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
-  return confirm('Was the archive file "' + name + '" saved?\n\nOK removes those entries from your ledger. Cancel keeps them (nothing changes).');
+  return await ask({ok:'Yes, it was saved',cancel:'No'}, 'Was the archive file "' + name + '" saved?\n\nOK removes those entries from your ledger. Cancel keeps them (nothing changes).');
 }
 async function runArchive() {
   const month = $('arMonth').value; if (!month) return;
   const plan = archivePlan(month); if (!plan.count) return;
-  if (state.dirty && !FS && !confirm('You have unsaved changes. Save your ledger file after archiving, so the ledger and the archive stay in step. Continue?')) return;
-  if (!confirm('Move ' + plan.count + ' reconciled entr' + (plan.count === 1 ? 'y' : 'ies') + ' (through ' + monthLabel(month) + ') out of your ledger into an archive file?\n\nBalances do not change. Keep the archive file safe: it is the only copy of those entries.')) return;
+  if (state.dirty && !FS && !await ask({ok:'Continue'}, 'You have unsaved changes. Save your ledger file after archiving, so the ledger and the archive stay in step. Continue?')) return;
+  if (!await ask({ok:'Archive'}, 'Move ' + plan.count + ' reconciled entr' + (plan.count === 1 ? 'y' : 'ies') + ' (through ' + monthLabel(month) + ') out of your ledger into an archive file?\n\nBalances do not change. Keep the archive file safe: it is the only copy of those entries.')) return;
   const name = archiveName(month), arch = buildArchive(month, plan);
   if (!await saveArchiveFile(arch, name)) return;
   const d = state.data;
@@ -1615,7 +1638,7 @@ async function chooseFolder() {
     if (text.trim()) {
       loaded = JSON.parse(text);
       const bad = fileProblem(loaded); if (bad) return setMsg(bad, 'err');
-      if (!confirmDiscard()) return;
+      if (!await confirmDiscard()) return;
     }
     state.dir = dir; state.dirLabel = label; await kvSet('dir', dir); lsSet('myLedger.dirLabel', label);
     if (loaded) { state.handle = existing; await kvSet('handle', existing); adopt(loaded, existing.name); }
@@ -2060,22 +2083,22 @@ function updateReconSummary() {
   line((isLiab(acct()) ? 'Ledger amount owing at ' : 'Ledger balance at ') + fmtDate(monthEnd(state.recon.month)), dmoney(S.ledgerEnd));
 }
 
-function finishRecon() {
+async function finishRecon() {
   const R = state.recon, d = state.data, a = acct(), key = a.id + '|' + R.month;
   if (d.reconciliations[key]) return;
   const S = reconSums(reconItems());
-  if (S.diff === null) { alert('Enter the closing balance from your bank statement first.'); return; }
-  if (!S.ticked.length) { alert('Tick the items that appear on the statement first.'); return; }
-  if (S.diff !== 0 && !confirm('There is still a difference of ' + dfmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
+  if (S.diff === null) { await ask({alert:1}, 'Enter the closing balance from your bank statement first.'); return; }
+  if (!S.ticked.length) { await ask({alert:1}, 'Tick the items that appear on the statement first.'); return; }
+  if (S.diff !== 0 && !await ask({ok:'Reconcile anyway'}, 'There is still a difference of ' + dfmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
   for (const r of S.ticked) { r.reconciled = R.month; r.reconAmt = cents(r.amount); }
   for (const r of S.rest) delete r.reconAmt;      // not on the statement, so counted in full again
   d.reconciliations[key] = { accountId:a.id, month:R.month, statementBalance:S.stmtCents / 100, difference:S.diff / 100, itemCount:S.ticked.length, completedAt:new Date().toISOString() };
   R.ticked.clear(); R.stmt = '';
   changed();
 }
-function reopenMonth(month) {
+async function reopenMonth(month) {
   const a = acct();
-  if (!confirm('Undo the reconciliation of ' + monthLabel(month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
+  if (!await ask({ok:'Undo reconciliation',danger:1}, 'Undo the reconciliation of ' + monthLabel(month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
   for (const r of state.data.records) if (r.accountId === a.id && r.reconciled === month) { delete r.reconciled; delete r.reconAmt; }
   delete state.data.reconciliations[a.id + '|' + month];
   changed();
@@ -2196,7 +2219,7 @@ function chgRule(id) {
   openEdit({ kind:'chg', ruleId:id }, { title:'Change amount: ' + u.text, date:t, flip:!u.transferTo && isLiab(acctById(u.accountId)), amount:u.transferTo ? Math.abs(estimateFor(u, t)) : estimateFor(u, t),
     note:'From this date on, each projected occurrence uses the new estimate. Occurrences you have already confirmed keep their confirmed amount.', save:'Schedule change' });
 }
-$('editForm').addEventListener('submit', ev => {
+$('editForm').addEventListener('submit', async ev => {
   ev.preventDefault();
   const E = state.edit; if (!E) return;
   const date = $('eDate').value, amount = parseFloat($('eAmount').value) * (state.editFlip ? -1 : 1);
@@ -2216,7 +2239,7 @@ $('editForm').addEventListener('submit', ev => {
     const newAmt = r.transferId ? (r.amount < 0 ? -Math.abs(amount) : Math.abs(amount)) : amount;
     const moved = r.date !== date || cents(r.amount) !== cents(newAmt);
     const anyRec = r.reconciled || (other && other.reconciled);
-    if (anyRec && moved && !confirm('This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
+    if (anyRec && moved && !await ask({ok:'Change it'}, 'This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
     r.date = date; r.amount = newAmt; r.text = text; r.editedAt = now;
     if (!r.transferId) r.category = catValue($('eCat'));
     if (r.reconciled && moved) delete r.reconciled;
@@ -2313,16 +2336,16 @@ attachSuggest($('text'), s => {
 });
 attachSuggest($('eText'));
 
-$('newForm').addEventListener('submit', ev => {
+$('newForm').addEventListener('submit', async ev => {
   ev.preventDefault();
   const amountRaw = parseFloat($('amount').value), text = $('text').value.trim(), date = $('date').value, type = $('type').value, freq = $('rFreq').value;
   if (!isFinite(amountRaw) || !date) return;
   const X = type === 'transfer', ctx = state.newCtx || {};
   const amount = X ? Math.abs(amountRaw) : amountRaw * sgn(acct());      // on a card, + means a charge, stored as money out
   const from = X ? $('xFrom').value : state.accountId, to = X ? $('xTo').value : null;
-  if (X && from === to) { alert('Choose two different accounts for a transfer.'); return; }
+  if (X && from === to) { await ask({alert:1}, 'Choose two different accounts for a transfer.'); return; }
   if (X && !Math.abs(amount)) return;
-  if (X) { const fa = acctById(from), ta = acctById(to); if (fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !confirm('These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return; }
+  if (X) { const fa = acctById(from), ta = acctById(to); if (fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !await ask({ok:'Continue'}, 'These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return; }
   if (!X && !text) return;
   const now = new Date().toISOString(), A = X ? acctById(from) : null, B = X ? acctById(to) : null;
   if (freq === 'once') {
@@ -2337,7 +2360,7 @@ $('newForm').addEventListener('submit', ev => {
     }
   } else {                                   // repeating: stored as a recurring item, projected until posted
     const endDate = $('rEnd').value || null;
-    if (endDate && endDate < date) { alert('The last date must be on or after the first date.'); return; }
+    if (endDate && endDate < date) { await ask({alert:1}, 'The last date must be on or after the first date.'); return; }
     const rule = { id:uid(), accountId:from, text: X ? xferText(A, B) : text, autoText: X, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
     if (X) rule.transferTo = to;
     state.data.recurring.push(rule);
@@ -2363,24 +2386,24 @@ $('pView').addEventListener('change', ev => { state.rep.view = ev.target.value; 
 $('pFrom').addEventListener('change', ev => { state.rep.from = ev.target.value; renderReport(); });
 $('pTo').addEventListener('change', ev => { state.rep.to = ev.target.value; renderReport(); });
 
-function unpostRecord(id) {              // undo a Post: the entry is removed and the occurrence comes back as a projection
+async function unpostRecord(id) {              // undo a Post: the entry is removed and the occurrence comes back as a projection
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted || !r.recurringId) return;
   const other = otherLeg(r);
   const msg = 'Unpost "' + r.text + '" on ' + fmtDate(r.date) + '? It goes back to the projected list' + (other ? ' (both sides of the transfer)' : '') + ' and balances adjust.';
-  if (!confirm(msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  if (!await ask({ok:'Unpost'}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
   const now = new Date().toISOString();
   for (const x of [r, other]) if (x && !x.deleted) { x.deleted = true; x.deletedAt = now; x.unposted = true; }
   changed();
 }
-function deleteRecord(id) {
+async function deleteRecord(id) {
   const r = state.data.records.find(x => x.id === id);
   if (!r || r.deleted) return;
   const other = otherLeg(r);
   const msg = other
     ? 'Delete this transfer? Both sides (here and in ' + acctLabel(acctById(other.accountId)) + ') stay in the file marked as deleted, and balances adjust.'
     : 'Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.';
-  if (!confirm(msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  if (!await ask({ok:'Delete',danger:1}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
   const now = new Date().toISOString();
   r.deleted = true; r.deletedAt = now;
   if (other && !other.deleted) { other.deleted = true; other.deletedAt = now; }
@@ -2427,33 +2450,33 @@ $('postForm').addEventListener('submit', ev => {
   changed();
 });
 $('postCancel').addEventListener('click', () => { postCtx = null; $('postDlg').close(); });
-function skipOcc(it) {
+async function skipOcc(it) {
   const u = ruleById(it.ruleId);
   if (!u) return;
-  if (!confirm('Skip "' + u.text + '" on ' + fmtDate(it.date) + '? It will not be posted or projected.')) return;
+  if (!await ask({ok:'Skip'}, 'Skip "' + u.text + '" on ' + fmtDate(it.date) + '? It will not be posted or projected.')) return;
   u.skipped = (u.skipped || []).concat(it.orig);
   delete u.overrides[it.orig];
   changed();
 }
-function postAllDue() {
+async function postAllDue() {
   const A = computeActual(), P = computeProjected(A.final);
   const due = P.rows.filter(x => x.it.due).map(x => x.it);
   if (!due.length) return;
   const est = due.filter(x => !x.confirmed).length;
-  if (!confirm('Post ' + due.length + ' due item' + (due.length > 1 ? 's' : '') + ' at their scheduled amounts?' + (est ? '\n\n' + est + ' of them still use the estimated amount.' : ''))) return;
+  if (!await ask({ok:'Post'}, 'Post ' + due.length + ' due item' + (due.length > 1 ? 's' : '') + ' at their scheduled amounts?' + (est ? '\n\n' + est + ' of them still use the estimated amount.' : ''))) return;
   for (const it of due) postRecord(ruleById(it.ruleId), it.orig, it.date, it.amount);
   changed();
 }
-function stopRule(id) {
+async function stopRule(id) {
   const u = ruleById(id);
   if (!u) return;
-  if (!confirm('Stop "' + u.text + '"? Entries already posted stay; no more will be projected.')) return;
+  if (!await ask({ok:'Stop',danger:1}, 'Stop "' + u.text + '"? Entries already posted stay; no more will be projected.')) return;
   u.deleted = true; u.deletedAt = new Date().toISOString();
   changed();
 }
-function removeChange(id, from) {
+async function removeChange(id, from) {
   const u = ruleById(id);
-  if (!u || !confirm('Remove the scheduled change from ' + fmtDate(from) + '?')) return;
+  if (!u || !await ask({ok:'Remove',danger:1}, 'Remove the scheduled change from ' + fmtDate(from) + '?')) return;
   u.changes = (u.changes || []).filter(c => c.from !== from);
   changed();
 }

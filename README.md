@@ -145,3 +145,7 @@ Search has a **Show items exceeding threshold** button (items after which the ba
 
 ### v4.35
 The file is re-checked every 45 s; newer saved-elsewhere versions are loaded or offered via a banner. Opening an older file than the loaded one asks first.
+
+
+### v4.36
+Browser confirm/alert boxes replaced with in-app dialogs titled "myLedger".

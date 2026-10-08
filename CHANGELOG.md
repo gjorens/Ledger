@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.36 (2026-10-07)
+- Confirmations and alerts are now myLedger's own dialogs (titled "myLedger", with action-specific buttons such as Delete / Undo reconciliation, red for destructive ones) instead of the browser's "gjorens.github.io says" boxes.
+
 ## 4.35 (2026-10-07)
 - The app now checks the file every 45 seconds while open (as well as when you return to it). A newer version saved elsewhere loads automatically if you have no unsaved changes; otherwise a banner offers **Load newer file** or **Keep my version**.
 - Brave / Safari (no direct file link): opening a file that is older than the version already loaded asks for confirmation.
