@@ -303,6 +303,9 @@
       </div>
       <p class="small" style="margin:6px 0 0">Browsers only tell the app the name of the folder you chose, not its full path.</p>
     </div>
+    <div class="boxhead" style="margin-top:12px">Start a new ledger</div>
+    <p class="small" style="margin:0 0 6px">Begin an empty ledger (for example your first real one after trying the test data). The file you have open now is not changed or deleted. The new ledger is saved as <b>ledger.json</b>.</p>
+    <button id="sNewLedger" type="button">Start a new, empty ledger…</button>
     <div id="sManualBlock" hidden>
       <p class="small" style="margin:0 0 6px" id="sManualText"></p>
     </div>
@@ -369,6 +372,7 @@
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
+        <li><b>Starting your real ledger:</b> Settings > File location > Start a new, empty ledger. The test file is left as it is; the new ledger saves as ledger.json.</li>
         <li><b>Search</b> (magnifier next to New item) lists matching entries by description, category, amount, date or account (this account or all). The target button on a result scrolls the ledger to that entry and flashes it; <b>Back to ledger</b> closes without moving. <b>Show items exceeding threshold</b> lists every item after which the balance is below the warning level (below zero if none is set). Negative amounts are red. Month bars in the list make it easier to find your place.</li>
         <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
@@ -623,8 +627,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.36';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 20:40';
+const APP_VERSION = '4.37';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-07 21:00';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -960,6 +964,8 @@ async function saveNow() {
     if (!state.handle && state.dir) {            // a folder is chosen but this data set's file is not there yet: create it
       try {
         if (await state.dir.requestPermission({ mode:'readwrite' }) !== 'granted') return;
+        let exists = true; try { await state.dir.getFileHandle(PFILE); } catch (e) { if (e.name === 'NotFoundError') exists = false; else throw e; }
+        if (exists && !await ask({ ok:'Replace it', danger:1 }, PFILE + ' already exists in your folder.\n\nSaving now would REPLACE it with this ledger. Use Open file first if you meant to continue with the existing one.')) return;
         state.handle = await state.dir.getFileHandle(PFILE, { create:true }); state.fileName = PFILE; state.baseSavedAt = null; await kvSet('handle', state.handle);
       } catch (e) { return setMsg('Could not create ' + PFILE + ': ' + e.message, 'err'); }
     }
@@ -967,6 +973,21 @@ async function saveNow() {
     await saveToHandle(false);
   }
   else await exportFile();
+}
+
+
+async function startNewLedger() {
+  if (!await confirmDiscard()) return;
+  const cur = state.fileName ? '"' + state.fileName + '"' : 'The current ledger';
+  if (!await ask({ ok:'Start new ledger', cancel:'Cancel' }, 'Start a new, empty ledger?\n\n' + cur + ' is not changed or deleted; it just stops being the open file. You will create your first account next, and the new ledger is saved as ledger.json.')) return;
+  $('settingsDlg').close();
+  state.data = newData(); state.dirty = false; state.msg = null; state.baseSavedAt = null; state.draftAt = null;
+  state.handle = null; state.fileName = null; state.accountId = null; state.newerDisk = null; state.newerData = null;
+  state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' }; state.prevLows = null;
+  setTest(false);
+  if (FS) await kvSet('handle', null);
+  await persistDraft(); render();
+  openAcct(null);
 }
 
 async function chooseSaveFile() {
@@ -1661,6 +1682,7 @@ $('avClose').addEventListener('click', () => $('archDlg').close());
 $('btnGear').addEventListener('click', openSettings);
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
 $('sChooseFolder').addEventListener('click', chooseFolder);
+$('sNewLedger').addEventListener('click', startNewLedger);
 $('sOpenFile').addEventListener('click', async () => { $('settingsDlg').close(); await openFile(); });
 $('sChooseFile').addEventListener('click', async () => { await chooseSaveFile(); $('sWhere').textContent = whereText(); });
 

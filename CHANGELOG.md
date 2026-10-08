@@ -4,6 +4,10 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.37 (2026-10-07)
+- **Start a new, empty ledger** (Settings > File location): clears the open data (test or real), removes the TEST DATA stripe and opens "Create your first account". The previously open file is not touched; the new ledger saves as ledger.json.
+- Safety: saving a new ledger into a folder that already contains ledger.json now asks before replacing it.
+
 ## 4.36 (2026-10-07)
 - Confirmations and alerts are now myLedger's own dialogs (titled "myLedger", with action-specific buttons such as Delete / Undo reconciliation, red for destructive ones) instead of the browser's "gjorens.github.io says" boxes.
 
