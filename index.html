@@ -317,7 +317,7 @@
 
   <details class="sset">
     <summary>Display</summary>
-    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:8px; cursor:pointer"><input type="checkbox" id="sShowDel" style="width:auto; margin-top:3px"><span>Show deleted entries in the transaction list and in search<br><span class="small">Deleted entries stay in the file so they can be restored. Turn this on to see them (struck through, with a restore button). They never count toward balances either way.</span></span></label>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:8px; cursor:pointer"><input type="checkbox" id="sShowDel" style="width:24px; height:24px; min-width:24px; margin:0; accent-color:var(--accent)"><span>Show deleted entries in the transaction list and in search<br><span class="small">Deleted entries stay in the file so they can be restored. Turn this on to see them (struck through, with a restore button). They never count toward balances either way.</span></span></label>
   </details>
 
   <details class="sset">
@@ -700,8 +700,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.48';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 01:30';
+const APP_VERSION = '4.49';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 01:45';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };

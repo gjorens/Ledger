@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.49 (2026-10-09)
+- Larger checkbox for the Show deleted entries setting.
+
 ## 4.48 (2026-10-09)
 - Deleted entries are now hidden from the transaction list and search by default. **Settings > Display > Show deleted entries** shows them again (struck through, with the restore button). Saved in the file; balances are unaffected either way.
 
