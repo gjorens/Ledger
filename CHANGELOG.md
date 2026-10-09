@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.53 (2026-10-09)
+- An entry you have already made can now become a repeating item: open Edit on it and choose **Repeats** (and an optional last date). The entry stays as the first occurrence and the following ones are projected. Works for transfers too.
+
 ## 4.52 (2026-10-09)
 - Settings window now uses the full width of the screen, has an X button at the top (stays visible while scrolling), and opening a section closes the others.
 

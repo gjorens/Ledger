@@ -572,6 +572,23 @@
       <label for="eCat">Category</label>
       <select id="eCat"></select>
     </div>
+    <div class="full xrow" id="eRepWrap" hidden>
+      <div>
+        <label for="eRep">Repeats</label>
+        <select id="eRep">
+          <option value="once" selected>Does not repeat</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Every 3 months</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <div>
+        <label for="eRepEnd">Last date (optional)</label>
+        <input id="eRepEnd" type="date">
+      </div>
+    </div>
     <p class="small full" id="eNote" style="margin:0"></p>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
       <button type="button" id="eRevert" class="danger">Back to regular estimate</button>
@@ -705,8 +722,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.52';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 10:50';
+const APP_VERSION = '4.53';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 11:15';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2404,6 +2421,7 @@ function openEdit(ctx, o) {
     for (const a of state.data.accounts) if (!a.closed || a.id === o.xfer.from || a.id === o.xfer.to) { const op = document.createElement('option'); op.value = a.id; op.textContent = acctLabel(a); sel.appendChild(op); }
     sel.value = cur;
   }
+  $('eRepWrap').hidden = !o.canRepeat; $('eRep').value = 'once'; $('eRepEnd').value = '';
   $('eCatWrap').hidden = !o.withCat;
   if (o.withCat) syncCats($('eCat'), o.cat || '');
   $('eNote').textContent = o.note || '';
@@ -2418,7 +2436,7 @@ function editRecord(r) {
   let note = '';
   if (isT) note = 'A transfer is one entry in each account. Changes to the date, amount or accounts are applied to both. Swapping the accounts reverses the direction.';
   if (r.reconciled || (otherLeg(r) && otherLeg(r).reconciled)) note += (note ? ' ' : '') + 'Reconciled with a statement: changing the date or amount marks it as not reconciled.';
-  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()), xfer:isT && otherLeg(r) ? { from:(r.amount < 0 ? r : otherLeg(r)).accountId, to:(r.amount < 0 ? otherLeg(r) : r).accountId } : null });
+  openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', canRepeat:!r.recurringId, withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()), xfer:isT && otherLeg(r) ? { from:(r.amount < 0 ? r : otherLeg(r)).accountId, to:(r.amount < 0 ? otherLeg(r) : r).accountId } : null });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
   openNew({ missed:true, title:'Add missed item', date:monthEnd(state.recon.month),
@@ -2463,6 +2481,7 @@ $('editForm').addEventListener('submit', async ev => {
       newAmt = Math.abs(amount) * (r.amount < 0 ? -1 : 1);
     }
     if (!r.transferId) { const nc = catValue($('eCat')); if ((cents(newAmt) !== cents(r.amount) || nc !== (r.category || '')) && !await amountSane(nc, newAmt)) return; }
+    if (!$('eRepWrap').hidden && $('eRep').value !== 'once' && $('eRepEnd').value && $('eRepEnd').value < date) { await ask({alert:1}, 'The last date must be on or after the first date.'); return; }
     const moved = r.date !== date || cents(r.amount) !== cents(newAmt) || !!(xf && xf.changed);
     const anyRec = r.reconciled || (other && other.reconciled);
     if (anyRec && moved && !await ask({ok:'Change it'}, 'This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
@@ -2478,6 +2497,14 @@ $('editForm').addEventListener('submit', async ev => {
         const A = acctById(xf.from), B = acctById(xf.to); neg.text = pos.text = xferText(A, B);
       }
     }
+    const freq = $('eRepWrap').hidden ? 'once' : $('eRep').value;
+    if (freq !== 'once') {                                 // this entry becomes the first posted occurrence of a new repeating item
+      const neg = other ? (r.amount < 0 ? r : other) : r, pos = other ? (r.amount < 0 ? other : r) : null;
+      const rule = { id:uid(), accountId:neg.accountId, text:r.text, autoText:!!other, category:other ? '' : (r.category || ''), amount:other ? -Math.abs(r.amount) : r.amount, frequency:freq, startDate:date, endDate:$('eRepEnd').value || null, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
+      if (pos) rule.transferTo = pos.accountId;
+      state.data.recurring.push(rule);
+      for (const x of [r, other]) if (x) { x.recurringId = rule.id; x.recurringDate = date; }
+    }
   }
   closeEdit(); changed();
 });
@@ -2487,6 +2514,7 @@ $('eRevert').addEventListener('click', () => {
   closeEdit(); changed();
 });
 $('eCancel').addEventListener('click', closeEdit);
+$('eDate').addEventListener('change', () => { $('eRepEnd').min = $('eDate').value || ''; });
 $('editDlg').addEventListener('close', () => { state.edit = null; });
 
 /* ---------- Account dialog ---------- */
