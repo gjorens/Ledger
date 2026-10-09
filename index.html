@@ -366,7 +366,7 @@
         <li><b>Repeats:</b> choose weekly, every 2 weeks, monthly, every 3 months or yearly to make a recurring item. The amount is then an estimate.</li>
         <li><b>Amounts:</b> type digits only; the decimal point is fixed (1 2 5 0 gives 12.50). The <b>±</b> button, or typing a minus sign, switches between money in and money out. On a credit card or loan, + means a charge and − means a payment.</li>
         <li>Start typing a description to pick an earlier one; its category and amount are filled in.</li>
-        <li><b>Add another</b> keeps the window open and the date unchanged, which is handy for entering a statement.</li>
+        <li><b>Add another</b> keeps the window open and the date unchanged, which is handy for entering a statement. "Repeats" goes back to "Does not repeat". If an amount looks the wrong way round for its category (money in for an expense, money out for income) you are asked to confirm.</li>
       </ul>
       <h4>The transaction list</h4>
       <ul>
@@ -641,8 +641,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.39';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-07 21:50';
+const APP_VERSION = '4.41';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 22:20';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1168,11 +1168,12 @@ function onCatChange(sel) {
 const catValue = sel => (sel.value === NEWCAT ? '' : sel.value);
 
 /* ---------- Amount boxes: digits only, decimal point fixed (typing 1 2 5 0 gives 12.50; use ± for negative) ---------- */
-function moneyFormat(raw) {
+function moneyFormat(raw, deleting) {
   raw = String(raw == null ? '' : raw);
   const neg = ((raw.match(/[-\u2212]/g) || []).length % 2) === 1;     // each minus typed flips the sign
-  const digits = raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 12);
-  if (!digits) return neg ? '-' : '';
+  const all = raw.replace(/\D/g, '');
+  const digits = all.replace(/^0+/, '').slice(0, 12);
+  if (!digits) return all && !deleting ? (neg ? '-' : '') + '0.00' : (neg ? '-' : '');   // typing 0 gives 0.00 (a zero amount is allowed); deleting back to nothing empties the box
   const p = digits.padStart(3, '0');
   return (neg ? '-' : '') + p.slice(0, -2) + '.' + p.slice(-2);
 }
@@ -1185,9 +1186,9 @@ function setMoney(el, v) {
   el.value = isFinite(n) ? (n < 0 ? '-' : '') + Math.abs(n).toFixed(2) : '';
 }
 function attachMoney(el) {
-  el.addEventListener('input', () => {
+  el.addEventListener('input', ev => {
     if (el.dataset.noNeg) el.value = el.value.replace(/[-\u2212]/g, '');           // transfers take positive amounts only
-    const f = moneyFormat(el.value);
+    const f = moneyFormat(el.value, ev && ev.inputType && ev.inputType.startsWith('delete'));
     if (el.value !== f) el.value = f;
     try { el.setSelectionRange(f.length, f.length); } catch (e) { /* ignore */ }
   });
@@ -1847,6 +1848,18 @@ function syncXferText() {                 // the description of a transfer is al
 function swapAccounts() {
   const f = $('xFrom').value; $('xFrom').value = $('xTo').value; $('xTo').value = f; syncXferText();
 }
+
+/* ---------- Reasonableness check: an income category should be money in, an expense category money out ---------- */
+const INCOME_CAT = /^(income|salary|payroll|wages?|refunds?|interest|dividends?|deposits?|rebates?|reimbursements?)/i;
+const NEUTRAL_CAT = /^(other|gifts?)$/i;                  // can go either way: never questioned
+async function amountSane(cat, amt) {                     // amt as stored: positive = money in, negative = money out
+  if (!cat || !amt || NEUTRAL_CAT.test(cat)) return true;
+  const inc = INCOME_CAT.test(cat);
+  if (inc && amt < 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is an income category, but this amount is money going OUT (' + fmt(cents(Math.abs(amt))) + ').\n\nIs that right?');
+  if (!inc && amt > 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is an expense category, but this amount is money coming IN (' + fmt(cents(amt)) + ').\n\nIs that right? (For example a refund.)');
+  return true;
+}
+
 function applyTypeUI() {
   const t = $('type').value === 'transfer';
   $('catWrap').hidden = t;
@@ -2288,6 +2301,7 @@ $('editForm').addEventListener('submit', async ev => {
       xf = { from, to, changed: from !== oldFrom || to !== oldTo };
       newAmt = Math.abs(amount) * (r.amount < 0 ? -1 : 1);
     }
+    if (!r.transferId) { const nc = catValue($('eCat')); if ((cents(newAmt) !== cents(r.amount) || nc !== (r.category || '')) && !await amountSane(nc, newAmt)) return; }
     const moved = r.date !== date || cents(r.amount) !== cents(newAmt) || !!(xf && xf.changed);
     const anyRec = r.reconciled || (other && other.reconciled);
     if (anyRec && moved && !await ask({ok:'Change it'}, 'This entry was reconciled with a statement.\n\nChange it anyway? It will be marked as not reconciled.')) return;
@@ -2407,6 +2421,7 @@ $('newForm').addEventListener('submit', async ev => {
   if (X && !Math.abs(amount)) return;
   if (X) { const fa = acctById(from), ta = acctById(to); if (fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !await ask({ok:'Continue'}, 'These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return; }
   if (!X && !text) return;
+  if (!X && !await amountSane(catValue($('cat')), amount)) return;
   const now = new Date().toISOString(), A = X ? acctById(from) : null, B = X ? acctById(to) : null;
   if (freq === 'once') {
     if (X) {                                 // two offsetting entries, one in each account
@@ -2425,7 +2440,7 @@ $('newForm').addEventListener('submit', async ev => {
     if (X) rule.transferTo = to;
     state.data.recurring.push(rule);
   }
-  if (ev.submitter && ev.submitter.id === 'nAgain' && !ctx.missed) { $('amount').value = ''; if ($('type').value !== 'transfer') $('text').value = ''; $('amount').focus(); }   // the date stays, handy when entering a statement
+  if (ev.submitter && ev.submitter.id === 'nAgain' && !ctx.missed) { $('amount').value = ''; if ($('type').value !== 'transfer') $('text').value = ''; $('rFreq').value = 'once'; $('rEnd').value = ''; applyTypeUI(); $('amount').focus(); }   // the date stays, handy when entering a statement
   else $('newDlg').close();
   changed();
 });

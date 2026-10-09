@@ -4,6 +4,13 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.41 (2026-10-08)
+- **Add another** now resets "Repeats" to "Does not repeat" (and clears the last date), so a repeating item is not repeated by accident.
+- Reasonableness check on amounts: an expense category with money coming in, or an income category (Income, Salary, Refund, Interest, ...) with money going out, asks "Is that right?" before saving. Applies to new items and to edits that change the amount or category. "Other" and "Gifts" are never questioned; transfers are not checked.
+
+## 4.40 (2026-10-08)
+- Amount boxes accept zero: typing 0 gives 0.00 (for example a zero opening balance on a new account). Backspacing a zero amount clears the box.
+
 ## 4.39 (2026-10-07)
 - Transfers can now be edited fully: the edit dialog has **From / To account** drop-downs with a swap button. Changing an account moves that side of the transfer; swapping reverses the direction. The description updates to "From -> To", both accounts are recalculated, and a leg that moves accounts is unreconciled. Currency mismatch asks to confirm.
 
