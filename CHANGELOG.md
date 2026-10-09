@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.45 (2026-10-09)
+- **Change one occurrence only**: the pencil on a projected row now opens "Edit this occurrence" with a choice: *My estimate (this month only)*, for budgeting something you do not know exactly yet (shows as an estimate, other months keep the regular estimate), or *Confirmed by the biller* (shows in bold). "Back to regular estimate" removes the change. To change every following month, use the calendar icon in Recurring items.
+
 ## 4.44 (2026-10-08)
 - Each category now has a **type**: Money in, Money out or Either, set with a drop-down on every row in Settings > Categories (saved in the file). The "Is that right?" amount check follows it.
 - Default types are guessed from the name; names containing "tax" (such as Income Tax) are money out. Renaming a category keeps its type; deleting removes it.

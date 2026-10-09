@@ -372,7 +372,7 @@
       <ul>
         <li>Sorted by date, then credits before debits, then description. The list opens at your latest past transaction.</li>
         <li><b>Edit</b> changes any entry. <b>Delete</b> marks it deleted: it stays in the file but no longer counts.</li>
-        <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to enter the amount the biller confirmed; it then shows in <b>bold</b>.</li>
+        <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to change that one occurrence only: enter your own estimate (for example a big purchase coming up) or the amount the biller confirmed, which then shows in <b>bold</b>. The other months keep the regular estimate. To change every following month use the calendar icon in Recurring items.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
         <li><b>Starting your real ledger:</b> Settings > File location > Start a new, empty ledger. The test file is left as it is; the new ledger saves as ledger.json.</li>
@@ -546,6 +546,13 @@
         <select id="eTo"></select>
       </div>
     </div>
+    <div class="full" id="eKindWrap" hidden>
+      <label for="eKind">This amount is</label>
+      <select id="eKind">
+        <option value="est">My estimate (this month only)</option>
+        <option value="conf">Confirmed by the biller</option>
+      </select>
+    </div>
     <div class="full" id="eTextWrap">
       <label for="eText">Description</label>
       <input id="eText" type="text" maxlength="60" autocomplete="off">
@@ -556,7 +563,7 @@
     </div>
     <p class="small full" id="eNote" style="margin:0"></p>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
-      <button type="button" id="eRevert" class="danger">Revert to estimate</button>
+      <button type="button" id="eRevert" class="danger">Back to regular estimate</button>
       <button type="button" id="eCancel">Cancel</button>
       <button type="submit" class="primary" id="eSave">Save</button>
     </div>
@@ -687,8 +694,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.44';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 23:40';
+const APP_VERSION = '4.45';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 00:10';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -926,7 +933,7 @@ function computeProjected(startCents) {
       if (done.has(u.id + '|' + orig)) continue;
       const ov = u.overrides ? u.overrides[orig] : null;     // confirmed by the biller
       const date = (ov && ov.date) || orig;
-      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, category:u.category || '', amount: ruleAmt(u, a.id, ov ? ov.amount : estimateFor(u, orig)), confirmed: !!ov, due: date <= today, xfer: !!u.transferTo });
+      items.push({ id:u.id + '|' + orig, ruleId:u.id, orig, date, text:u.text, category:u.category || '', amount: ruleAmt(u, a.id, ov ? ov.amount : estimateFor(u, orig)), confirmed: !!ov && !ov.estimate, adjusted: !!ov, due: date <= today, xfer: !!u.transferTo });
     }
   }
   items.sort(cmp);
@@ -2043,7 +2050,7 @@ function renderTable(A, P) {
       const t = addCell(tr, it.text, 'text');
       tag(t, '↻');
       if (it.xfer) tag(t, '⇄', '', 'Transfer between accounts');
-      if (!it.confirmed) tag(t, 'est.', '', 'Estimated amount: press Edit to confirm the biller\'s amount');
+      if (!it.confirmed) tag(t, 'est.', '', it.adjusted ? 'Your own estimate for this occurrence (press Edit to change it or confirm it)' : 'Estimated amount: press Edit to adjust it or confirm the biller\'s amount');
       if (it.due) tag(t, 'due', 'due');
       addCell(tr, it.category, 'cat');
       const am = addCell(tr, dfmt(cents(it.amount)), 'num amt');
@@ -2304,6 +2311,7 @@ function openEdit(ctx, o) {
   $('eText').value = o.text || ''; $('eText').required = !!o.withText;
   $('eTextWrap').hidden = !o.withText;
   $('eXferWrap').hidden = !o.xfer;
+  $('eKindWrap').hidden = !o.occKind; if (o.occKind) $('eKind').value = o.occKind;
   if (o.xfer) for (const [id, cur] of [['eFrom', o.xfer.from], ['eTo', o.xfer.to]]) {
     const sel = $(id); sel.innerHTML = '';
     for (const a of state.data.accounts) if (!a.closed || a.id === o.xfer.from || a.id === o.xfer.to) { const op = document.createElement('option'); op.value = a.id; op.textContent = acctLabel(a); sel.appendChild(op); }
@@ -2331,8 +2339,8 @@ function addMissed() {                    // quick add from the reconciliation p
 }
 function editOcc(it) {
   const u = ruleById(it.ruleId);
-  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, { title:'Confirm amount: ' + it.text, date:it.date, flip:!u.transferTo && isLiab(acct()), amount:u.transferTo ? Math.abs(it.amount) : it.amount,
-    note:'Enter the amount the biller has confirmed. It will then show in bold. The estimate was ' + fmt(cents(u.transferTo ? Math.abs(estimateFor(u, it.orig)) : estimateFor(u, it.orig) * sgn(acct()))) + '.', save:'Confirm', revert:it.confirmed });
+  openEdit({ kind:'occ', ruleId:it.ruleId, orig:it.orig }, { title:'Edit this occurrence: ' + it.text, date:it.date, flip:!u.transferTo && isLiab(acct()), amount:u.transferTo ? Math.abs(it.amount) : it.amount, occKind:it.confirmed ? 'conf' : 'est',
+    note:'Changes only this one occurrence (' + fmtDate(it.orig) + '); every other month keeps the regular estimate of ' + fmt(cents(u.transferTo ? Math.abs(estimateFor(u, it.orig)) : estimateFor(u, it.orig) * sgn(acct()))) + '. Choose "My estimate" to budget for something you do not know exactly yet, or "Confirmed" once the biller has told you the amount (it then shows in bold).', save:'Save', revert:it.adjusted });
 }
 function chgRule(id) {
   const u = ruleById(id), t = todayStr();
@@ -2347,7 +2355,8 @@ $('editForm').addEventListener('submit', async ev => {
   const now = new Date().toISOString();
   if (E.kind === 'occ') {
     const u = ruleById(E.ruleId); if (!u) return;
-    u.overrides[E.orig] = { amount:u.transferTo ? -Math.abs(amount) : amount, date, confirmedAt:now };
+    u.overrides[E.orig] = { amount:u.transferTo ? -Math.abs(amount) : amount, date, editedAt:now };
+    if ($('eKind').value === 'conf') u.overrides[E.orig].confirmedAt = now; else u.overrides[E.orig].estimate = true;
   } else if (E.kind === 'chg') {
     const u = ruleById(E.ruleId); if (!u) return;
     u.changes = (u.changes || []).filter(c => c.from !== date);
