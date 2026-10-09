@@ -82,6 +82,7 @@
   .sp-cur { stroke:var(--accent); }
   .sp-prev { stroke:var(--muted); opacity:.55; stroke-width:1 !important; }
   .rule { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:4px 0; border-top:1px solid var(--line); font-size:.9rem; flex-wrap:wrap; }
+  .rule.dim { opacity:.75; }
   .rule.sub { border-top:none; padding:1px 0 1px 16px; color:var(--muted); font-size:.85rem; }
   .rule .btns { white-space:nowrap; }
   .rule .btns button + button { margin-left:4px; }
@@ -380,7 +381,7 @@
         <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
-        <li>In <b>Recurring items</b>: the pencil <b>edits</b> the item (fix a wrong amount, description, category, dates, how often it repeats or the accounts of a transfer); the calendar icon <b>schedules a new estimate</b> from a future date; <b>Stop</b> ends the item. Once entries from an item have been posted, its first date and how often it repeats are locked.</li>
+        <li>In <b>Recurring items</b>: the pencil <b>edits</b> the item (fix a wrong amount, description, category, dates, how often it repeats or the accounts of a transfer); the calendar icon <b>schedules a new estimate</b> from a future date; <b>Stop</b> ends the item. Once entries from an item have been posted, its first date and how often it repeats are locked. Items whose last date has passed, and stopped items, move to <b>Finished and stopped items</b>, where you can restore, continue (set a new last date) or remove them; <b>Clean up</b> removes the ones that have no entries in the file.</li>
         <li><b>Look ahead</b> sets how far projections run. <b>Balance graph</b> compares the 12 months ending at that date with the same 12 months a year earlier.</li>
       </ul>
       <h4>Monthly reconciliation</h4>
@@ -694,8 +695,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.45';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 00:10';
+const APP_VERSION = '4.46';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 00:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2077,19 +2078,27 @@ function renderTable(A, P) {
   }
 }
 
+const ruleFinished = u => !u.deleted && !!u.endDate && u.endDate < todayStr();
+const ruleHasEntries = u => state.data.records.some(r => r.recurringId === u.id);
+const ruleRemovable = u => (u.deleted || ruleFinished(u)) && !ruleHasEntries(u);     // nothing in the file refers to it any more
+function ruleSummary(u) {
+  const s = document.createElement('span');
+  const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !isLiab(acc) && !u.transferTo && v < 0;
+  s.appendChild(document.createTextNode(u.text + (u.transferTo ? ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo)) : '') + ' \u00b7 est. '));
+  const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
+  s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : '')));
+  return s;
+}
 function renderRules() {
   const box = $('ruleList'); box.innerHTML = '';
   const a = acct();
-  const act = state.data.recurring.filter(u => !u.deleted && (u.accountId === a.id || u.transferTo === a.id));
-  if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items for this account yet.'; box.appendChild(p); return; }
+  const mine = state.data.recurring.filter(u => u.accountId === a.id || u.transferTo === a.id);
+  const act = mine.filter(u => !u.deleted && !ruleFinished(u));
+  const old = mine.filter(u => u.deleted || ruleFinished(u));
+  if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items for this account yet.'; box.appendChild(p); }
   for (const u of act) {
     const row = document.createElement('div'); row.className = 'rule';
-    const s = document.createElement('span');
-    { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !isLiab(acc) && !u.transferTo && v < 0;
-      s.appendChild(document.createTextNode(u.text + (u.transferTo ? ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo)) : '') + ' \u00b7 est. '));
-      const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
-      s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : ''))); }
-    row.appendChild(s);
+    row.appendChild(ruleSummary(u));
     const btns = document.createElement('span'); btns.className = 'btns';
     btns.appendChild(iconBtn('edit', 'Edit this recurring item (fix a mistake)', () => editRule(u.id)));
     btns.appendChild(iconBtn('sched', 'Change the amount from a date', () => chgRule(u.id)));
@@ -2104,6 +2113,45 @@ function renderRules() {
       box.appendChild(cr);
     }
   }
+  const removable = state.data.recurring.filter(ruleRemovable);
+  if (old.length || removable.length) {
+    const det = document.createElement('details'); det.style.marginTop = '8px'; det.open = !!state.oldRulesOpen;
+    det.addEventListener('toggle', () => { state.oldRulesOpen = det.open; });
+    const sm = document.createElement('summary'); sm.className = 'small'; sm.style.cursor = 'pointer';
+    sm.textContent = 'Finished and stopped items (' + old.length + ')'; det.appendChild(sm);
+    for (const u of old) {
+      const row = document.createElement('div'); row.className = 'rule dim';
+      const sp = ruleSummary(u); const st = document.createElement('em'); st.textContent = u.deleted ? ' \u00b7 stopped' : ' \u00b7 finished'; sp.appendChild(st); row.appendChild(sp);
+      const btns = document.createElement('span'); btns.className = 'btns';
+      if (u.deleted) btns.appendChild(iconBtn('restore', 'Restore this item (it is projected again)', () => restoreRule(u.id)));
+      else btns.appendChild(iconBtn('edit', 'Edit it, for example set a new last date to continue it', () => editRule(u.id)));
+      if (ruleRemovable(u)) btns.appendChild(iconBtn('trash', 'Remove it from the file for good', () => removeRule(u.id), 'danger'));
+      row.appendChild(btns); det.appendChild(row);
+    }
+    if (removable.length) {
+      const cl = document.createElement('div'); cl.style.marginTop = '6px';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = 'Clean up: remove ' + removable.length + ' finished or stopped item' + (removable.length === 1 ? '' : 's') + ' from the file';
+      b.onclick = cleanUpRules; cl.appendChild(b);
+      const n = document.createElement('div'); n.className = 'small'; n.textContent = 'Only items with no entries in the file are removed. Items that still have posted entries stay listed here (after you archive old entries they can be removed too).'; cl.appendChild(n);
+      det.appendChild(cl);
+    }
+    box.appendChild(det);
+  }
+}
+async function restoreRule(id) {
+  const u = ruleById(id); if (!u || !u.deleted) return;
+  delete u.deleted; delete u.deletedAt; changed();
+}
+async function removeRule(id) {
+  const u = ruleById(id); if (!u || !ruleRemovable(u)) return;
+  if (!await ask({ ok:'Remove for good', danger:1 }, 'Remove "' + u.text + '" from the file for good? This cannot be undone.')) return;
+  state.data.recurring = state.data.recurring.filter(x => x.id !== id); changed();
+}
+async function cleanUpRules() {
+  const gone = state.data.recurring.filter(ruleRemovable); if (!gone.length) return;
+  if (!await ask({ ok:'Remove ' + gone.length, danger:1 }, 'Remove ' + gone.length + ' finished or stopped recurring item' + (gone.length === 1 ? '' : 's') + ' from the file for good?\n\nOnly items with no entries in the file are removed. This cannot be undone.')) return;
+  const ids = new Set(gone.map(u => u.id));
+  state.data.recurring = state.data.recurring.filter(u => !ids.has(u.id)); changed();
 }
 
 /* ---------- Monthly reconciliation (per account) ---------- */

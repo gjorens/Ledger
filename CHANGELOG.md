@@ -4,6 +4,11 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.46 (2026-10-09)
+- Recurring items: items whose last date has passed, and items you stopped, move to a collapsible **Finished and stopped items** group, so the active list stays short.
+- **Restore** a stopped item (it is projected again). Edit a finished item to give it a new last date and continue it.
+- **Remove** an item from the file for good, or **Clean up** all finished and stopped items at once. Only items with no entries in the file are removed; items that still have posted entries stay in the group (after Archive old data they can be removed too).
+
 ## 4.45 (2026-10-09)
 - **Change one occurrence only**: the pencil on a projected row now opens "Edit this occurrence" with a choice: *My estimate (this month only)*, for budgeting something you do not know exactly yet (shows as an estimate, other months keep the regular estimate), or *Confirmed by the biller* (shows in bold). "Back to regular estimate" removes the change. To change every following month, use the calendar icon in Recurring items.
 
