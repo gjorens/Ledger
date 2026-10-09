@@ -117,6 +117,10 @@
   .touch .ritem { padding:6px 0; }
   .touch .rule { padding:6px 0; }
   dialog.wide { width:min(560px, calc(100% - 24px)); }
+  #settingsDlg { width:calc(100% - 24px); max-width:none; }
+  #settingsDlg .shead { display:flex; align-items:center; justify-content:space-between; position:sticky; top:-16px; background:var(--bg); margin:-4px 0 6px; padding:4px 0; z-index:1; }
+  #settingsDlg .shead h3 { margin:0; }
+  #sX { font-size:22px; line-height:1; padding:2px 12px; }
   #archDlg { width:min(880px, calc(100% - 24px)); }
   #archDlg table { min-width:600px; }
   #gChart svg { width:100%; height:auto; display:block; }
@@ -290,7 +294,7 @@
 </main>
 
 <dialog id="settingsDlg" class="wide" style="max-height:90vh; overflow:auto">
-  <h3 style="margin-bottom:6px">Settings</h3>
+  <div class="shead"><h3>Settings</h3><button type="button" id="sX" aria-label="Close settings" title="Close">×</button></div>
 
   <details class="sset" open>
     <summary>File location</summary>
@@ -701,8 +705,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.51';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 10:20';
+const APP_VERSION = '4.52';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 10:50';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1770,6 +1774,8 @@ $('avSearch').addEventListener('input', renderArchiveView);
 $('avClose').addEventListener('click', () => $('archDlg').close());
 $('btnGear').addEventListener('click', openSettings);
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
+$('sX').addEventListener('click', () => $('settingsDlg').close());
+document.querySelectorAll('#settingsDlg details.sset').forEach(d => d.addEventListener('toggle', () => { if (d.open) document.querySelectorAll('#settingsDlg details.sset').forEach(o => { if (o !== d) o.open = false; }); }));   // one section open at a time
 $('sChooseFolder').addEventListener('click', chooseFolder);
 $('sNewLedger').addEventListener('click', startNewLedger);
 $('sOpenFile').addEventListener('click', async () => { $('settingsDlg').close(); await openFile(); });

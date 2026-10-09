@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.52 (2026-10-09)
+- Settings window now uses the full width of the screen, has an X button at the top (stays visible while scrolling), and opening a section closes the others.
+
 ## 4.51 (2026-10-09)
 - Credit card, line of credit and loan accounts: payments and credits (the negative amounts as the bank shows them) now appear in red, in the transaction list, projected items, search results, recurring items, archive viewer and Edit lists. Charges stay black.
 
