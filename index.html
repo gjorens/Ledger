@@ -477,6 +477,7 @@
         <option value="weekly">Weekly</option>
         <option value="biweekly">Every 2 weeks</option>
         <option value="monthly">Monthly</option>
+        <option value="monthlyNoDec">Monthly (except Dec)</option>
         <option value="quarterly">Every 3 months</option>
         <option value="yearly">Yearly</option>
       </select>
@@ -580,6 +581,7 @@
           <option value="weekly">Weekly</option>
           <option value="biweekly">Every 2 weeks</option>
           <option value="monthly">Monthly</option>
+        <option value="monthlyNoDec">Monthly (except Dec)</option>
           <option value="quarterly">Every 3 months</option>
           <option value="yearly">Yearly</option>
         </select>
@@ -722,8 +724,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.53';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 11:15';
+const APP_VERSION = '4.54';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 11:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -787,7 +789,7 @@ const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Da
 const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 
 /* ---------- Data helpers ---------- */
-const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', quarterly:'Every 3 months', yearly:'Yearly' };
+const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', monthlyNoDec:'Monthly (except Dec)', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && (Array.isArray(d.accounts) || typeof d.startingBalance === 'number');
 function fileProblem(d) {
   if (d && d.type === 'myLedger-archive') return 'That is an archive file, not your ledger. Open it from Settings \u203a Archive old data \u203a View an archive.';
@@ -917,6 +919,10 @@ function nth(u, n) {
     case 'weekly':    return addDays(u.startDate, 7 * n);
     case 'biweekly':  return addDays(u.startDate, 14 * n);
     case 'monthly':   return addMonths(u.startDate, n);
+    case 'monthlyNoDec': {                // every month except December: count only the non-December months
+      for (let m = 0, k = 0; m < 12 * 500; m++) { const d = addMonths(u.startDate, m); if (d.slice(5, 7) === '12') continue; if (k++ === n) return d; }
+      return null;
+    }
     case 'quarterly': return addMonths(u.startDate, 3 * n);
     case 'yearly':    return addMonths(u.startDate, 12 * n);
   }
