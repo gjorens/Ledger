@@ -327,7 +327,7 @@
     <div style="display:flex; gap:6px"><input id="sCatNew" type="text" maxlength="40" autocomplete="off" placeholder="New category name"><button id="sCatAdd" type="button" class="primary">Add</button></div>
     <div class="boxhead" style="margin-top:10px">Your categories</div>
     <div id="sCatList"></div>
-    <p class="small" style="margin:6px 0 0">Renaming updates every entry and recurring item that uses the category. Renaming one to the name of another merges them. Deleting leaves the affected entries uncategorised.</p>
+    <p class="small" style="margin:6px 0 0">Each category has a type (money in, money out or either); the app asks you to confirm an amount that goes the other way. Renaming updates every entry and recurring item that uses the category. Renaming one to the name of another merges them. Deleting leaves the affected entries uncategorised.</p>
   </details>
 
   <details class="sset">
@@ -687,8 +687,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.42';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 22:50';
+const APP_VERSION = '4.44';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 23:40';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1476,6 +1476,9 @@ function renderCatSettings() {
       const dn = miniBtn('\u25bc', () => moveCategory(c, 1)); dn.title = 'Move down'; dn.disabled = i === list.length - 1;
       btns.appendChild(up); btns.appendChild(dn);
     }
+    { const sel = document.createElement('select'); sel.style.width = 'auto'; sel.className = 'mini'; sel.title = 'Is this category normally money in, money out, or either? Used to check amounts as you enter them.'; sel.setAttribute('aria-label', 'Type of ' + c);
+      for (const k of Object.keys(CAT_TYPES)) { const o = document.createElement('option'); o.value = k; o.textContent = CAT_TYPES[k]; sel.appendChild(o); }
+      sel.value = catType(c); sel.onchange = () => { const st = state.data.settings; st.catTypes = st.catTypes || {}; st.catTypes[c] = sel.value; changed(); }; btns.appendChild(sel); }
     btns.appendChild(iconBtn('edit', 'Rename', () => renameCategory(c)));
     btns.appendChild(iconBtn('trash', 'Delete', () => deleteCategory(c), 'danger'));
     row.appendChild(nm); row.appendChild(btns); box.appendChild(row);
@@ -1493,13 +1496,18 @@ async function renameCategory(old) {
   if (dup) {
     if (!await ask({ok:'Merge'}, '"' + dup + '" already exists. Merge "' + old + '" into it? Everything using "' + old + '" will move to "' + dup + '".')) return;
     reassignCategory(old, dup); d.categories = d.categories.filter(c => c !== old);
-  } else { reassignCategory(old, n); d.categories = d.categories.map(c => c === old ? n : c); }
+    if (d.settings.catTypes) delete d.settings.catTypes[old];
+  } else {
+    reassignCategory(old, n); d.categories = d.categories.map(c => c === old ? n : c);
+    if (d.settings.catTypes && d.settings.catTypes[old]) { d.settings.catTypes[n] = d.settings.catTypes[old]; delete d.settings.catTypes[old]; }
+  }
   changed();
 }
 async function deleteCategory(name) {
   const n = catUsage().get(name) || 0;
   if (!await ask({ok:'Delete',danger:1}, 'Delete the category "' + name + '"?' + (n ? '\n\n' + n + ' entr' + (n === 1 ? 'y' : 'ies') + ' or recurring item' + (n === 1 ? '' : 's') + ' use it and will become uncategorised.' : ''))) return;
   reassignCategory(name, ''); state.data.categories = state.data.categories.filter(c => c !== name);
+  if (state.data.settings.catTypes) delete state.data.settings.catTypes[name];
   changed();
 }
 function moveCategory(name, dir) {        // manual order only: swap with the neighbour in the stored list
@@ -1897,12 +1905,20 @@ function swapAccounts() {
 
 /* ---------- Reasonableness check: an income category should be money in, an expense category money out ---------- */
 const INCOME_CAT = /^(income|salary|payroll|wages?|refunds?|interest|dividends?|deposits?|rebates?|reimbursements?)/i;
-const NEUTRAL_CAT = /^(other|gifts?)$/i;                  // can go either way: never questioned
+const NEUTRAL_CAT = /^(other|gifts?)$/i;                  // can go either way
+const CAT_TYPES = { in:'Money in', out:'Money out', any:'Either' };
+function catType(name) {                                  // what a category is for: 'in' (income), 'out' (expense) or 'any'; the person's choice in Settings, else a sensible guess from the name
+  const set = state.data && state.data.settings.catTypes && state.data.settings.catTypes[name];
+  if (set && CAT_TYPES[set]) return set;
+  if (NEUTRAL_CAT.test(name)) return 'any';
+  if (/\btax(es)?\b/i.test(name)) return 'out';          // "Income Tax" is an expense
+  return INCOME_CAT.test(name) ? 'in' : 'out';
+}
 async function amountSane(cat, amt) {                     // amt as stored: positive = money in, negative = money out
-  if (!cat || !amt || NEUTRAL_CAT.test(cat)) return true;
-  const inc = INCOME_CAT.test(cat);
-  if (inc && amt < 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is an income category, but this amount is money going OUT (' + fmt(cents(Math.abs(amt))) + ').\n\nIs that right?');
-  if (!inc && amt > 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is an expense category, but this amount is money coming IN (' + fmt(cents(amt)) + ').\n\nIs that right? (For example a refund.)');
+  if (!cat || !amt) return true;
+  const t = catType(cat);
+  if (t === 'in' && amt < 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is a money-IN category, but this amount is money going OUT (' + fmt(cents(Math.abs(amt))) + ').\n\nIs that right? (You can change a category\'s type in Settings > Categories.)');
+  if (t === 'out' && amt > 0) return await ask({ ok:'Save anyway' }, '"' + cat + '" is a money-OUT category, but this amount is money coming IN (' + fmt(cents(amt)) + ').\n\nIs that right? (For example a refund. You can change a category\'s type in Settings > Categories.)');
   return true;
 }
 
@@ -1913,6 +1929,7 @@ function applyTypeUI() {
   $('amountLbl').textContent = t ? 'Amount to move' : LBL.entry(acct());
   $('text').required = !t;
   noNeg($('amount'), t); $('text').readOnly = t; if (t) syncXferText(); else if ($('text').dataset.auto) { $('text').value = ''; delete $('text').dataset.auto; }
+  $('rEnd').min = $('date').value || '';           // the last date cannot be before the first
   const rep_ = $('rFreq').value !== 'once';
   for (const el of document.querySelectorAll ? document.querySelectorAll('.ronly') : []) el.hidden = !rep_;
   $('dateLbl').textContent = rep_ ? 'First date' : 'Transaction date';
@@ -2446,6 +2463,7 @@ $('xFrom').addEventListener('change', () => { if ($('type').value === 'transfer'
 $('xTo').addEventListener('change', () => { if ($('type').value === 'transfer') syncXferText(); });
 $('type').addEventListener('change', applyTypeUI);
 $('rFreq').addEventListener('change', applyTypeUI);
+$('date').addEventListener('change', () => { $('rEnd').min = $('date').value || ''; });
 $('aType').addEventListener('change', acctLabels);
 $('btnNew').addEventListener('click', () => openNew());
 $('nCancel').addEventListener('click', () => $('newDlg').close());
@@ -2613,12 +2631,13 @@ function editRule(id) {
   setMoney($('ruAmt'), X ? Math.abs(u.amount) : u.amount * sgn(acc));
   const fs = $('ruFreq'); if (!fs.dataset.filled) { for (const k of Object.keys(FREQ)) { const o = document.createElement('option'); o.value = k; o.textContent = FREQ[k]; fs.appendChild(o); } fs.dataset.filled = '1'; }
   fs.value = u.frequency; $('ruFirst').value = u.startDate; $('ruLast').value = u.endDate || '';
-  fs.disabled = used; $('ruFirst').disabled = used;
+  fs.disabled = used; $('ruFirst').disabled = used; $('ruLast').min = u.startDate;
   $('ruNote').textContent = (used ? 'Entries from this item have already been posted, skipped or confirmed, so how often it repeats and its first date are locked. To change them, stop this item and create a new one. ' : '') +
     'Changing the amount here corrects the estimate for every occurrence that is not yet confirmed. Entries already posted keep their amounts; edit those in the transaction list.' + (X ? ' Changing the accounts only affects occurrences not yet posted.' : '');
   $('ruleDlg').showModal();
 }
 $('ruCancel').addEventListener('click', () => $('ruleDlg').close());
+$('ruFirst').addEventListener('change', () => { $('ruLast').min = $('ruFirst').value || ''; });
 { const b = $('ruSwap'); b.appendChild(iconBtn('swap', 'Swap the two accounts', () => {}).firstChild); b.addEventListener('click', () => { const f = $('ruFrom').value; $('ruFrom').value = $('ruTo').value; $('ruTo').value = f; }); }
 $('ruleForm').addEventListener('submit', async ev => {
   ev.preventDefault();

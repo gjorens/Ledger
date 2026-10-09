@@ -4,6 +4,13 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.44 (2026-10-08)
+- Each category now has a **type**: Money in, Money out or Either, set with a drop-down on every row in Settings > Categories (saved in the file). The "Is that right?" amount check follows it.
+- Default types are guessed from the name; names containing "tax" (such as Income Tax) are money out. Renaming a category keeps its type; deleting removes it.
+
+## 4.43 (2026-10-08)
+- The last date of a repeating item can no longer be set before its first date: the date picker disables earlier days and the form will not save (new item and Edit recurring item).
+
 ## 4.42 (2026-10-08)
 - **Edit recurring item** (pencil in Recurring items): correct a mistake in the original entry: description, category, estimated amount, last date, and (until anything has been posted, skipped or confirmed) the first date and how often it repeats; for transfers the From / To accounts and direction. The old pencil, which schedules a new estimate from a date, is now the calendar icon.
 
