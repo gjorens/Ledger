@@ -419,6 +419,7 @@
 <dialog id="askDlg">
   <h3 style="margin:0 0 8px">myLedger</h3>
   <p id="askMsg" style="white-space:pre-line; margin:0 0 14px; line-height:1.45"></p>
+  <input id="askIn" type="text" maxlength="60" autocomplete="off" hidden style="margin:0 0 14px">
   <div style="display:flex; justify-content:flex-end; gap:10px"><button type="button" id="askNo">Cancel</button><button type="button" id="askOk" class="primary">OK</button></div>
 </dialog>
 <dialog id="searchDlg" class="wide" style="max-height:92vh; overflow:auto">
@@ -700,8 +701,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.49';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 01:45';
+const APP_VERSION = '4.51';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 10:20';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1217,9 +1218,9 @@ function syncCats(sel, value) {       // (re)build a category dropdown; keeps th
   }
   sel.value = cats.includes(cur) ? cur : '';
 }
-function onCatChange(sel) {
+async function onCatChange(sel) {
   if (sel.value !== NEWCAT) return;
-  const n = (prompt('New category name:') || '').trim();
+  const n = ((await askText({ ok:'Add category' }, 'New category name:', '')) || '').trim();
   const dup = n && state.data.categories.find(c => c.toLowerCase() === n.toLowerCase());
   if (n && !dup) { state.data.categories.push(n); changed(); syncCats(sel, n); }
   else syncCats(sel, dup || '');
@@ -1317,20 +1318,23 @@ function attachSuggest(input, onPick) {
 /* ---------- Messages & render ---------- */
 
 /* ---------- In-app confirm / alert dialogs (the browser's own boxes say "<site> says") ---------- */
-function ask(o, msg) {                 // resolves true (OK) or false (Cancel); {alert:1} shows a single OK button
-  if (globalThis.__askHook) return Promise.resolve(globalThis.__askHook(msg, o));
+function ask(o, msg) {                 // resolves true (OK) or false (Cancel); {alert:1} shows a single OK button; {input:1, value} asks for text and resolves the text, or null on Cancel
+  if (globalThis.__askHook) return Promise.resolve(o.input ? (globalThis.prompt ? globalThis.prompt(msg, o.value) : null) : globalThis.__askHook(msg, o));
   return new Promise(res => {
-    const dlg = $('askDlg');
+    const dlg = $('askDlg'), inp = $('askIn');
     $('askMsg').textContent = msg;
     const ok = $('askOk'), no = $('askNo');
     ok.textContent = o.alert ? 'OK' : (o.ok || 'OK'); ok.className = o.danger ? 'danger' : 'primary';
     no.textContent = o.cancel || 'Cancel'; no.hidden = !!o.alert;
+    inp.hidden = !o.input; inp.value = o.input ? (o.value || '') : '';
     let done = false;
-    const fin = v => { if (done) return; done = true; ok.onclick = no.onclick = null; dlg.onclose = null; if (dlg.open) dlg.close(); res(v); };
-    ok.onclick = () => fin(true); no.onclick = () => fin(false); dlg.onclose = () => fin(false);
-    dlg.showModal(); (o.danger ? no : ok).focus();
+    const fin = v => { if (done) return; done = true; ok.onclick = no.onclick = inp.onkeydown = null; dlg.onclose = null; if (dlg.open) dlg.close(); res(v); };
+    ok.onclick = () => fin(o.input ? inp.value : true); no.onclick = () => fin(o.input ? null : false); dlg.onclose = () => fin(o.input ? null : false);
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); fin(inp.value); } };
+    dlg.showModal(); if (o.input) { inp.focus(); inp.select(); } else (o.danger ? no : ok).focus();
   });
 }
+const askText = (o, msg, value) => ask({ ...o, input:1, value }, msg);
 
 function setMsg(m, kind) { state.msg = m; state.msgKind = kind || 'err'; render(); }
 
@@ -1503,7 +1507,7 @@ async function addCategory() {
   state.data.categories.push(n); $('sCatNew').value = ''; changed();
 }
 async function renameCategory(old) {
-  const n = (prompt('Rename category "' + old + '" to:', old) || '').trim();
+  const n = ((await askText({ ok:'Rename' }, 'Rename category "' + old + '" to:', old)) || '').trim();
   if (!n || n === old) return;
   const d = state.data, dup = d.categories.find(c => c.toLowerCase() === n.toLowerCase() && c !== old);
   if (dup) {
@@ -1579,7 +1583,7 @@ function renderSearch() {
     const row = document.createElement('div'); row.className = 'sres';
     const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(m.date);
     const t = document.createElement('span'); t.textContent = m.text; const sm = document.createElement('small'); sm.textContent = [all ? acctLabel(m.a) : '', m.note, m.balText ? 'balance ' + m.balText : ''].filter(Boolean).join(' \u00b7 '); t.appendChild(sm);
-    const am = document.createElement('span'); am.className = 'a' + (!isLiab(m.a) && m.amount < 0 ? ' neg' : ''); am.textContent = fmt(cents(m.amount) * sgn(m.a));
+    const am = document.createElement('span'); am.className = 'a' + (m.amount * sgn(m.a) < 0 ? ' neg' : ''); am.textContent = fmt(cents(m.amount) * sgn(m.a));
     row.appendChild(d); row.appendChild(t); row.appendChild(am);
     row.appendChild(iconBtn('locate', 'Show in the ledger', () => gotoItem(m.a.id, m.rid)));
     box.appendChild(row);
@@ -1714,7 +1718,7 @@ function renderArchiveView() {
   for (const r of rows.slice(0, 600)) {
     const tr = document.createElement('tr'); if (r.deleted) tr.className = 'deleted';
     add(tr, fmtDate(r.date), 'time'); add(tr, r.text + (r.deleted ? ' (deleted)' : ''), 'text'); add(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
-    add(tr, fmt(cents(r.amount) * f), 'num' + (!L && r.amount < 0 ? ' neg' : '')); add(tr, r.balance === null || r.balance === undefined ? '' : fmt(cents(r.balance) * f), 'num' + (!L && r.balance < 0 ? ' neg' : ''));
+    add(tr, fmt(cents(r.amount) * f), 'num' + (r.amount * f < 0 ? ' neg' : '')); add(tr, r.balance === null || r.balance === undefined ? '' : fmt(cents(r.balance) * f), 'num' + (!L && r.balance < 0 ? ' neg' : ''));
     tb.appendChild(tr);
   }
   if (rows.length > 600) $('avCount').textContent += ' (showing the first 600: use Search to narrow)';
@@ -2031,7 +2035,7 @@ function renderTable(A, P) {
     if (r.deleted) tag(t, 'deleted');
     addCell(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
     const am = addCell(tr, dfmt(cents(r.amount)), 'num amt');
-    if (!isLiab(a) && r.amount < 0) am.classList.add('neg');
+    if (r.amount * sgn(a) < 0) am.classList.add('neg');
     const bc = addCell(tr, dfmt(bal), 'num');
     if (lowBal(a, bal)) bc.classList.add('neg');
     const act = addCell(tr, '', 'act');
@@ -2064,7 +2068,7 @@ function renderTable(A, P) {
       if (it.due) tag(t, 'due', 'due');
       addCell(tr, it.category, 'cat');
       const am = addCell(tr, dfmt(cents(it.amount)), 'num amt');
-      if (!isLiab(a) && it.amount < 0) am.classList.add('neg');
+      if (it.amount * sgn(a) < 0) am.classList.add('neg');
       const bc = addCell(tr, dfmt(bal), 'num');
       if (lowBal(a, bal)) bc.classList.add('neg');
       const act = addCell(tr, '', 'act');
@@ -2092,7 +2096,7 @@ const ruleHasEntries = u => state.data.records.some(r => r.recurringId === u.id)
 const ruleRemovable = u => (u.deleted || ruleFinished(u)) && !ruleHasEntries(u);     // nothing in the file refers to it any more
 function ruleSummary(u) {
   const s = document.createElement('span');
-  const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !isLiab(acc) && !u.transferTo && v < 0;
+  const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !u.transferTo && v < 0;
   s.appendChild(document.createTextNode(u.text + (u.transferTo ? ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo)) : '') + ' \u00b7 est. '));
   const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
   s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : '')));
@@ -2137,7 +2141,7 @@ function renderRules() {
     for (const c of [...(u.changes || [])].sort((x, y) => x.from < y.from ? -1 : 1)) {
       const cr = document.createElement('div'); cr.className = 'rule sub';
       const cs = document.createElement('span'); cs.appendChild(document.createTextNode('From ' + fmtDate(c.from) + ': est. '));
-      { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acc), am = document.createElement('span'); am.textContent = fmt(cents(v)); if (!isLiab(acc) && !u.transferTo && v < 0) am.className = 'neg'; cs.appendChild(am); }
+      { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acc), am = document.createElement('span'); am.textContent = fmt(cents(v)); if (!u.transferTo && v < 0) am.className = 'neg'; cs.appendChild(am); }
       cr.appendChild(cs); cr.appendChild(iconBtn('x', 'Remove this scheduled change', () => removeChange(u.id, c.from)));
       box.appendChild(cr);
     }
@@ -2242,7 +2246,7 @@ function renderRecon() {
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = R.ticked.has(r.id);
       const dd = document.createElement('span'); dd.className = 'd'; dd.textContent = fmtDate(r.date) + (r.date < start ? ' (earlier)' : '');
       const tt = document.createElement('span'); tt.textContent = r.text;
-      const aa = document.createElement('span'); aa.className = 'a' + (!isLiab(a) && r.amount < 0 ? ' neg' : ''); aa.textContent = dfmt(cents(r.amount));
+      const aa = document.createElement('span'); aa.className = 'a' + (r.amount * sgn(a) < 0 ? ' neg' : ''); aa.textContent = dfmt(cents(r.amount));
       const eb = iconBtn('edit', 'Edit', () => editRecord(r)); eb.hidden = cb.checked;      // only unticked items can be edited
       const toggle = on => { cb.checked = on; if (on) R.ticked.add(r.id); else R.ticked.delete(r.id); eb.hidden = on; updateReconSummary(); };
       cb.onchange = () => toggle(cb.checked);

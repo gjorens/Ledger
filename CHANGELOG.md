@@ -4,6 +4,12 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.51 (2026-10-09)
+- Credit card, line of credit and loan accounts: payments and credits (the negative amounts as the bank shows them) now appear in red, in the transaction list, projected items, search results, recurring items, archive viewer and Edit lists. Charges stay black.
+
+## 4.50 (2026-10-09)
+- The last two browser prompt boxes (adding a new category from the New item / Edit forms, and renaming a category) are now myLedger dialogs titled "myLedger", with a text box and Enter to confirm. No browser "<site> says" boxes remain.
+
 ## 4.49 (2026-10-09)
 - Larger checkbox for the Show deleted entries setting.
 
