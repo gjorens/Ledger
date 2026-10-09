@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.42 (2026-10-08)
+- **Edit recurring item** (pencil in Recurring items): correct a mistake in the original entry: description, category, estimated amount, last date, and (until anything has been posted, skipped or confirmed) the first date and how often it repeats; for transfers the From / To accounts and direction. The old pencil, which schedules a new estimate from a date, is now the calendar icon.
+
 ## 4.41 (2026-10-08)
 - **Add another** now resets "Repeats" to "Does not repeat" (and clears the last date), so a repeating item is not repeated by accident.
 - Reasonableness check on amounts: an expense category with money coming in, or an income category (Income, Salary, Refund, Interest, ...) with money going out, asks "Is that right?" before saving. Applies to new items and to edits that change the amount or category. "Other" and "Gifts" are never questioned; transfers are not checked.

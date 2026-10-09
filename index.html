@@ -214,7 +214,7 @@
     <div class="boxhead outer">Tools</div>
     <details class="card" id="recur">
       <summary>Recurring items</summary>
-      <p class="small" style="margin:8px 0 6px">Recurring items are created with <b>+ New item</b> by choosing a repeat. The amount is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use <b>Change amount</b>. If the first date was in the past, those occurrences show as Due so you can post or skip them.</p>
+      <p class="small" style="margin:8px 0 6px">Recurring items are created with <b>+ New item</b> by choosing a repeat. The amount is an estimate. When the biller tells you the real amount, press <b>Edit</b> on that month's projected row to confirm it (it then shows in bold). If you know the amount will change from a certain date, use the calendar icon (<b>Change amount from a date</b>). To correct a mistake in the item itself, use its pencil. If the first date was in the past, those occurrences show as Due so you can post or skip them.</p>
       <div id="ruleList"></div>
     </details>
 
@@ -380,7 +380,7 @@
         <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
-        <li>In <b>Recurring items</b>: <b>Change amount</b> schedules a new estimate from a future date, and <b>Stop</b> ends the item.</li>
+        <li>In <b>Recurring items</b>: the pencil <b>edits</b> the item (fix a wrong amount, description, category, dates, how often it repeats or the accounts of a transfer); the calendar icon <b>schedules a new estimate</b> from a future date; <b>Stop</b> ends the item. Once entries from an item have been posted, its first date and how often it repeats are locked.</li>
         <li><b>Look ahead</b> sets how far projections run. <b>Balance graph</b> compares the 12 months ending at that date with the same 12 months a year earlier.</li>
       </ul>
       <h4>Monthly reconciliation</h4>
@@ -563,6 +563,52 @@
   </form>
 </dialog>
 
+<dialog id="ruleDlg">
+  <form id="ruleForm" class="entry" style="margin-top:0">
+    <h3 class="full" id="ruTitle">Edit recurring item</h3>
+    <div class="full" id="ruTextWrap">
+      <label for="ruText">Description</label>
+      <input id="ruText" type="text" maxlength="60" autocomplete="off">
+    </div>
+    <div class="full" id="ruCatWrap">
+      <label for="ruCat">Category</label>
+      <select id="ruCat"></select>
+    </div>
+    <div class="full xrow" id="ruXferWrap" hidden>
+      <div>
+        <label for="ruFrom">From account</label>
+        <select id="ruFrom"></select>
+      </div>
+      <button type="button" class="icon" id="ruSwap" title="Swap the two accounts (reverses the direction)" aria-label="Swap the two accounts"></button>
+      <div>
+        <label for="ruTo">To account</label>
+        <select id="ruTo"></select>
+      </div>
+    </div>
+    <div class="full">
+      <label for="ruAmt" id="ruAmtLbl">Estimated amount</label>
+      <input id="ruAmt" class="money" type="text" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div>
+      <label for="ruFreq">Repeats</label>
+      <select id="ruFreq"></select>
+    </div>
+    <div>
+      <label for="ruFirst">First date</label>
+      <input id="ruFirst" type="date" required>
+    </div>
+    <div class="full">
+      <label for="ruLast">Last date (optional)</label>
+      <input id="ruLast" type="date">
+    </div>
+    <p class="small full" id="ruNote" style="margin:0"></p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">
+      <button type="button" id="ruCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="warnDlg">
   <h3>Low balance warning</h3>
   <div id="warnList" class="small" style="color:var(--fg)"></div>
@@ -641,8 +687,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.41';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-08 22:20';
+const APP_VERSION = '4.42';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-08 22:50';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1904,6 +1950,7 @@ const ICONS = {                           // small line icons (stroke follows th
   restore:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
   check:'M20 6L9 17l-5-5',
   skip:'M5 4l10 8-10 8zM19 5v14',
+  sched:'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
   stop:'M6 6h12v12H6z',
   x:'M18 6L6 18M6 6l12 12',
   swap:'M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4',
@@ -2020,7 +2067,8 @@ function renderRules() {
       s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : ''))); }
     row.appendChild(s);
     const btns = document.createElement('span'); btns.className = 'btns';
-    btns.appendChild(iconBtn('edit', 'Change amount from a date', () => chgRule(u.id)));
+    btns.appendChild(iconBtn('edit', 'Edit this recurring item (fix a mistake)', () => editRule(u.id)));
+    btns.appendChild(iconBtn('sched', 'Change the amount from a date', () => chgRule(u.id)));
     btns.appendChild(iconBtn('stop', 'Stop this recurring item', () => stopRule(u.id), 'danger'));
     row.appendChild(btns);
     box.appendChild(row);
@@ -2542,6 +2590,62 @@ async function postAllDue() {
   for (const it of due) postRecord(ruleById(it.ruleId), it.orig, it.date, it.amount);
   changed();
 }
+
+/* ---------- Edit a recurring item (correct a mistake in the original entry) ---------- */
+function ruleUsed(u) {                    // has this item already produced anything (posted, skipped or confirmed occurrences)?
+  return state.data.records.some(r => r.recurringId === u.id) || (u.skipped || []).length > 0 || Object.keys(u.overrides || {}).length > 0;
+}
+function editRule(id) {
+  const u = ruleById(id); if (!u) return;
+  const acc = acctById(u.accountId), X = !!u.transferTo, used = ruleUsed(u);
+  state.ruleEdit = id;
+  $('ruTitle').textContent = 'Edit recurring item';
+  $('ruTextWrap').hidden = X; $('ruCatWrap').hidden = X; $('ruXferWrap').hidden = !X;
+  $('ruText').value = u.text; $('ruText').required = !X;
+  if (!X) syncCats($('ruCat'), u.category || '');
+  if (X) for (const [sid, cur] of [['ruFrom', u.accountId], ['ruTo', u.transferTo]]) {
+    const sel = $(sid); sel.innerHTML = '';
+    for (const a of state.data.accounts) if (!a.closed || a.id === cur) { const o = document.createElement('option'); o.value = a.id; o.textContent = acctLabel(a); sel.appendChild(o); }
+    sel.value = cur;
+  }
+  noNeg($('ruAmt'), X);
+  $('ruAmtLbl').textContent = X ? 'Estimated amount to move' : LBL.entryEst(acc);
+  setMoney($('ruAmt'), X ? Math.abs(u.amount) : u.amount * sgn(acc));
+  const fs = $('ruFreq'); if (!fs.dataset.filled) { for (const k of Object.keys(FREQ)) { const o = document.createElement('option'); o.value = k; o.textContent = FREQ[k]; fs.appendChild(o); } fs.dataset.filled = '1'; }
+  fs.value = u.frequency; $('ruFirst').value = u.startDate; $('ruLast').value = u.endDate || '';
+  fs.disabled = used; $('ruFirst').disabled = used;
+  $('ruNote').textContent = (used ? 'Entries from this item have already been posted, skipped or confirmed, so how often it repeats and its first date are locked. To change them, stop this item and create a new one. ' : '') +
+    'Changing the amount here corrects the estimate for every occurrence that is not yet confirmed. Entries already posted keep their amounts; edit those in the transaction list.' + (X ? ' Changing the accounts only affects occurrences not yet posted.' : '');
+  $('ruleDlg').showModal();
+}
+$('ruCancel').addEventListener('click', () => $('ruleDlg').close());
+{ const b = $('ruSwap'); b.appendChild(iconBtn('swap', 'Swap the two accounts', () => {}).firstChild); b.addEventListener('click', () => { const f = $('ruFrom').value; $('ruFrom').value = $('ruTo').value; $('ruTo').value = f; }); }
+$('ruleForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const u = ruleById(state.ruleEdit); if (!u) return;
+  const X = !!u.transferTo, acc = acctById(u.accountId), used = ruleUsed(u);
+  const val = parseFloat($('ruAmt').value); if (!isFinite(val)) return;
+  const first = used ? u.startDate : $('ruFirst').value, freq = used ? u.frequency : $('ruFreq').value, last = $('ruLast').value || null;
+  if (!first) return;
+  if (last && last < first) { await ask({alert:1}, 'The last date must be on or after the first date.'); return; }
+  let text = u.text, cat = u.category || '', amount, from = u.accountId, to = u.transferTo;
+  if (X) {
+    from = $('ruFrom').value; to = $('ruTo').value;
+    if (from === to) { await ask({alert:1}, 'Choose two different accounts for a transfer.'); return; }
+    const fa = acctById(from), ta = acctById(to);
+    if ((from !== u.accountId || to !== u.transferTo) && fa && ta && fa.currency && ta.currency && fa.currency !== ta.currency && !await ask({ok:'Continue'}, 'These accounts use different currencies (' + fa.currency + ' and ' + ta.currency + ').\n\nThe same number is recorded in both accounts, with no conversion. Continue?')) return;
+    amount = -Math.abs(val); text = xferText(fa, ta);
+  } else {
+    text = $('ruText').value.trim(); if (!text) return;
+    cat = catValue($('ruCat')); amount = val * sgn(acc);
+    if ((cents(amount) !== cents(u.amount) || cat !== (u.category || '')) && !await amountSane(cat, amount)) return;
+  }
+  Object.assign(u, { text, amount, frequency:freq, startDate:first, endDate:last, accountId:from });
+  if (X) { u.transferTo = to; u.autoText = true; } else u.category = cat;
+  u.editedAt = new Date().toISOString();
+  $('ruleDlg').close(); changed();
+});
+
 async function stopRule(id) {
   const u = ruleById(id);
   if (!u) return;
