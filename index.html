@@ -724,8 +724,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.54';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 11:40';
+const APP_VERSION = '4.55';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 12:05';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2126,7 +2126,7 @@ const ruleRemovable = u => (u.deleted || ruleFinished(u)) && !ruleHasEntries(u);
 function ruleSummary(u) {
   const s = document.createElement('span');
   const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !u.transferTo && v < 0;
-  s.appendChild(document.createTextNode(u.text + (u.transferTo ? ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo)) : '') + ' \u00b7 est. '));
+  s.appendChild(document.createTextNode(u.text + (u.transferTo ? (u.autoText ? ' \u00b7 transfer' : ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo))) : '') + ' \u00b7 est. '));
   const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
   s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : '')));
   return s;

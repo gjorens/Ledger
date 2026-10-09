@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.55 (2026-10-09)
+- Recurring items list: a scheduled transfer no longer shows the two account names twice ("Chequing → CIBC Mastercard · transfer Chequing → CIBC Mastercard"); it now reads "Chequing → CIBC Mastercard · transfer · est. 5,000.00 · Monthly from ...".
+
 ## 4.54 (2026-10-09)
 - New repeat choice **Monthly (except Dec)**: every month but December (for example a payment that is skipped over the holidays). Available when adding an item, converting an entry, and editing a repeating item.
 
