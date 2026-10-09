@@ -316,6 +316,11 @@
   </details>
 
   <details class="sset">
+    <summary>Display</summary>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:8px; cursor:pointer"><input type="checkbox" id="sShowDel" style="width:auto; margin-top:3px"><span>Show deleted entries in the transaction list and in search<br><span class="small">Deleted entries stay in the file so they can be restored. Turn this on to see them (struck through, with a restore button). They never count toward balances either way.</span></span></label>
+  </details>
+
+  <details class="sset">
     <summary>Categories</summary>
     <div class="boxhead" style="margin-top:8px">Dropdown order</div>
     <select id="sCatSort">
@@ -695,8 +700,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.47';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 01:00';
+const APP_VERSION = '4.48';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 01:30';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1523,6 +1528,7 @@ function moveCategory(name, dir) {        // manual order only: swap with the ne
   if (i < 0 || j < 0 || j >= a.length) return;
   [a[i], a[j]] = [a[j], a[i]]; changed();
 }
+$('sShowDel').addEventListener('change', ev => { if (!state.data) return; state.data.settings.showDeleted = ev.target.checked; changed(); });
 $('sCatAdd').addEventListener('click', addCategory);
 $('sCatNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
 $('sCatSort').addEventListener('change', ev => { state.data.settings.catSort = ev.target.value; changed(); });
@@ -1555,6 +1561,7 @@ function searchMatches() {
   const hit = (a, text, cat, date, amt) => { const hay = [text, cat, date, fmtDate(date), monthLabel(date.slice(0, 7)), acctLabel(a), fmt(Math.abs(cents(amt))), String(Math.abs(amt)), (amt < 0 ? '-' : '') + Math.abs(amt).toFixed(2)].join(' ').toLowerCase(); return toks.every(t => hay.includes(t)); };
   for (const r of state.data.records) {
     const a = acctById(r.accountId); if (!a || (!all && a.id !== state.accountId)) continue;
+    if (r.deleted && !state.data.settings.showDeleted) continue;
     if (hit(a, r.text || '', r.transferId ? 'transfer' : (r.category || ''), r.date, r.amount)) out.push({ a, date:r.date, text:r.text, amount:r.amount, rid:r.id, note:r.deleted ? 'deleted' : '' });
   }
   if (!all) {                                    // projected items of the account being viewed
@@ -1715,6 +1722,7 @@ function renderArchiveView() {
 
 function fillSettings() {
   renderCatSettings(); fillArchive();
+  $('sShowDel').checked = !!(state.data && state.data.settings.showDeleted);
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
@@ -2010,6 +2018,7 @@ function renderTable(A, P) {
   let lastYm = null;
   const monthDiv = ym => { const tr = document.createElement('tr'); tr.className = 'mdiv'; const td = document.createElement('td'); td.colSpan = 6; td.textContent = monthLabel(ym); tr.appendChild(td); return tr; };
   for (const { r, bal } of A.rows) {
+    if (r.deleted && !state.data.settings.showDeleted) continue;
     if (r.date.slice(0, 7) !== lastYm) { lastYm = r.date.slice(0, 7); tb.appendChild(monthDiv(lastYm)); }
     const tr = document.createElement('tr'); tr.dataset.rid = r.id;
     if (r.deleted) tr.className = 'deleted';
