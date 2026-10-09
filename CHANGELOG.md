@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.47 (2026-10-09)
+- Recurring items are sorted (Description A-Z by default) with a **Sort by** choice: Description A-Z, Next date, or Amount (largest first). Saved in the file.
+
 ## 4.46 (2026-10-09)
 - Recurring items: items whose last date has passed, and items you stopped, move to a collapsible **Finished and stopped items** group, so the active list stays short.
 - **Restore** a stopped item (it is projected again). Edit a finished item to give it a new last date and continue it.

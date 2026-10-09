@@ -695,8 +695,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.46';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 00:40';
+const APP_VERSION = '4.47';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-09 01:00';
 $('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2089,10 +2089,30 @@ function ruleSummary(u) {
   s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : '')));
   return s;
 }
+const RULE_SORTS = { name:'Description A-Z', next:'Next date', amount:'Amount (largest first)' };
+function ruleNext(u) {                    // the next scheduled date on or after today ('9999-12-31' when there is none)
+  const t = todayStr();
+  for (let n = 0; n < 5000; n++) { const d = nth(u, n); if (!d || (u.endDate && d > u.endDate)) break; if (d >= t) return d; }
+  return '9999-12-31';
+}
+function sortRules(list) {
+  const mode = state.data.settings.ruleSort || 'name', byName = (x, y) => x.text.localeCompare(y.text);
+  const key = { name:byName, next:(x, y) => (ruleNext(x) < ruleNext(y) ? -1 : ruleNext(x) > ruleNext(y) ? 1 : byName(x, y)), amount:(x, y) => (Math.abs(y.amount) - Math.abs(x.amount)) || byName(x, y) }[mode] || byName;
+  return list.slice().sort(key);
+}
 function renderRules() {
   const box = $('ruleList'); box.innerHTML = '';
   const a = acct();
-  const mine = state.data.recurring.filter(u => u.accountId === a.id || u.transferTo === a.id);
+  const mine = sortRules(state.data.recurring.filter(u => u.accountId === a.id || u.transferTo === a.id));
+  if (mine.length > 1) {
+    const w = document.createElement('div'); w.style.cssText = 'display:flex; align-items:center; gap:8px; margin:4px 0';
+    const l = document.createElement('label'); l.className = 'small'; l.style.margin = '0'; l.textContent = 'Sort by'; l.htmlFor = 'ruleSort';
+    const sel = document.createElement('select'); sel.id = 'ruleSort'; sel.style.width = 'auto';
+    for (const k of Object.keys(RULE_SORTS)) { const o = document.createElement('option'); o.value = k; o.textContent = RULE_SORTS[k]; sel.appendChild(o); }
+    sel.value = state.data.settings.ruleSort || 'name';
+    sel.onchange = () => { state.data.settings.ruleSort = sel.value; changed(); };
+    w.appendChild(l); w.appendChild(sel); box.appendChild(w);
+  }
   const act = mine.filter(u => !u.deleted && !ruleFinished(u));
   const old = mine.filter(u => u.deleted || ruleFinished(u));
   if (!act.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'No recurring items for this account yet.'; box.appendChild(p); }
