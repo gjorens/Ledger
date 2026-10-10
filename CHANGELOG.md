@@ -4,6 +4,17 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.58 (2026-10-10)
+- Cleaner main page. The Open file buttons are gone from the front page. The top row now has the app name with a short version number (v4.58), the Save button, a new **file icon** and the gear. The full version with its build time is in Settings > About.
+- The **file icon** opens a File window holding everything file-related that used to be in Settings: Open a file, Open any file, choose folder or single file, Start a new ledger, Archive old data and View an archive. Settings keeps Display, Categories, About and the User guide. The banner and Save button work as before.
+- Accounts: Add and Edit are now a **+** and a **pencil** button. Account tabs are all the same size (room for about 12 characters; longer names are shortened with "...", and hovering or long-pressing shows the full name) and line up in a grid.
+
+## 4.57 (2026-10-10)
+- Post this item: the dialog now fits the screen on iPhone and iPad (the amount box and its ± button were running off the edge, with Cancel and Post crowding it). The cause was the row above the transactions (Today, search, New item, Look ahead, Balance graph), which was wider than a phone screen and made every dialog wider than the screen; it now wraps onto two lines. Field labels in all item forms also have a little more space above their boxes.
+
+## 4.56 (2026-10-10)
+- Skipped occurrences of a recurring item can be put back: each skipped date is listed under the item ("Skipped: Nov 14, 2026") with a restore button. Skips from months you have since archived are not offered.
+
 ## 4.55 (2026-10-09)
 - Recurring items list: a scheduled transfer no longer shows the two account names twice ("Chequing → CIBC Mastercard · transfer Chequing → CIBC Mastercard"); it now reads "Chequing → CIBC Mastercard · transfer · est. 5,000.00 · Monthly from ...".
 

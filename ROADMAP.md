@@ -33,3 +33,7 @@ Goal: a real installable iOS app that keeps the existing web code, fixing the li
 - **Requirements**: a Mac with Xcode; an Apple Developer account (about US$99/year; check current pricing) to install on devices long-term and to use TestFlight. App Store publishing needs Apple review, a privacy policy and screenshots, but is not required for personal use (install via Xcode or TestFlight).
 - **Limits of this environment**: Claude can write the project files and the native file / lock code but cannot build or test on iOS here; builds and device testing are done by the user in Xcode, feeding results back.
 - **Alternative (not recommended unless the app outgrows the web code)**: full native rewrite in Swift / SwiftUI: best feel, widgets and iCloud sync, but everything is rewritten and two apps would need maintaining.
+
+## Section tabs (idea)
+
+A second tab row above the account tabs for sections beyond individual accounts, for example **Accounts**, **Net worth** (all accounts and liabilities summed, with a history chart), **Loans** (balance, rate, payoff date), **Investments** (see above) and **Automobiles** (cost, odometer, service and fuel log). Each section would reuse the same file, categories and reports. Sensible first step: Net worth, because it needs no new data. The others need new record types and would be added one at a time.

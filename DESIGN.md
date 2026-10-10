@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.54. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.58. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -50,7 +50,7 @@ Design constraints that explain most decisions:
 
 **Recurring rule:** `{ id, accountId, text, category, amount, frequency, startDate, endDate, skipped[], overrides{}, changes[], transferTo?, autoText?, createdAt, deleted?, deletedAt? }`
 - `frequency`: `weekly`, `biweekly`, `monthly`, `monthlyNoDec` (every month except December), `quarterly`, `yearly`.
-- `skipped[]`: original dates of occurrences that will not happen.
+- `skipped[]`: original dates of occurrences that will not happen. Skipped dates are listed under the rule with a restore button (`reinstateOcc`); dates in months already archived are not offered, because archiving also adds the dates of archived posted entries to `skipped[]`.
 - `overrides{ originalDate: { amount, date, editedAt, confirmedAt | estimate } }`: change one occurrence only. `estimate: true` means "my estimate for this month only"; `confirmedAt` means confirmed by the biller.
 - `changes[ { from, amount } ]`: scheduled amount changes; the estimate in force on a date is the latest change on or before it.
 - `transferTo`: makes the rule a scheduled transfer from `accountId` to that account; `autoText` means the description is generated ("Transfer: A to B") and is regenerated if accounts change.
@@ -108,7 +108,7 @@ Possible improvement: an automatic dated backup and a "Download backup" button (
 
 ## 8. Archiving
 
-Settings > Archive old data moves **reconciled** entries up to a chosen month out of the ledger into a separate file, to keep the working file small. Balances do not change because the reconciled anchor carries them.
+File window > Archive old data moves **reconciled** entries up to a chosen month out of the ledger into a separate file, to keep the working file small. Balances do not change because the reconciled anchor carries them.
 
 - **File name:** `ledger-archive-YYYY-MM.json` (`ledger-test-archive-YYYY-MM.json` for test data), where the month is the last month archived; `-2`, `-3` are added if the name was used before. Extension `.json`.
 - **Contents:** `{ type:"myLedger-archive", version, createdAt, archivedThrough, testData, accounts, reconciliations, records }`.
@@ -121,7 +121,10 @@ Settings > Archive old data moves **reconciled** entries up to a chosen month ou
 - **Layout:** account tabs, an account summary, the transaction table with month divider rows, projected rows (shaded) after the actual ones, collapsible cards for Recurring items, Reconciliation and Reports, and a gear for Settings.
 - **Dialogs:** all confirmations, alerts and text prompts are in-app `<dialog>` elements (`ask`, `askText`), titled "myLedger", not browser `confirm()`/`prompt()` (which show "<website> says"). All callers are `async`. A test hook `__askHook` answers dialogs automatically in tests.
 - **Money boxes:** digits only with the decimal point fixed (typing 1 2 5 0 gives 12.50); a minus sign or the ± button flips the sign; zero is allowed.
-- **Settings** is a full-width dialog with a sticky X button; sections (File location, Display, Categories, Archive old data, About, User guide) open one at a time.
+- **Header:** app name with the short version (`v4.58`; the build time is in Settings > About and the tooltip), the Save button (shown when a ledger is open), the **File** icon and the gear. The banner under it reports file actions taken or needed.
+- **File window** (file icon): Open a file, Open any file (touch), choose folder / single file (Chrome, Edge), Start a new ledger, Archive old data and View an archive. All file-related actions live here.
+- **Settings** (gear) is a full-width dialog with a sticky X button; sections (Display, Categories, About, User guide) open one at a time. The File window works the same way.
+- **Accounts:** a + button (add) and a pencil button (edit selected) beside the heading; tabs are a fixed-size grid (about 12 characters, longer names truncated with a tooltip).
 - **Colours** are CSS variables with a dark-mode set. Negative amounts are red; on liability accounts the displayed negative (payments) is red. Buttons are tonal grey with icons, the primary action is blue.
 - **Touch:** on touch devices rows and buttons are larger.
 - **Search:** searches all entries in the account (and optionally deleted ones), with a "show items exceeding a threshold" filter.

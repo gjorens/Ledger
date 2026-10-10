@@ -49,18 +49,20 @@
   .xrow { display:flex; gap:6px; align-items:flex-end; }
   .xrow > div { flex:1 1 0; min-width:0; }
   .xrow > button { flex:none; margin-bottom:1px; }
-  .tabs { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 2px; align-items:center; }
+  .tabs { display:grid; grid-template-columns:repeat(auto-fill, calc(12ch + 24px)); gap:10px; margin:6px 0 2px; align-items:center; }
   input[type=date] { -webkit-appearance:none; appearance:none; min-width:0; width:100%; text-align:left; min-height:2.3em; }
   form.entry > div, .xrow > div { min-width:0; }
   .moneywrap { min-width:0; }
-  .tab { border-radius:4px; padding:5px 14px; background:var(--tab); color:var(--fg); border:2px solid var(--tab-bd); font-weight:500; }
+  .tab { border-radius:4px; padding:5px 8px; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; background:var(--tab); color:var(--fg); border:2px solid var(--tab-bd); font-weight:500; }
   .tab.low { box-shadow:0 0 0 5px #d32f2f; border-color:#d32f2f; }   /* red ring while the account is at or below its warning level */
   .tab.on { background:var(--accent); color:#fff; border-color:var(--tab-on-bd); font-weight:700; }
   form.entry { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; align-items:end; margin-top:6px; }
   form.entry .desc { grid-column:span 2; }
   form.entry .full { grid-column:1 / -1; }
   form.entry .addbtn button { width:100%; }
-  form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:1px; }
+  form.entry label, .lbl { display:block; font-size:.8rem; color:var(--muted); margin-bottom:4px; }
+  #postDlg { width:calc(100% - 24px); max-width:420px; box-sizing:border-box; }
+  #postDlg .btnrow { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
   .desc, #eTextWrap { position:relative; }
   .suggest { position:absolute; left:0; right:0; top:100%; z-index:30; background:var(--bg); border:1px solid var(--line); border-radius:9px; margin:2px 0 0; padding:0; list-style:none; max-height:230px; overflow:auto; box-shadow:0 4px 14px rgba(0,0,0,.2); }
   .suggest li { padding:8px 10px; cursor:pointer; font-size:.92rem; display:flex; justify-content:space-between; gap:8px; }
@@ -71,9 +73,8 @@
   .stat b { display:block; font-size:1.1rem; font-variant-numeric:tabular-nums; }
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
-  .acctrow { display:flex; gap:10px; align-items:flex-start; }
-  .acctrow .tabs { flex:1 1 auto; }
-  .acctbtns { display:flex; flex-direction:column; align-items:flex-end; gap:5px; margin:2px 0 6px; flex:none; }
+  .acctrow { display:flex; gap:10px; align-items:center; justify-content:space-between; }
+  .acctbtns { display:flex; gap:6px; flex:none; }
   .horizon .primary { margin-right:10px; }
   .sparkstat { display:flex; flex-direction:column; justify-content:center; }
   .sparkstat { flex:3 1 260px; }
@@ -109,7 +110,7 @@
   .acctpanel .stat.breach { box-shadow:inset 0 0 0 3px #d32f2f; }
   .txhead { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .txhead .horizon { margin:0; }
-  .horizon { display:flex; align-items:center; gap:8px; margin:6px 0 0; }
+  .horizon { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0 0; }
   .horizon select { width:auto; }
   .touch th, .touch td { padding:7px 8px; }
   .touch button.mini { padding:5px 10px; }
@@ -117,10 +118,10 @@
   .touch .ritem { padding:6px 0; }
   .touch .rule { padding:6px 0; }
   dialog.wide { width:min(560px, calc(100% - 24px)); }
-  #settingsDlg { width:calc(100% - 24px); max-width:none; }
-  #settingsDlg .shead { display:flex; align-items:center; justify-content:space-between; position:sticky; top:-16px; background:var(--bg); margin:-4px 0 6px; padding:4px 0; z-index:1; }
-  #settingsDlg .shead h3 { margin:0; }
-  #sX { font-size:22px; line-height:1; padding:2px 12px; }
+  #settingsDlg, #fileDlg { width:calc(100% - 24px); max-width:none; }
+  #settingsDlg .shead, #fileDlg .shead { display:flex; align-items:center; justify-content:space-between; position:sticky; top:-16px; background:var(--bg); margin:-4px 0 6px; padding:4px 0; z-index:1; }
+  #settingsDlg .shead h3, #fileDlg .shead h3 { margin:0; }
+  #sX, #fX { font-size:22px; line-height:1; padding:2px 12px; }
   #archDlg { width:min(880px, calc(100% - 24px)); }
   #archDlg table { min-width:600px; }
   #gChart svg { width:100%; height:auto; display:block; }
@@ -187,9 +188,8 @@
   <div class="top">
     <h1>myLedger <small id="ver"></small> <span class="badge" id="profBadge" hidden>TEST DATA</span></h1>
     <div class="filebar">
-      <button id="btnOpen">Open file</button>
-      <button id="btnAny" class="mini" hidden title="Use this if your ledger file is greyed out in the file list">Open any file…</button>
       <button id="btnSave" class="primary" hidden>Save file</button>
+      <button id="btnFile" class="icon" type="button" title="File actions: open, choose folder, new ledger, archive" aria-label="File actions"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button>
       <button id="btnGear" class="icon" type="button" title="Settings" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
@@ -200,14 +200,14 @@
 
   <section id="setup" class="card" hidden>
     <strong>First use</strong>
-    <p class="small">Create your first account (you can add more later), or open an existing ledger file above.</p>
+    <p class="small">Create your first account (you can add more later), or use the file icon at the top to open an existing ledger file.</p>
     <button class="primary" id="btnFirst" type="button">Create first account</button>
   </section>
 
   <section id="app" hidden>
     <div class="card acctbox">
-      <div class="boxhead">Accounts</div>
-      <div class="acctrow"><div class="tabs" id="acctBar"></div><div class="acctbtns" id="acctBtns"></div></div>
+      <div class="acctrow"><div class="boxhead" style="margin:0">Accounts</div><div class="acctbtns" id="acctBtns"></div></div>
+      <div class="tabs" id="acctBar"></div>
       <div class="acctpanel">
         <div class="acctline">
           <div class="small" id="acctInfo" style="margin:0"></div>
@@ -293,33 +293,57 @@
   </section>
 </main>
 
-<dialog id="settingsDlg" class="wide" style="max-height:90vh; overflow:auto">
-  <div class="shead"><h3>Settings</h3><button type="button" id="sX" aria-label="Close settings" title="Close">×</button></div>
+<dialog id="fileDlg" class="wide" style="max-height:90vh; overflow:auto">
+  <div class="shead"><h3>File</h3><button type="button" id="fX" aria-label="Close" title="Close">×</button></div>
 
   <details class="sset" open>
-    <summary>File location</summary>
+    <summary>Open and save</summary>
     <div class="boxhead">Where your ledger file is kept</div>
     <div id="sWhere" style="margin-bottom:6px; font-weight:600"></div>
+    <div class="filebar"><button id="sOpenFile" class="primary" type="button">Open a file…</button><button id="btnAny" class="mini" hidden title="Use this if your ledger file is greyed out in the file list">Open any file…</button></div>
     <div id="sFsBlock" hidden>
       <p class="small" style="margin:0 0 6px">Choose the folder where your ledger lives: iCloud Drive, Dropbox, OneDrive or any other folder on this computer. The app saves <b id="sFileName">ledger.json</b> inside it and autosaves there. To make a new folder, type a name below first; it is created inside the folder you pick.</p>
       <label class="lbl" for="sNewFolder">New folder name (optional)</label>
       <input id="sNewFolder" type="text" maxlength="60" autocomplete="off" placeholder="e.g. myLedger">
       <div class="filebar" style="margin:8px 0 0">
         <button id="sChooseFolder" class="primary" type="button">Choose folder…</button>
-        <button id="sOpenFile" type="button">Open a file…</button>
         <button id="sChooseFile" type="button">Use a single file instead…</button>
       </div>
       <p class="small" style="margin:6px 0 0">Browsers only tell the app the name of the folder you chose, not its full path.</p>
     </div>
-    <div class="boxhead" style="margin-top:12px">Start a new ledger</div>
-    <p class="small" style="margin:0 0 6px">Begin an empty ledger (for example your first real one after trying the test data). The file you have open now is not changed or deleted. The new ledger is saved as <b>ledger.json</b>.</p>
-    <button id="sNewLedger" type="button">Start a new, empty ledger…</button>
     <div id="sManualBlock" hidden>
       <p class="small" style="margin:0 0 6px" id="sManualText"></p>
     </div>
   </details>
 
   <details class="sset">
+    <summary>Start a new ledger</summary>
+    
+    <p class="small" style="margin:0 0 6px">Begin an empty ledger (for example your first real one after trying the test data). The file you have open now is not changed or deleted. The new ledger is saved as <b>ledger.json</b>.</p>
+    <button id="sNewLedger" type="button">Start a new, empty ledger…</button>
+  </details>
+
+  <details class="sset">
+    <summary>Archive old data</summary>
+    <p class="small" style="margin:8px 0 6px">Over the years the ledger file grows. Archiving moves old <b>reconciled</b> entries (and deleted ones) into a separate file, <b>ledger-archive-YYYY-MM.json</b>, and keeps balances exactly as they are. Nothing is lost: open the archive any time with <b>View an archive…</b>. Entries from the latest reconciled month, and anything not yet reconciled, always stay in your ledger.</p>
+    <label class="lbl" for="arMonth">Archive everything reconciled through</label>
+    <select id="arMonth"></select>
+    <p class="small" id="arPreview" style="margin:6px 0"></p>
+    <div class="filebar">
+      <button id="arGo" class="primary" type="button">Archive…</button>
+      <button id="arView" type="button">View an archive…</button>
+    </div>
+    <div class="small" id="arList" style="white-space:pre-line; margin:4px 0 0"></div>
+  </details>
+
+  <div style="display:flex; justify-content:flex-end; margin-top:10px"><button type="button" id="fClose">Close</button></div>
+</dialog>
+
+<dialog id="settingsDlg" class="wide" style="max-height:90vh; overflow:auto">
+  <div class="shead"><h3>Settings</h3><button type="button" id="sX" aria-label="Close settings" title="Close">×</button></div>
+
+
+  <details class="sset" open>
     <summary>Display</summary>
     <label style="display:flex; gap:8px; align-items:flex-start; margin-top:8px; cursor:pointer"><input type="checkbox" id="sShowDel" style="width:24px; height:24px; min-width:24px; margin:0; accent-color:var(--accent)"><span>Show deleted entries in the transaction list and in search<br><span class="small">Deleted entries stay in the file so they can be restored. Turn this on to see them (struck through, with a restore button). They never count toward balances either way.</span></span></label>
   </details>
@@ -340,18 +364,6 @@
     <p class="small" style="margin:6px 0 0">Each category has a type (money in, money out or either); the app asks you to confirm an amount that goes the other way. Renaming updates every entry and recurring item that uses the category. Renaming one to the name of another merges them. Deleting leaves the affected entries uncategorised.</p>
   </details>
 
-  <details class="sset">
-    <summary>Archive old data</summary>
-    <p class="small" style="margin:8px 0 6px">Over the years the ledger file grows. Archiving moves old <b>reconciled</b> entries (and deleted ones) into a separate file, <b>ledger-archive-YYYY-MM.json</b>, and keeps balances exactly as they are. Nothing is lost: open the archive any time with <b>View an archive…</b>. Entries from the latest reconciled month, and anything not yet reconciled, always stay in your ledger.</p>
-    <label class="lbl" for="arMonth">Archive everything reconciled through</label>
-    <select id="arMonth"></select>
-    <p class="small" id="arPreview" style="margin:6px 0"></p>
-    <div class="filebar">
-      <button id="arGo" class="primary" type="button">Archive…</button>
-      <button id="arView" type="button">View an archive…</button>
-    </div>
-    <div class="small" id="arList" style="white-space:pre-line; margin:4px 0 0"></div>
-  </details>
 
   <details class="sset">
     <summary>About myLedger</summary>
@@ -366,8 +378,8 @@
     <div class="guide">
       <h4>Getting started</h4>
       <ul>
-        <li>First time: tap <b>Create first account</b>, or <b>Open file</b> to load a ledger you already have.</li>
-        <li>Add more accounts with <b>+ Add account</b> (chequing, savings, credit card, loan, and so on). <b>Edit account</b> changes its details, opening balance and low-balance warning.</li>
+        <li>First time: tap <b>Create first account</b>, or use the <b>file icon</b> at the top and choose <b>Open a file</b> to load a ledger you already have.</li>
+        <li>Add more accounts with the <b>+</b> button beside Accounts (chequing, savings, credit card, loan, and so on). The <b>pencil</b> button edits the selected account: it changes its details, opening balance and low-balance warning.</li>
         <li>Switch accounts with the tabs. Each account has its own balance, recurring items and reconciliation.</li>
       </ul>
       <h4>Adding items (+ New item)</h4>
@@ -385,9 +397,9 @@
         <li>Italic rows are projected from recurring items. <b>est.</b> means estimated. <b>Edit</b> a projected row to change that one occurrence only: enter your own estimate (for example a big purchase coming up) or the amount the biller confirmed, which then shows in <b>bold</b>. The other months keep the regular estimate. To change every following month use the calendar icon in Recurring items.</li>
         <li>Each account can have a <b>currency</b> (CAD, USD, EUR, GBP, MXN and others) in Edit account. Balances then show with the right symbol. There is no conversion between currencies, so a transfer between accounts in different currencies asks you to confirm, and reports across mixed-currency accounts carry a warning.</li>
         <li><b>Transfers</b> are described automatically as <i>From account \u2192 To account</i> and the description cannot be edited (it follows account renames). Amounts are positive only: use the double-arrow button between the two account boxes to swap the direction.</li>
-        <li><b>Starting your real ledger:</b> Settings > File location > Start a new, empty ledger. The test file is left as it is; the new ledger saves as ledger.json.</li>
+        <li><b>Starting your real ledger:</b> File icon > Start a new ledger. The test file is left as it is; the new ledger saves as ledger.json.</li>
         <li><b>Search</b> (magnifier next to New item) lists matching entries by description, category, amount, date or account (this account or all). The target button on a result scrolls the ledger to that entry and flashes it; <b>Back to ledger</b> closes without moving. <b>Show items exceeding threshold</b> lists every item after which the balance is below the warning level (below zero if none is set). Negative amounts are red. Month bars in the list make it easier to find your place.</li>
-        <li><b>Archive old data</b> (Settings) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
+        <li><b>Archive old data</b> (file icon) moves old reconciled entries into a separate file, <i>ledger-archive-YYYY-MM.json</i>, so your ledger stays small. Balances do not change. Open an archive any time with <b>View an archive</b> (read-only, searchable). Keep the archive files with your ledger: they are the only copy of those entries.</li>
         <li>Row buttons are icons (hover for the name): pencil = Edit, trash = Delete, check = Post, skip arrow = Skip, back arrow = Unpost, square = Stop. A deleted entry stays in the list marked <i>deleted</i> with a round arrow button to <b>undelete</b> it (a transfer comes back on both sides).</li>
         <li><b>Post</b> turns a projected row into a real entry; <b>Skip</b> drops that one occurrence. If you post by mistake, press <b>Unpost</b> on the entry to put it back.</li>
         <li>In <b>Recurring items</b>: the pencil <b>edits</b> the item (fix a wrong amount, description, category, dates, how often it repeats or the accounts of a transfer); the calendar icon <b>schedules a new estimate</b> from a future date; <b>Stop</b> ends the item. Once entries from an item have been posted, its first date and how often it repeats are locked. Items whose last date has passed, and stopped items, move to <b>Finished and stopped items</b>, where you can restore, continue (set a new last date) or remove them; <b>Clean up</b> removes the ones that have no entries in the file.</li>
@@ -407,8 +419,8 @@
       <ul><li>Open <b>Reports</b> to see spending and income by category (or by category and month) for a period you choose, for one account or all of them. Transfers, deleted items and projections are left out.</li></ul>
       <h4>Saving</h4>
       <ul>
-        <li><b>Chrome, Edge or Brave on a Mac:</b> choose a folder in Settings. The app then autosaves to it every 30 seconds and when you leave the page. If it asks you to <b>Reconnect</b> after a restart, tap it once.</li>
-        <li><b>Safari, iPhone and iPad:</b> press <b>Save file</b> (or <b>Save to Files</b>) after making changes, choose the folder, and choose Replace. Press <b>Open file</b> to load your ledger on another device.</li>
+        <li><b>Chrome, Edge or Brave on a Mac:</b> use the file icon at the top to choose a folder. The app then autosaves to it every 30 seconds and when you leave the page. If it asks you to <b>Reconnect</b> after a restart, tap it once.</li>
+        <li><b>Safari, iPhone and iPad:</b> press <b>Save file</b> (or <b>Save to Files</b>) after making changes, choose the folder, and choose Replace. Use the file icon, then <b>Open a file</b>, to load your ledger on another device.</li>
         <li>An unsaved-changes banner shows when there is anything not yet saved. A safety copy is also kept inside the browser.</li>
         <li>Use the same version of the app on all your devices, and open the latest file before you start entering items.</li>
       </ul>
@@ -523,14 +535,14 @@
 </dialog>
 
 <dialog id="postDlg">
-  <form id="postForm" method="dialog" class="grid" style="min-width:min(92vw,340px)">
+  <form id="postForm" method="dialog" class="entry" style="margin-top:0">
     <h3 class="full" style="margin:0">Post this item</h3>
     <p class="small full" id="postInfo" style="margin:0"></p>
     <div class="full">
       <label for="postAmt" id="postAmtLbl">Actual amount</label>
       <input id="postAmt" class="money" type="text" inputmode="numeric" autocomplete="off" required>
     </div>
-    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+    <div class="full btnrow">
       <button type="button" id="postCancel">Cancel</button>
       <button type="submit" class="primary">Post</button>
     </div>
@@ -724,9 +736,9 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.55';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-09 12:05';
-$('ver').textContent = 'v' + APP_VERSION + ' · ' + APP_BUILD;
+const APP_VERSION = '4.58';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-10 14:20';
+$('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } };
@@ -792,7 +804,7 @@ const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medi
 const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', monthlyNoDec:'Monthly (except Dec)', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && (Array.isArray(d.accounts) || typeof d.startingBalance === 'number');
 function fileProblem(d) {
-  if (d && d.type === 'myLedger-archive') return 'That is an archive file, not your ledger. Open it from Settings \u203a Archive old data \u203a View an archive.';
+  if (d && d.type === 'myLedger-archive') return 'That is an archive file, not your ledger. Open it from the file icon \u203a Archive old data \u203a View an archive.';
   if (!valid(d)) return 'That file is not a ledger file.';
   if ((d.version || 1) > DATA_VERSION) return 'That file was saved by a newer version of myLedger. Reload this page to update, then try again.';
   return null;
@@ -1008,7 +1020,7 @@ async function saveToHandle(auto) {
           const disk = JSON.parse(t);
           if (disk.savedAt && disk.savedAt > state.baseSavedAt) {
             if (auto) { setMsg('The file on disk is newer (saved elsewhere). Tap Save now to decide.', 'warn'); return false; }
-            if (!await ask({ok:'Overwrite',danger:1}, 'The file was saved more recently from another device (' + fmtTime(disk.savedAt) + ').\n\nOverwrite it with this version?\n\nCancel, then use "Open file" to load the newer one.')) return false;
+            if (!await ask({ok:'Overwrite',danger:1}, 'The file was saved more recently from another device (' + fmtTime(disk.savedAt) + ').\n\nOverwrite it with this version?\n\nCancel, then use the file icon > Open a file to load the newer one.')) return false;
           }
         }
       } catch (e) { /* unreadable/empty file: proceed */ }
@@ -1066,11 +1078,11 @@ async function saveNow() {
       try {
         if (await state.dir.requestPermission({ mode:'readwrite' }) !== 'granted') return;
         let exists = true; try { await state.dir.getFileHandle(PFILE); } catch (e) { if (e.name === 'NotFoundError') exists = false; else throw e; }
-        if (exists && !await ask({ ok:'Replace it', danger:1 }, PFILE + ' already exists in your folder.\n\nSaving now would REPLACE it with this ledger. Use Open file first if you meant to continue with the existing one.')) return;
+        if (exists && !await ask({ ok:'Replace it', danger:1 }, PFILE + ' already exists in your folder.\n\nSaving now would REPLACE it with this ledger. Use the file icon > Open a file first if you meant to continue with the existing one.')) return;
         state.handle = await state.dir.getFileHandle(PFILE, { create:true }); state.fileName = PFILE; state.baseSavedAt = null; await kvSet('handle', state.handle);
       } catch (e) { return setMsg('Could not create ' + PFILE + ': ' + e.message, 'err'); }
     }
-    if (!state.handle) return openSettings();     // nothing chosen yet: the gear is where the folder is chosen
+    if (!state.handle) return openFileMenu();     // nothing chosen yet: the file menu is where the folder is chosen
     await saveToHandle(false);
   }
   else await exportFile();
@@ -1081,7 +1093,7 @@ async function startNewLedger() {
   if (!await confirmDiscard()) return;
   const cur = state.fileName ? '"' + state.fileName + '"' : 'The current ledger';
   if (!await ask({ ok:'Start new ledger', cancel:'Cancel' }, 'Start a new, empty ledger?\n\n' + cur + ' is not changed or deleted; it just stops being the open file. You will create your first account next, and the new ledger is saved as ledger.json.')) return;
-  $('settingsDlg').close();
+  $('fileDlg').close();
   state.data = newData(); state.dirty = false; state.msg = null; state.baseSavedAt = null; state.draftAt = null;
   state.handle = null; state.fileName = null; state.accountId = null; state.newerDisk = null; state.newerData = null;
   state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' }; state.prevLows = null;
@@ -1204,7 +1216,7 @@ async function findInDir(ask) {          // locate this data set's file inside t
 async function reconnect() {          // needs a tap: browsers only allow the permission prompt from a click
   if (!state.handle && state.dir) {
     const found = await findInDir(true); state.needsReconnect = false;
-    if (!found) { setMsg(state.dirMissing ? 'No ' + PROFILES[PROFILE].label + ' file (' + PFILE + ') found in the folder "' + (state.dirLabel || state.dir.name) + '"' + (state.dirNames && state.dirNames.length ? ' (it holds: ' + state.dirNames.join(', ') + ')' : '') + '. Use Open file to pick the right one.' : 'Folder access was not granted.', 'warn'); return; }
+    if (!found) { setMsg(state.dirMissing ? 'No ' + PROFILES[PROFILE].label + ' file (' + PFILE + ') found in the folder "' + (state.dirLabel || state.dir.name) + '"' + (state.dirNames && state.dirNames.length ? ' (it holds: ' + state.dirNames.join(', ') + ')' : '') + '. Use the file icon > Open a file to pick the right one.' : 'Folder access was not granted.', 'warn'); return; }
   }
   const h = state.handle;
   if (!h) return;
@@ -1491,7 +1503,7 @@ function whereText() {                    // where the ledger file lives, as far
 function modeText() {
   if (FS) return state.handle || state.dir
     ? 'Saving to ' + whereText() + '. Autosaves every 30 s and when you leave the page.'
-    : 'No save location yet. Open Settings (the gear) to choose a folder.';
+    : 'No save location yet. Use the file icon at the top to choose a folder.';
   return 'Use ' + SAVE_LABEL + ' to update your file (' + PFILE + '). ' + (TOUCH
     ? 'Pick the folder in the Files sheet, for example iCloud Drive \u203a myLedger, and choose Replace.'
     : 'It is saved to your Downloads folder: move it to your iCloud folder and replace the old copy.');
@@ -1751,18 +1763,22 @@ function renderArchiveView() {
   if (rows.length > 600) $('avCount').textContent += ' (showing the first 600: use Search to narrow)';
 }
 
-function fillSettings() {
-  renderCatSettings(); fillArchive();
-  $('sShowDel').checked = !!(state.data && state.data.settings.showDeleted);
+function fillFile() {
+  fillArchive();
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
-  $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome, Edge or Brave on a Mac.';
+  $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open a file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome or Edge on a Mac.';
+}
+function fillSettings() {
+  renderCatSettings();
+  $('sShowDel').checked = !!(state.data && state.data.settings.showDeleted);
   $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
   $('aboutData').textContent = (PROFILE === 'test' ? 'Test data is open (orange stripe).' : 'Your ledger is open.') + (state.fileName ? ' File: ' + state.fileName + '.' : '');
   $('aboutMode').textContent = modeText();
 }
 function openSettings() { fillSettings(); $('settingsDlg').showModal(); }
+function openFileMenu() { fillFile(); $('fileDlg').showModal(); }
 async function chooseFolder() {
   try {
     const parent = await window.showDirectoryPicker({ mode:'readwrite', id:'myledger' });
@@ -1789,23 +1805,27 @@ async function chooseFolder() {
 }
 $('arMonth').addEventListener('change', arPreview);
 $('arGo').addEventListener('click', runArchive);
-$('arView').addEventListener('click', () => { $('settingsDlg').close(); renderArchiveView(); $('archDlg').showModal(); });
+$('arView').addEventListener('click', () => { $('fileDlg').close(); renderArchiveView(); $('archDlg').showModal(); });
 $('avOpen').addEventListener('click', () => { if (TOUCH) $('avInput').accept = '.json,application/json'; else $('avInput').removeAttribute('accept'); $('avInput').click(); });
 $('avInput').addEventListener('change', async ev => { const fl = [...ev.target.files]; ev.target.value = ''; await loadArchiveFiles(fl); });
 $('avAcct').addEventListener('change', renderArchiveView);
 $('avSearch').addEventListener('input', renderArchiveView);
 $('avClose').addEventListener('click', () => $('archDlg').close());
 $('btnGear').addEventListener('click', openSettings);
+$('btnFile').addEventListener('click', openFileMenu);
+$('fClose').addEventListener('click', () => $('fileDlg').close());
+$('fX').addEventListener('click', () => $('fileDlg').close());
 $('sClose').addEventListener('click', () => $('settingsDlg').close());
 $('sX').addEventListener('click', () => $('settingsDlg').close());
-document.querySelectorAll('#settingsDlg details.sset').forEach(d => d.addEventListener('toggle', () => { if (d.open) document.querySelectorAll('#settingsDlg details.sset').forEach(o => { if (o !== d) o.open = false; }); }));   // one section open at a time
+document.querySelectorAll('#settingsDlg details.sset, #fileDlg details.sset').forEach(d => d.addEventListener('toggle', () => { if (d.open) d.closest('dialog').querySelectorAll('details.sset').forEach(o => { if (o !== d) o.open = false; }); }));   // one section open at a time
 $('sChooseFolder').addEventListener('click', chooseFolder);
 $('sNewLedger').addEventListener('click', startNewLedger);
-$('sOpenFile').addEventListener('click', async () => { $('settingsDlg').close(); await openFile(); });
+$('sOpenFile').addEventListener('click', async () => { $('fileDlg').close(); await openFile(); });
 $('sChooseFile').addEventListener('click', async () => { await chooseSaveFile(); $('sWhere').textContent = whereText(); });
 
 function render() {
   if ($('settingsDlg').open) fillSettings();
+  if ($('fileDlg').open) fillFile();
   $('btnAny').hidden = FS || !TOUCH;
   $('btnSave').hidden = !state.data;
   $('btnSave').textContent = SAVE_LABEL;
@@ -1866,11 +1886,11 @@ function renderAcctBar() {
     const low = !a.closed && lowFor(a).first;
     const btn = document.createElement('button'); btn.className = 'tab' + (a.id === state.accountId ? ' on' : '') + (low ? ' low' : '');
     if (low) btn.title = typeof a.warnBelow !== 'number' ? 'Projected to go below zero on ' + fmtDate(low.date) : isLiab(a) ? 'Projected to owe more than ' + money(cents(-a.warnBelow), a) + ' on ' + fmtDate(low.date) : 'Projected to be below ' + money(cents(a.warnBelow), a) + ' on ' + fmtDate(low.date);
-    btn.textContent = acctLabel(a); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
+    btn.textContent = acctLabel(a); btn.title = acctLabel(a) + (btn.title ? ' \u2014 ' + btn.title : ''); btn.onclick = () => switchAccount(a.id); bar.appendChild(btn);
   }
   const ab = $('acctBtns'); ab.innerHTML = '';
-  ab.appendChild(miniBtn('+ Add account', () => openAcct(null)));
-  ab.appendChild(miniBtn('Edit account', () => openAcct(acct())));
+  ab.appendChild(iconBtn('plus', 'Add an account', () => openAcct(null)));
+  ab.appendChild(iconBtn('edit', 'Edit this account', () => openAcct(acct())));
   const cur = acct();
   $('acctInfo').textContent = acctSub(cur) + (typeof cur.warnBelow === 'number' ? (isLiab(cur) ? ' · warning above ' + money(cents(-cur.warnBelow), cur) + ' owing' : ' · warning below ' + money(cents(cur.warnBelow), cur)) : '');
 }
@@ -2010,6 +2030,7 @@ function tag(td, label, cls, title) {
   if (title) t.title = title; td.appendChild(t);
 }
 const ICONS = {                           // small line icons (stroke follows the button's text color)
+  plus:'M12 5v14M5 12h14',
   edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6',
   unpost:'M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
@@ -2172,6 +2193,12 @@ function renderRules() {
       const cs = document.createElement('span'); cs.appendChild(document.createTextNode('From ' + fmtDate(c.from) + ': est. '));
       { const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(c.amount) : c.amount * sgn(acc), am = document.createElement('span'); am.textContent = fmt(cents(v)); if (!u.transferTo && v < 0) am.className = 'neg'; cs.appendChild(am); }
       cr.appendChild(cs); cr.appendChild(iconBtn('x', 'Remove this scheduled change', () => removeChange(u.id, c.from)));
+      box.appendChild(cr);
+    }
+    for (const d of skippedOf(u)) {
+      const cr = document.createElement('div'); cr.className = 'rule sub';
+      const cs = document.createElement('span'); cs.textContent = 'Skipped: ' + fmtDate(d);
+      cr.appendChild(cs); cr.appendChild(iconBtn('restore', 'Put this skipped occurrence back (it is projected or due again)', () => reinstateOcc(u.id, d)));
       box.appendChild(cr);
     }
   }
@@ -2721,6 +2748,16 @@ $('postForm').addEventListener('submit', ev => {
   changed();
 });
 $('postCancel').addEventListener('click', () => { postCtx = null; $('postDlg').close(); });
+function skippedOf(u) {                   // skipped dates that can be put back (not those of entries since archived: their entries live in an archive file)
+  const lim = (state.data.archives || []).reduce((m, x) => x.through > m ? x.through : m, '');
+  return (u.skipped || []).filter(d => d.slice(0, 7) > lim).sort();
+}
+async function reinstateOcc(id, d) {
+  const u = ruleById(id); if (!u) return;
+  if (!await ask({ok:'Put back'}, 'Put back "' + u.text + '" on ' + fmtDate(d) + '? It will be projected again' + (d < todayStr() ? ' (or shown as Due, since the date has passed)' : '') + ', at the regular estimate.')) return;
+  u.skipped = (u.skipped || []).filter(x => x !== d);
+  changed();
+}
 async function skipOcc(it) {
   const u = ruleById(it.ruleId);
   if (!u) return;
@@ -2809,8 +2846,7 @@ async function removeChange(id, from) {
   changed();
 }
 
-$('btnOpen').onclick = openFile;
-$('btnAny').onclick = openAnyFile;
+$('btnAny').onclick = async () => { $('fileDlg').close(); await openAnyFile(); };
 $('btnSave').onclick = saveNow;
 
 /* ---------- Safety nets ---------- */
