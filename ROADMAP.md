@@ -37,3 +37,11 @@ Goal: a real installable iOS app that keeps the existing web code, fixing the li
 ## Section tabs (idea)
 
 A second tab row above the account tabs for sections beyond individual accounts, for example **Accounts**, **Net worth** (all accounts and liabilities summed, with a history chart), **Loans** (balance, rate, payoff date), **Investments** (see above) and **Automobiles** (cost, odometer, service and fuel log). Each section would reuse the same file, categories and reports. Sensible first step: Net worth, because it needs no new data. The others need new record types and would be added one at a time.
+
+## Export and import accounts (idea)
+
+Export one or more accounts, with their entries, recurring items, reconciliations and the categories they use, to a file that can be imported into another ledger file. Uses: splitting one file into several (see multiple real ledgers), moving an account to a new year's file, sharing one account with someone else, or recovering an account from a backup. Points to decide: new account ids on import so they never clash; what to do with transfers whose other leg is in an account that is not exported (turn them into ordinary entries or keep the link and warn); merging categories by name.
+
+## TFSA account type with contribution tracking (idea, part of Investments)
+
+A **TFSA** (Tax-Free Savings Account, Canada) account type under investment accounts. It tracks **contributions** separately from growth: contributions and withdrawals by calendar year, the annual limit for each year, the lifetime contribution room used and remaining, and a warning before an over-contribution. Withdrawals are added back to room on 1 January of the following year, so the tracker needs to record when a withdrawal happened. The yearly limits come from the Canada Revenue Agency and are entered by the user or kept in a small table, and the app should say that it is not tax advice and that the person should check their CRA My Account for official room. The same design would suit an RRSP (deduction limit) or FHSA later.

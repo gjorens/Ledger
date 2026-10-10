@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.59 (2026-10-10)
+- Balance graph: the window now uses the full width of the app, and the graph is drawn at that width (taller on wide screens). Move the mouse over it (or touch and drag on iPhone and iPad) to see the date and balance at that point, plus the balance a year earlier. Weekly points; projected dates are marked.
+
 ## 4.58 (2026-10-10)
 - Cleaner main page. The Open file buttons are gone from the front page. The top row now has the app name with a short version number (v4.58), the Save button, a new **file icon** and the gear. The full version with its build time is in Settings > About.
 - The **file icon** opens a File window holding everything file-related that used to be in Settings: Open a file, Open any file, choose folder or single file, Start a new ledger, Archive old data and View an archive. Settings keeps Display, Categories, About and the User guide. The banner and Save button work as before.

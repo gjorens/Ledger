@@ -124,7 +124,10 @@
   #sX, #fX { font-size:22px; line-height:1; padding:2px 12px; }
   #archDlg { width:min(880px, calc(100% - 24px)); }
   #archDlg table { min-width:600px; }
-  #gChart svg { width:100%; height:auto; display:block; }
+  #gChart { position:relative; }
+  #gChart svg { width:100%; height:auto; display:block; touch-action:pan-y; }
+  #graphDlg { width:calc(100% - 24px); max-width:none; box-sizing:border-box; }
+  .gtip { position:absolute; pointer-events:none; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:4px 9px; font-size:.82rem; box-shadow:0 2px 8px rgba(0,0,0,.18); white-space:nowrap; z-index:2; }
   .gl { display:inline-block; width:18px; height:0; border-top:2.5px solid; vertical-align:middle; margin:0 4px 0 8px; }
   .tablewrap { overflow:auto; max-height:75vh; margin-top:6px; border:1px solid var(--line); border-radius:10px; }
   table { border-collapse:collapse; width:100%; min-width:720px; }
@@ -736,8 +739,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.58';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-10 14:20';
+const APP_VERSION = '4.59';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-10 17:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1442,7 +1445,8 @@ function balanceSeries(a) {
   const prev = dates.map(d => { const pd = addMonths(d, -12); return { date:pd, bal:pd < B.first ? null : valueAt(B.events, pd) }; });
   return { dates, cur, prev, start, end, today:todayStr() };
 }
-function openGraph() {
+function openGraph() { $('graphDlg').showModal(); drawGraph(); }
+function drawGraph() {
   const a = acct(), G = balanceSeries(a), sg = sgn(a), NS = 'http://www.w3.org/2000/svg';
   const val = p => p.bal === null ? null : (sg * p.bal) / 100;
   const cv = G.cur.map(val), pv = G.prev.map(val);
@@ -1451,7 +1455,7 @@ function openGraph() {
   let lo = Math.min(...all), hi = Math.max(...all);
   if (lvl !== null && lvl >= lo - (hi - lo) * 0.3 && lvl <= hi + (hi - lo) * 0.3) { lo = Math.min(lo, lvl); hi = Math.max(hi, lvl); }
   if (hi - lo < 1) { hi += 1; lo -= 1; }
-  const W = 520, H = 190, L = 40, R = 8, T = 8, Bm = 20, n = G.dates.length;
+  const W = Math.max(300, Math.round($('gChart').clientWidth || 520)), H = W > 800 ? 340 : W > 500 ? 260 : 210, L = 44, R = 10, T = 8, Bm = 22, n = G.dates.length;
   const x = i => L + (W - L - R) * i / (n - 1), y = v => T + (H - T - Bm) * (1 - (v - lo) / (hi - lo));
   const el = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; return e; };
   const svg = el('svg', { viewBox:'0 0 ' + W + ' ' + H, role:'img' });
@@ -1480,6 +1484,28 @@ function openGraph() {
     const tx = x(split - 1); svg.appendChild(el('line', { x1:tx, x2:tx, y1:T, y2:H - Bm, stroke:'var(--muted)', 'stroke-width':1, 'stroke-dasharray':'1 3' }));
   }
   const box = $('gChart'); box.innerHTML = ''; box.appendChild(svg);
+  // hover / touch read-out: a guide line, a dot on each line and a small box with the date and balance
+  const hov = el('g', { style:'display:none' });
+  const hl = el('line', { y1:T, y2:H - Bm, stroke:'var(--muted)', 'stroke-width':1 }), hc = el('circle', { r:4, fill:'var(--accent)', stroke:'var(--bg)', 'stroke-width':1.5 }), hp = el('circle', { r:3.5, fill:'var(--muted)', stroke:'var(--bg)', 'stroke-width':1.5 });
+  hov.appendChild(hl); hov.appendChild(hp); hov.appendChild(hc); svg.appendChild(hov);
+  const tip = document.createElement('div'); tip.className = 'gtip'; tip.hidden = true; box.appendChild(tip);
+  const showAt = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - L) / (W - L - R) * (n - 1))));
+    hov.style.display = ''; hl.setAttribute('x1', x(i)); hl.setAttribute('x2', x(i));
+    hc.setAttribute('cx', x(i)); hc.setAttribute('cy', y(cv[i]));
+    if (pv[i] !== null) { hp.style.display = ''; hp.setAttribute('cx', x(i)); hp.setAttribute('cy', y(pv[i])); } else hp.style.display = 'none';
+    const proj = G.dates[i] > G.today ? ' (projected)' : '';
+    tip.textContent = '';
+    const l1 = document.createElement('div'); l1.textContent = fmtDate(G.dates[i]) + proj; tip.appendChild(l1);
+    const l2 = document.createElement('div'); l2.style.fontWeight = '700'; l2.textContent = money(cents(cv[i]), a); tip.appendChild(l2);
+    if (pv[i] !== null) { const l3 = document.createElement('div'); l3.className = 'small'; l3.style.margin = '0'; l3.textContent = 'a year earlier: ' + money(cents(pv[i]), a); tip.appendChild(l3); }
+    tip.hidden = false;
+    const sx = x(i) * r.width / W, tw = tip.offsetWidth;
+    tip.style.left = (sx + 12 + tw > r.width ? Math.max(0, sx - 12 - tw) : sx + 12) + 'px'; tip.style.top = '6px';
+  };
+  svg.addEventListener('pointermove', showAt); svg.addEventListener('pointerdown', showAt);
+  svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.hidden = true; });
   const L1 = isLiab(a) ? 'amount owing' : 'balance';
   $('gTitle').textContent = acctLabel(a) + ' · ' + L1;
   const rng = (s0, e0) => fmtDate(s0) + ' – ' + fmtDate(e0);
@@ -1487,10 +1513,10 @@ function openGraph() {
   const item = (color, dash, text) => { const sp = document.createElement('span'); const sw = document.createElement('span'); sw.className = 'gl'; sw.style.borderTopColor = color; if (dash) sw.style.borderTopStyle = 'dashed'; sp.appendChild(sw); sp.appendChild(document.createTextNode(text)); lg.appendChild(sp); };
   item('var(--accent)', false, rng(G.start, G.end) + (split < n ? ' (dashed = projected)' : ''));
   item('var(--muted)', false, 'a year earlier: ' + rng(addMonths(G.start, -12), addMonths(G.end, -12)));
-  $('graphDlg').showModal();
 }
 $('btnGraph').addEventListener('click', openGraph);
 $('gClose').addEventListener('click', () => $('graphDlg').close());
+window.addEventListener('resize', () => { if ($('graphDlg').open) drawGraph(); });
 
 function whereText() {                    // where the ledger file lives, as far as the browser lets us know
   if (FS) {

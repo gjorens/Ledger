@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.58. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.59. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -126,6 +126,7 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - **Settings** (gear) is a full-width dialog with a sticky X button; sections (Display, Categories, About, User guide) open one at a time. The File window works the same way.
 - **Accounts:** a + button (add) and a pencil button (edit selected) beside the heading; tabs are a fixed-size grid (about 12 characters, longer names truncated with a tooltip).
 - **Colours** are CSS variables with a dark-mode set. Negative amounts are red; on liability accounts the displayed negative (payments) is red. Buttons are tonal grey with icons, the primary action is blue.
+- **Balance graph:** full-width dialog; an SVG drawn at the dialog's pixel width and redrawn on resize, with a hover / touch read-out (guide line, dots and a box with the date, balance and the balance a year earlier). Points are weekly samples from `balanceSeries`.
 - **Touch:** on touch devices rows and buttons are larger.
 - **Search:** searches all entries in the account (and optionally deleted ones), with a "show items exceeding a threshold" filter.
 - **Reports:** income and expense by category and month, with a frozen category column, categories sorted, for one account or all.
