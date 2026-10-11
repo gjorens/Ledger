@@ -192,6 +192,7 @@
   dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--fg); padding:12px; width:min(420px, calc(100% - 32px)); overflow:visible; }
   dialog::backdrop { background:rgba(0,0,0,.4); }
   dialog h3 { margin:0; }
+  dialog h3:focus { outline:none; }
   .moneywrap { display:flex; gap:4px; align-items:stretch; }
   .moneywrap input { text-align:right; min-width:0; }
   .moneywrap button { padding:0 10px; }
@@ -567,7 +568,7 @@
 </dialog>
 <dialog id="editDlg">
   <form id="editForm" class="entry" style="margin-top:0">
-    <h3 class="full" id="editTitle">Edit</h3>
+    <h3 tabindex="-1" autofocus class="full" id="editTitle">Edit</h3>
     <div>
       <label for="eDate">Date</label>
       <input id="eDate" type="date" required>
@@ -631,7 +632,7 @@
 
 <dialog id="ruleDlg">
   <form id="ruleForm" class="entry" style="margin-top:0">
-    <h3 class="full" id="ruTitle">Edit recurring item</h3>
+    <h3 tabindex="-1" autofocus class="full" id="ruTitle">Edit recurring item</h3>
     <div class="full" id="ruTextWrap">
       <label for="ruText">Description</label>
       <input id="ruText" type="text" maxlength="60" autocomplete="off">
@@ -683,7 +684,7 @@
 
 <dialog id="acctDlg">
   <form id="acctForm" class="entry" style="margin-top:0">
-    <h3 class="full" id="acctTitle">Add account</h3>
+    <h3 tabindex="-1" autofocus class="full" id="acctTitle">Add account</h3>
     <div>
       <label for="aType">Type</label>
       <select id="aType"></select>
@@ -755,8 +756,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.64';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-10 23:15';
+const APP_VERSION = '4.65';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-10 23:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };

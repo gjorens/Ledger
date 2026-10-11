@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.65 (2026-10-10)
+- Edit / change-amount / account dialogs on iPhone and iPad no longer flash the date picker or keyboard for a moment when they open: nothing is focused until you tap a field.
+
 ## 4.64 (2026-10-10)
 - iPhone and iPad: opening Edit recurring item, Edit entry or Edit account no longer pops the keyboard up automatically, and while the keyboard is showing every dialog moves to the top of the visible area and scrolls, so the Save and Cancel buttons can always be reached. In forms the buttons also stay pinned at the bottom of the dialog.
 
