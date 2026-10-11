@@ -79,6 +79,31 @@
   .vpage h3 { margin:0 0 4px; }
   .vpage ul { margin:6px 0 8px; padding-left:20px; }
   .vpage .vplace { border:2px dashed var(--line); border-radius:10px; padding:10px 12px; margin:8px 0; }
+  .autohead { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .autohead h3 { margin:0; flex:1 1 auto; }
+  .autohead select { width:auto; max-width:100%; }
+  .autostats { display:flex; gap:18px; flex-wrap:wrap; margin:10px 0; }
+  .autostats b { display:block; font-size:1.05rem; }
+  .autostats span { font-size:.8rem; color:var(--muted); }
+  .autot { width:100%; min-width:0; border-collapse:collapse; font-size:.92rem; }
+  .autot th { text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); padding:3px 6px; border-bottom:2px solid var(--line); }
+  .autot td { padding:6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .autot th.num, .autot td.num { text-align:right; white-space:nowrap; }
+  .autot tr.del td { text-decoration:line-through; color:var(--muted); }
+  .autot .sub { display:block; font-size:.78rem; color:var(--muted); }
+  .autot tfoot td { font-weight:700; border-top:2px solid var(--line); border-bottom:0; }
+  .phone .autot td.num:last-child { white-space:normal; width:34px; }
+  .phone .autot td.num:last-child button { display:block; margin:0 0 4px; }
+  .st-over { color:var(--dng-fg); font-weight:700; }
+  .st-soon { background:var(--warn-bg); color:var(--warn-fg); border-radius:6px; padding:0 5px; font-weight:700; }
+  .st-ok { color:var(--ok-fg); }
+  #vehDlg, #svcDlg { width:min(560px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+  .chkgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0 10px; }
+  form.entry label.chk { display:flex; gap:8px; align-items:center; padding:4px 0; margin:0; cursor:pointer; font-size:.95rem; color:var(--fg); }
+  .chk input { width:22px; height:22px; min-width:22px; margin:0; accent-color:var(--accent); }
+  .schedgrid { display:grid; grid-template-columns:1fr 76px 96px; gap:4px 6px; align-items:center; }
+  .schedgrid input { padding:4px 6px; }
+  .schedgrid .hd { font-size:.72rem; color:var(--muted); text-transform:uppercase; }
   .vpage .vacc { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); }
   .acctbtns { display:flex; gap:6px; flex:none; }
   .horizon .primary { margin-right:10px; }
@@ -737,6 +762,45 @@
   </form>
 </dialog>
 
+<dialog id="vehDlg">
+  <form id="vehForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full" id="vehTitle">Add vehicle</h3>
+    <div class="desc"><label for="vName">Vehicle name</label><input id="vName" type="text" maxlength="50" autocomplete="off" required placeholder="e.g. 2019 Honda CR-V"></div>
+    <div><label for="vUnit">Distance unit</label><select id="vUnit"><option value="km">Kilometres</option><option value="mi">Miles</option></select></div>
+    <div><label for="vPlate">Plate (optional)</label><input id="vPlate" type="text" maxlength="12" autocomplete="off"></div>
+    <div><label for="vVin">VIN (optional)</label><input id="vVin" type="text" maxlength="20" autocomplete="off"></div>
+    <div><label for="vOdo">Odometer now (optional)</label><input id="vOdo" type="text" inputmode="numeric" autocomplete="off"></div>
+    <div><label for="vOdoDate">As of</label><input id="vOdoDate" type="date"></div>
+    <div class="full"><label for="vAnnual">Your estimate of distance driven per year (optional)</label><input id="vAnnual" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 15000"></div>
+    <p class="small full" style="margin:0">Your estimate is used until there are at least two odometer readings or service records about three months apart; after that the app uses the distance you actually drive.</p>
+    <div class="full"><div class="lbl">Service schedule: repeat every... (fill in months, distance, or both; whichever comes first is used)</div><div class="schedgrid" id="vSched"></div></div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="vRemove" class="danger" style="margin-right:auto" hidden>Remove</button>
+      <button type="button" id="vCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="svcDlg">
+  <form id="svcForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full" id="svcTitle">Add service record</h3>
+    <div><label for="sDate">Date</label><input id="sDate" type="date" required></div>
+    <div><label for="sVeh">Vehicle</label><select id="sVeh"></select></div>
+    <div><label for="sOdo" id="sOdoLbl">Mileage</label><input id="sOdo" type="text" inputmode="numeric" autocomplete="off" required></div>
+    <div class="full"><div class="lbl">Services performed</div><div class="chkgrid" id="sItems"></div></div>
+    <div class="full" style="display:flex; gap:6px"><input id="sNewItem" type="text" maxlength="50" autocomplete="off" placeholder="Add a service that is not in the list"><button type="button" id="sAddItem">Add</button></div>
+    <div><label for="sBy">Performed by</label><input id="sBy" type="text" list="shopList" maxlength="60" autocomplete="off"><datalist id="shopList"></datalist></div>
+    <div><label for="sCost">Cost</label><input id="sCost" class="money" type="text" inputmode="numeric" autocomplete="off"></div>
+    <div class="full"><label for="sNote">Notes (optional)</label><input id="sNote" type="text" maxlength="200" autocomplete="off"></div>
+    <p class="small full" id="sTotal" style="margin:0"></p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="sCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 'use strict';
 const FS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
@@ -757,7 +821,8 @@ function setTest(on) {                                      // orange stripe + T
   document.title = on ? 'myLedger (test)' : 'myLedger';
 }
 const $ = id => document.getElementById(id);
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;               // 5 adds vehicles, serviceItems and services (Autos page)
+const SERVICE_DEFAULTS = ['Air filter (cabin)', 'Air filter (engine)', 'Alignment', 'Battery replacement', 'Brake fluid flush', 'Brake inspection', 'Brake pads and rotors', 'Coolant flush', 'Oil and filter change', 'Safety inspection', 'Seasonal tire swap', 'Spark plugs', 'Tire replacement', 'Tire rotation', 'Transmission service', 'Wheel balance', 'Wiper blades'];
 const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
 const DEFAULT_CATEGORIES = ['Income', 'Housing', 'Utilities', 'Groceries', 'Dining', 'Transport', 'Health', 'Shopping', 'Subscriptions', 'Entertainment', 'Gifts', 'Insurance', 'Other'];
 const NEWCAT = '__new__';
@@ -768,8 +833,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.66';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-11 07:30';
+const APP_VERSION = '4.67';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-11 16:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -906,7 +971,7 @@ function anchorOf(a) {
   return { base:cents(last.statementBalance) - inStmt, month:last.month };
 }
 const balanceOf = a => anchorOf(a).base + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
-const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[] });
+const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[], vehicles:[], serviceItems:SERVICE_DEFAULTS.slice(), services:[] });
 
 function ensureAccount() {
   const ids = state.data.accounts.map(a => a.id);
@@ -925,6 +990,13 @@ function migrate(d) {                 // upgrades older files in memory; saved a
   if (!Array.isArray(d.categories)) d.categories = DEFAULT_CATEGORIES.slice();
   if (!Array.isArray(d.archives)) d.archives = [];
   if (!Array.isArray(d.recurring)) d.recurring = [];
+  if (!Array.isArray(d.vehicles)) d.vehicles = [];
+  if (!Array.isArray(d.services)) d.services = [];
+  if (!Array.isArray(d.serviceItems)) d.serviceItems = SERVICE_DEFAULTS.slice();
+  { const have = new Set(d.serviceItems.map(x => x.toLowerCase()));
+    for (const s of d.services) for (const n of (s.items || [])) if (!have.has(n.toLowerCase())) { d.serviceItems.push(n); have.add(n.toLowerCase()); }
+    for (const v of d.vehicles) { if (!v.schedule || typeof v.schedule !== 'object') v.schedule = {}; if (!Array.isArray(v.readings)) v.readings = []; if (!v.unit) v.unit = 'km'; }
+    d.serviceItems.sort((a, b) => a.localeCompare(b, undefined, { sensitivity:'base' })); }
   if (!d.settings || typeof d.settings !== 'object') d.settings = {};
   if (!d.settings.horizonMonths) d.settings.horizonMonths = 3;
   if (!d.reconciliations || typeof d.reconciliations !== 'object') d.reconciliations = {};
@@ -1971,12 +2043,13 @@ const VIEWS = [
   { id:'loans', label:'Loans and mortgages', types:['Loan', 'Line of credit'], blurb:'Balances, payments and interest for loans, lines of credit and mortgages, with interest-rate trends.',
     planned:['Rate, term and renewal date for each loan or mortgage', 'Payment schedule: principal and interest split, payoff date', 'Interest-rate trend and what a rate change does to your payment', 'Extra payments and how much interest they save', 'Payments transferred from your bank accounts'] },
   { id:'autos', label:'Autos', blurb:'Each vehicle at a glance: what was serviced and when, and what is due next.',
-    planned:['Vehicles with odometer and plate / VIN', 'Service history: date, kilometres, shop, cost, invoice note', 'Upcoming services by date or kilometres, with reminders', 'Fuel, insurance and registration dates', 'Costs per vehicle by year'] }
+    planned:['Fuel, insurance and registration dates', 'Costs per vehicle by year', 'Reminders'] }
 ];
 const VIEW_KEY = 'myLedger.view';
 const curView = () => { const v = lsGet(VIEW_KEY); return VIEWS.some(x => x.id === v) ? v : 'accounts'; };
 function renderViewPage(v) {
   const box = $('viewPage'); box.innerHTML = '';
+  if (v.id === 'autos') return renderAutos(box);
   const h = document.createElement('h3'); h.textContent = v.label; box.appendChild(h);
   const p = document.createElement('div'); p.className = 'small'; p.textContent = v.blurb; box.appendChild(p);
   const ph = document.createElement('div'); ph.className = 'vplace';
@@ -2008,6 +2081,257 @@ function applyView() {
   if (!acc) renderViewPage(v);
 }
 $('viewSel').addEventListener('change', ev => setView(ev.target.value));
+
+/* ---------- Autos: vehicles, service records, and what is due next ----------
+   Data (file version 5): vehicles[{id,name,plate,vin,unit,annual,readings[{date,odo}],schedule{service name:{months,km}}}],
+   serviceItems[names, kept A-Z], services[{id,vehicleId,date,odo,items[],by,cost,note,deleted}]. Due dates are computed, never stored. */
+const VEH_KEY = 'myLedger.vehicle';
+const NEW_VEH_SCHEDULE = { 'Oil and filter change':{ months:6, km:8000 }, 'Tire rotation':{ months:6, km:10000 }, 'Brake inspection':{ months:12, km:null }, 'Brake pads and rotors':{ months:null, km:60000 } };
+const aCmp = (a, b) => a.localeCompare(b, undefined, { sensitivity:'base' });
+const ymdMs = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+const daysBetween = (a, b) => Math.round((ymdMs(b) - ymdMs(a)) / 864e5);
+const nfmt = n => Math.round(n).toLocaleString();
+const vehicles = () => state.data ? state.data.vehicles.filter(v => !v.deleted) : [];
+function curVehicle() { const vs = vehicles(), s = lsGet(VEH_KEY); return vs.find(v => v.id === s) || vs[0] || null; }
+const svcOf = v => state.data.services.filter(s => s.vehicleId === v.id && !s.deleted);
+const svcTotal = (v, year) => svcOf(v).filter(s => !year || s.date.startsWith(year)).reduce((t, s) => t + cents(s.cost || 0), 0);
+function odoPoints(v) {                   // every known odometer reading: stand-alone readings plus the mileage on service records
+  const p = (v.readings || []).map(r => ({ date:r.date, odo:r.odo }));
+  for (const s of svcOf(v)) if (typeof s.odo === 'number') p.push({ date:s.date, odo:s.odo });
+  return p.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.odo - b.odo);
+}
+function odoModel(v) {                    // distance per day: measured from the last two years of readings once they span 90+ days, otherwise the owner's yearly estimate
+  const pts = odoPoints(v), last = pts[pts.length - 1] || null;
+  let rate = null, src = 'none';
+  if (last) {
+    const from = addDays(last.date, -730), first = pts.find(p => p.date >= from);
+    if (first && daysBetween(first.date, last.date) >= 90 && last.odo > first.odo) { rate = (last.odo - first.odo) / daysBetween(first.date, last.date); src = 'measured'; }
+  }
+  if (rate === null && v.annual > 0) { rate = v.annual / 365; src = 'estimate'; }
+  return { last, rate, src, n:pts.length };
+}
+function estOdo(m, date) { return m.last ? Math.round(m.last.odo + (m.rate || 0) * Math.max(0, daysBetween(m.last.date, date))) : null; }
+function dueRows(v) {                     // one row per scheduled service item: when it was last done and when it is next due (by date or distance, whichever comes first)
+  const m = odoModel(v), today = todayStr(), now = estOdo(m, today), out = [], sv = svcOf(v);
+  for (const [name, sc] of Object.entries(v.schedule || {})) {
+    const months = sc.months > 0 ? sc.months : null, km = sc.km > 0 ? sc.km : null;
+    if (!months && !km) continue;
+    const done = sv.filter(s => s.items.includes(name)).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0)[0] || null;
+    const row = { name, months, km, last:done, nextDate:null, nextKm:null, due:null, by:null, status:'none' };
+    if (done) {
+      if (months) row.nextDate = addMonths(done.date, months);
+      let kmDate = null;
+      if (km && typeof done.odo === 'number') {
+        row.nextKm = done.odo + km;
+        if (m.last) { if (m.last.odo >= row.nextKm) kmDate = m.last.date; else if (m.rate > 0) kmDate = addDays(m.last.date, Math.ceil((row.nextKm - m.last.odo) / m.rate)); }
+      }
+      if (row.nextDate && (!kmDate || row.nextDate <= kmDate)) { row.due = row.nextDate; row.by = 'date'; }
+      else if (kmDate) { row.due = kmDate; row.by = 'km'; }
+      const reached = row.nextKm !== null && now !== null && now >= row.nextKm;
+      row.status = reached || (row.due && row.due < today) ? 'overdue' : row.due && row.due <= addDays(today, 45) ? 'soon' : row.due ? 'ok' : 'unknown';
+    }
+    out.push(row);
+  }
+  const rank = r => r.status === 'none' ? 2 : r.due ? 0 : 1;
+  return out.sort((a, b) => rank(a) - rank(b) || (a.due && b.due ? (a.due < b.due ? -1 : a.due > b.due ? 1 : 0) : 0) || aCmp(a.name, b.name));
+}
+function addCatalog(name) {               // adds a new service name to the shared list (kept A-Z); returns the name as stored
+  name = name.trim().replace(/\s+/g, ' '); if (!name) return '';
+  const list = state.data.serviceItems, hit = list.find(x => x.toLowerCase() === name.toLowerCase());
+  if (hit) return hit;
+  list.push(name); list.sort(aCmp); return name;
+}
+function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
+function renderAutos(box) {
+  const h = mk('div', 'autohead'); h.appendChild(mk('h3', '', 'Autos'));
+  box.appendChild(h);
+  if (!state.data) { box.appendChild(mk('div', 'small', 'Open or create a ledger first.')); return; }
+  const vs = vehicles(), v = curVehicle();
+  if (vs.length > 1) {
+    const sel = mk('select'); sel.setAttribute('aria-label', 'Vehicle');
+    for (const x of vs) { const o = mk('option', '', x.name); o.value = x.id; sel.appendChild(o); }
+    sel.value = v.id; sel.onchange = () => { lsSet(VEH_KEY, sel.value); render(); }; h.appendChild(sel);
+  }
+  h.appendChild(iconBtn('plus', 'Add a vehicle', () => openVeh(null)));
+  if (v) h.appendChild(iconBtn('edit', 'Edit this vehicle and its service schedule', () => openVeh(v)));
+  if (!v) {
+    box.appendChild(mk('div', 'small', 'Keep each vehicle’s service history and see what is due next. Add your first vehicle to start.'));
+    const b = mk('button', 'primary', 'Add a vehicle'); b.type = 'button'; b.onclick = () => openVeh(null); box.appendChild(b); return;
+  }
+  const unit = v.unit === 'mi' ? 'mi' : 'km', m = odoModel(v), now = estOdo(m, todayStr());
+  const info = [v.plate, v.vin].filter(Boolean).join(' · ');
+  if (info) box.appendChild(mk('div', 'small', info));
+  const od = mk('div', 'small');
+  od.textContent = m.last ? 'Odometer about ' + nfmt(now) + ' ' + unit + ' today (last known ' + nfmt(m.last.odo) + ' on ' + fmtDate(m.last.date) + ')'
+    + (m.rate ? ' · ' + nfmt(m.rate * 365) + ' ' + unit + '/year, ' + (m.src === 'measured' ? 'worked out from your records' : 'your estimate') : ' · add a yearly estimate to project distance-based services') : 'No odometer reading yet. Add one, or enter the mileage on a service record.';
+  box.appendChild(od);
+  const bar = mk('div'); bar.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin:6px 0';
+  const add = mk('button', 'primary', '+ Service record'); add.type = 'button'; add.onclick = () => openSvc(null); bar.appendChild(add);
+  const rd = mk('button', '', 'Odometer reading'); rd.type = 'button'; rd.onclick = () => addReading(v); bar.appendChild(rd);
+  box.appendChild(bar);
+  const sv = svcOf(v), yr = todayStr().slice(0, 4), st = mk('div', 'autostats');
+  for (const [val, lbl] of [[fmt(svcTotal(v)), 'Total cost of service to date'], [fmt(svcTotal(v, yr)), 'This year'], [String(sv.length), sv.length === 1 ? 'Service visit' : 'Service visits']]) { const d = mk('div'); d.appendChild(mk('b', '', val)); d.appendChild(mk('span', '', lbl)); st.appendChild(d); }
+  box.appendChild(st);
+
+  box.appendChild(mk('div', 'boxhead', 'Due next, by service'));
+  const rows = dueRows(v);
+  if (!rows.length) box.appendChild(mk('div', 'small', 'No schedule yet. Use the edit button to say how often each service should be done (for example brake inspection yearly, brake pads every 60,000 ' + unit + ').'));
+  else {
+    const w = mk('div'); w.style.overflowX = 'auto'; const t = mk('table', 'autot');
+    t.innerHTML = '<thead><tr><th>Service</th>' + (PHONE ? '' : '<th>Last done</th>') + '<th>Due</th></tr></thead>'; const tb = mk('tbody');
+    for (const r of rows) {
+      const tr = mk('tr'), c1 = mk('td'), c2 = mk('td'), c3 = mk('td');
+      c1.appendChild(document.createTextNode(r.name));
+      c1.appendChild(mk('span', 'sub', 'every ' + [r.months ? r.months + ' mo' : '', r.km ? nfmt(r.km) + ' ' + unit : ''].filter(Boolean).join(' or ')));
+      if (PHONE) c1.appendChild(mk('span', 'sub', r.last ? 'last ' + fmtDate(r.last.date) + (typeof r.last.odo === 'number' ? ' · ' + nfmt(r.last.odo) + ' ' + unit : '') : 'never recorded'));
+      else if (r.last) { c2.textContent = fmtDate(r.last.date); if (typeof r.last.odo === 'number') c2.appendChild(mk('span', 'sub', nfmt(r.last.odo) + ' ' + unit)); } else c2.textContent = '—';
+      if (r.status === 'none') c3.appendChild(mk('span', 'sub', 'No record yet'));
+      else {
+        const lab = r.status === 'overdue' ? 'Overdue' : r.status === 'soon' ? 'Due soon' : '';
+        if (r.due) c3.appendChild(mk('span', r.status === 'overdue' ? 'st-over' : r.status === 'soon' ? 'st-soon' : 'st-ok', (r.status === 'overdue' ? 'Overdue · ' : '') + fmtDate(r.due)));
+        else c3.appendChild(mk('span', 'sub', 'Date unknown'));
+        const bits = [];
+        if (r.nextKm !== null) bits.push('at ' + nfmt(r.nextKm) + ' ' + unit);
+        if (r.due && r.by === 'km') bits.push('estimated date');
+        if (lab && r.status === 'soon') bits.unshift(lab);
+        if (bits.length) c3.appendChild(mk('span', 'sub', bits.join(' · ')));
+      }
+      if (PHONE) tr.append(c1, c3); else tr.append(c1, c2, c3); tb.appendChild(tr);
+    }
+    t.appendChild(tb); w.appendChild(t); box.appendChild(w);
+  }
+
+  box.appendChild(mk('div', 'boxhead outer', 'Service history'));
+  const all = state.data.services.filter(s => s.vehicleId === v.id && (!s.deleted || state.data.settings.showDeleted)).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  if (!all.length) box.appendChild(mk('div', 'small', 'No service records yet. Use + Service record.'));
+  else {
+    const w = mk('div'); w.style.overflowX = 'auto'; const t = mk('table', 'autot');
+    t.innerHTML = '<thead><tr><th>Date</th>' + (PHONE ? '' : '<th class="num">' + unit + '</th>') + '<th>Services</th><th class="num">Cost</th><th></th></tr></thead>'; const tb = mk('tbody');
+    for (const s of all) {
+      const tr = mk('tr', s.deleted ? 'del' : ''), c3 = mk('td'), ca = mk('td', 'num');
+      const cd = mk('td', '', fmtDate(s.date)); if (PHONE && typeof s.odo === 'number') cd.appendChild(mk('span', 'sub', nfmt(s.odo) + ' ' + unit)); tr.appendChild(cd);
+      if (!PHONE) tr.appendChild(mk('td', 'num', typeof s.odo === 'number' ? nfmt(s.odo) : ''));
+      c3.appendChild(document.createTextNode(s.items.slice().sort(aCmp).join(', ')));
+      const extra = [s.by ? 'by ' + s.by : '', s.note].filter(Boolean).join(' · '); if (extra) c3.appendChild(mk('span', 'sub', extra));
+      tr.appendChild(c3); tr.appendChild(mk('td', 'num', s.cost ? fmt(cents(s.cost)) : ''));
+      if (s.deleted) ca.appendChild(iconBtn('restore', 'Restore this record', () => { s.deleted = false; s.editedAt = new Date().toISOString(); changed(); }));
+      else { ca.appendChild(iconBtn('edit', 'Edit this record', () => openSvc(s))); ca.appendChild(iconBtn('trash', 'Delete this record', async () => { if (await ask({ danger:1, ok:'Delete' }, 'Delete the service record from ' + fmtDate(s.date) + '? It stays in the file and can be restored when deleted entries are shown (Settings > Display).')) { s.deleted = true; s.editedAt = new Date().toISOString(); changed(); } })); }
+      tr.appendChild(ca); tb.appendChild(tr);
+    }
+    t.appendChild(tb);
+    const tf = mk('tfoot'), tr = mk('tr'); tr.appendChild(mk('td', '', 'Total')); if (!PHONE) tr.appendChild(mk('td')); tr.appendChild(mk('td')); tr.appendChild(mk('td', 'num', fmt(svcTotal(v)))); tr.appendChild(mk('td')); tf.appendChild(tr); t.appendChild(tf);
+    w.appendChild(t); box.appendChild(w);
+  }
+}
+async function addReading(v) {
+  const unit = v.unit === 'mi' ? 'miles' : 'kilometres', t = await askText({}, 'Odometer reading today, in ' + unit + ':', '');
+  if (t === null) return;
+  const odo = parseInt(String(t).replace(/\D/g, ''), 10);
+  if (!isFinite(odo) || odo <= 0) return;
+  const today = todayStr(); v.readings = (v.readings || []).filter(r => r.date !== today); v.readings.push({ date:today, odo });
+  changed();
+}
+
+/* vehicle dialog */
+function fillSched(v, sched) {
+  const g = $('vSched'); g.innerHTML = '';
+  for (const t of ['Service', 'Months', 'Distance']) g.appendChild(mk('div', 'hd', t));
+  const names = state.data.serviceItems.slice(); for (const k of Object.keys(sched)) if (!names.includes(k)) names.push(k);
+  for (const n of names.sort(aCmp)) {
+    g.appendChild(mk('div', '', n));
+    for (const k of ['months', 'km']) { const i = mk('input'); i.type = 'text'; i.inputMode = 'numeric'; i.autocomplete = 'off'; i.dataset.name = n; i.dataset.k = k; i.value = sched[n] && sched[n][k] ? sched[n][k] : ''; i.setAttribute('aria-label', n + (k === 'months' ? ' every months' : ' every distance')); g.appendChild(i); }
+  }
+}
+function openVeh(v) {
+  state.vehEdit = v ? v.id : null;
+  $('vehTitle').textContent = v ? 'Edit vehicle' : 'Add vehicle';
+  $('vName').value = v ? v.name : ''; $('vUnit').value = v ? v.unit : 'km'; $('vPlate').value = v ? v.plate || '' : ''; $('vVin').value = v ? v.vin || '' : '';
+  const m = v ? odoModel(v) : { last:null };
+  $('vOdo').value = m.last ? m.last.odo : ''; $('vOdoDate').value = m.last ? m.last.date : todayStr();
+  $('vAnnual').value = v && v.annual ? v.annual : '';
+  fillSched(v, v ? v.schedule : NEW_VEH_SCHEDULE);
+  $('vRemove').hidden = !v;
+  $('vehDlg').showModal(); noAutoKeyboard();
+}
+const closeVeh = () => { state.vehEdit = null; if ($('vehDlg').open) $('vehDlg').close(); };
+$('vCancel').addEventListener('click', closeVeh);
+$('vRemove').addEventListener('click', async () => {
+  const v = state.data.vehicles.find(x => x.id === state.vehEdit); if (!v) return;
+  if (!await ask({ danger:1, ok:'Remove' }, 'Remove ' + v.name + ' from the Autos page? Its service records stay in the file.')) return;
+  v.deleted = true; closeVeh(); changed();
+});
+$('vehForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const name = $('vName').value.trim(); if (!name) return;
+  const sched = {};
+  for (const i of $('vSched').querySelectorAll('input')) {
+    const n = i.dataset.name, x = parseInt(i.value.replace(/\D/g, ''), 10); if (!(x > 0)) continue;
+    (sched[n] = sched[n] || { months:null, km:null })[i.dataset.k] = x;
+  }
+  const annual = parseInt($('vAnnual').value.replace(/\D/g, ''), 10) || null, odo = parseInt($('vOdo').value.replace(/\D/g, ''), 10), odoDate = $('vOdoDate').value || todayStr();
+  let v = state.vehEdit && state.data.vehicles.find(x => x.id === state.vehEdit);
+  if (!v) { v = { id:uid(), readings:[], createdAt:new Date().toISOString() }; state.data.vehicles.push(v); }
+  Object.assign(v, { name, unit:$('vUnit').value, plate:$('vPlate').value.trim(), vin:$('vVin').value.trim(), annual, schedule:sched });
+  if (odo > 0) { const m = odoModel(v); if (!(m.last && m.last.odo === odo && m.last.date === odoDate)) { v.readings = (v.readings || []).filter(r => r.date !== odoDate); v.readings.push({ date:odoDate, odo }); } }
+  lsSet(VEH_KEY, v.id); closeVeh(); changed();
+});
+
+/* service record dialog */
+let svcChecked = new Set();
+function svcVeh() { return state.data.vehicles.find(x => x.id === $('sVeh').value) || null; }
+function drawSvcItems() {
+  const g = $('sItems'); g.innerHTML = '';
+  const names = state.data.serviceItems.slice(); for (const n of svcChecked) if (!names.includes(n)) names.push(n);
+  for (const n of names.sort(aCmp)) {
+    const l = mk('label', 'chk'), c = mk('input'); c.type = 'checkbox'; c.checked = svcChecked.has(n);
+    c.onchange = () => { if (c.checked) svcChecked.add(n); else svcChecked.delete(n); };
+    l.appendChild(c); l.appendChild(mk('span', '', n)); g.appendChild(l);
+  }
+}
+function svcTotalNote() {
+  const v = svcVeh(); if (!v) return;
+  const prior = svcOf(v).filter(s => s.id !== state.svcEdit).reduce((t, s) => t + cents(s.cost || 0), 0), cur = cents(parseFloat($('sCost').value) || 0);
+  $('sTotal').textContent = 'Total cost of service to date for ' + v.name + ': ' + fmt(prior + cur) + (cur ? ' (including this record)' : '');
+  const u = v.unit === 'mi' ? 'Mileage (miles)' : 'Mileage (km)'; $('sOdoLbl').textContent = u;
+  const e = estOdo(odoModel(v), $('sDate').value || todayStr()); $('sOdo').placeholder = e ? 'about ' + nfmt(e) : '';
+}
+function openSvc(rec) {
+  const cur = rec ? state.data.vehicles.find(x => x.id === rec.vehicleId) : curVehicle(); if (!cur) return;
+  state.svcEdit = rec ? rec.id : null; svcChecked = new Set(rec ? rec.items : []);
+  $('svcTitle').textContent = rec ? 'Edit service record' : 'Add service record';
+  const sel = $('sVeh'); sel.innerHTML = '';
+  for (const x of state.data.vehicles.filter(x => !x.deleted || x.id === cur.id)) { const o = mk('option', '', x.name); o.value = x.id; sel.appendChild(o); }
+  sel.value = cur.id;
+  $('sDate').value = rec ? rec.date : todayStr(); $('sOdo').value = rec && typeof rec.odo === 'number' ? rec.odo : '';
+  $('sBy').value = rec ? rec.by || '' : ''; $('sNote').value = rec ? rec.note || '' : ''; setMoney($('sCost'), rec && rec.cost ? rec.cost : ''); noNeg($('sCost'), true);
+  const shops = [...new Set(state.data.services.map(s => s.by).filter(Boolean))].sort(aCmp), dl = $('shopList'); dl.innerHTML = '';
+  for (const s of shops) { const o = mk('option'); o.value = s; dl.appendChild(o); }
+  $('sNewItem').value = ''; drawSvcItems(); svcTotalNote();
+  $('svcDlg').showModal(); noAutoKeyboard();
+}
+const closeSvc = () => { state.svcEdit = null; if ($('svcDlg').open) $('svcDlg').close(); };
+function addSvcItem() {
+  const n = addCatalog($('sNewItem').value); if (!n) return;
+  svcChecked.add(n); $('sNewItem').value = ''; drawSvcItems(); state.dirty = true; persistDraft();
+}
+$('sAddItem').addEventListener('click', addSvcItem);
+$('sNewItem').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); addSvcItem(); } });
+$('sCancel').addEventListener('click', closeSvc);
+$('sVeh').addEventListener('change', svcTotalNote); $('sCost').addEventListener('input', svcTotalNote); $('sDate').addEventListener('change', svcTotalNote);
+$('svcForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const v = svcVeh(), date = $('sDate').value, odo = parseInt($('sOdo').value.replace(/\D/g, ''), 10);
+  if (!v || !date || !(odo >= 0) || !isFinite(odo)) return;
+  if ($('sNewItem').value.trim()) addSvcItem();
+  if (!svcChecked.size) { await ask({ alert:1 }, 'Tick at least one service that was performed, or add a new one.'); return; }
+  const earlier = odoPoints(v).filter(p => p.date < date && p.odo > odo).pop();
+  if (earlier && !await ask({}, 'That mileage is lower than ' + nfmt(earlier.odo) + ', recorded on ' + fmtDate(earlier.date) + '. Save it anyway?')) return;
+  const f = { vehicleId:v.id, date, odo, items:[...svcChecked].sort(aCmp), by:$('sBy').value.trim(), cost:parseFloat($('sCost').value) || 0, note:$('sNote').value.trim(), editedAt:new Date().toISOString() };
+  const ex = state.svcEdit && state.data.services.find(s => s.id === state.svcEdit);
+  if (ex) Object.assign(ex, f); else state.data.services.push(Object.assign({ id:uid(), deleted:false, createdAt:f.editedAt }, f));
+  lsSet(VEH_KEY, v.id); closeSvc(); changed();
+});
 
 function renderAcctBar() {
   const bar = $('acctBar'); bar.innerHTML = '';

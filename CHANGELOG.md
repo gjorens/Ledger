@@ -2,7 +2,15 @@
 
 The version number and build time are shown next to the app name at the top of the page. Newest first.
 
-Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
+Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
+
+## 4.67 (2026-10-11)
+- **Autos page built.** Pick **Autos** in the page drop-down. Add vehicles (name, plate, VIN, kilometres or miles, odometer now, your yearly distance estimate) and keep a **service history** for each.
+- **Service record form:** date, vehicle, mileage, services performed (tick boxes from a list kept A-Z), performed by (remembers earlier shops), cost and notes. A box lets you add a service that is not in the list; it is added to the list and ticked. The form shows the **total cost of service to date** for the vehicle, including the record being entered. The page also shows total, this year and number of visits.
+- **Due next, by service:** each vehicle has its own schedule per service item, every N months, every N km/miles, or both (whichever comes first), for example brake inspection every 12 months and brake pads every 60,000 km. Each item shows when it was last done and when it is next due, marked **Due soon** (within 45 days) or **Overdue**, or "No record yet".
+- **Projected mileage:** starts from your yearly estimate and switches to the distance you actually drive once readings and service records span about three months (the last two years are used). **Odometer reading** adds a reading without a service. Distance-based due dates use this estimate and are labelled estimated.
+- Service records can be edited and deleted (soft delete; shown and restorable when Settings > Display shows deleted entries). A vehicle can be removed; its records stay in the file.
+- Data format 5 adds `vehicles`, `serviceItems` and `services`. The test file now includes two sample vehicles with service history.
 
 ## 4.66 (2026-10-11)
 - **Pages framework.** The "ACCOUNTS" label at the top of the main box is now a drop-down: **Accounts** (the existing screen, unchanged), **Investments**, **Loans and mortgages** and **Autos**. The choice is remembered. The three new pages are placeholders for now: each lists what it is planned to hold, and Investments and Loans also list your real accounts of those types (Investment; Loan and Line of credit) with an "Open in Accounts" button. The + and pencil buttons show only on the Accounts page.
