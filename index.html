@@ -126,7 +126,8 @@
   #sX, #fX { font-size:22px; line-height:1; padding:2px 12px; }
   #archDlg { width:min(880px, calc(100% - 24px)); }
   #archDlg table { min-width:600px; }
-  #gChart { position:relative; }
+  #gChart { position:relative; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+  #gChart svg text { pointer-events:none; }
   #gChart svg { width:100%; height:auto; display:block; touch-action:pan-y; }
   #graphDlg { width:calc(100% - 24px); max-width:none; box-sizing:border-box; }
   .gtip { position:absolute; pointer-events:none; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:4px 9px; font-size:.82rem; box-shadow:0 2px 8px rgba(0,0,0,.18); white-space:nowrap; z-index:2; }
@@ -382,6 +383,8 @@
     <div style="margin-top:8px"><b>myLedger</b> <span id="aboutVer"></span></div>
     <div class="small" id="aboutData" style="margin:4px 0 0"></div>
     <div class="small" id="aboutMode" style="margin:4px 0 0"></div>
+    <div style="margin-top:8px"><button type="button" id="btnReload">Reload app (get the latest version)</button></div>
+    <div class="small" style="margin:4px 0 0">Clears the saved copy of the app and loads it again. Your ledger and any unsaved changes are kept.</div>
     <p class="small" style="margin:8px 0 0">A personal bank-transaction ledger that runs entirely on your device. Your data is only ever stored in the file you choose and in a safety copy inside this browser; nothing is sent anywhere.</p>
   </details>
 
@@ -498,6 +501,7 @@
       <label for="rFreq">Repeats</label>
       <select id="rFreq">
         <option value="once" selected>Does not repeat</option>
+        <option value="oneEst">One time, estimated amount</option>
         <option value="weekly">Weekly</option>
         <option value="biweekly">Every 2 weeks</option>
         <option value="monthly">Monthly</option>
@@ -750,8 +754,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.61';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-10 22:10';
+const APP_VERSION = '4.63';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-10 22:50';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -816,7 +820,7 @@ const fmtShort = s => { const [y, m, d] = s.split('-').map(Number); return new D
 const fmtTime = iso => new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 
 /* ---------- Data helpers ---------- */
-const FREQ = { weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', monthlyNoDec:'Monthly (except Dec)', quarterly:'Every 3 months', yearly:'Yearly' };
+const FREQ = { once:'One time', weekly:'Weekly', biweekly:'Every 2 weeks', monthly:'Monthly', monthlyNoDec:'Monthly (except Dec)', quarterly:'Every 3 months', yearly:'Yearly' };
 const valid = d => d && typeof d === 'object' && Array.isArray(d.records) && (Array.isArray(d.accounts) || typeof d.startingBalance === 'number');
 function fileProblem(d) {
   if (d && d.type === 'myLedger-archive') return 'That is an archive file, not your ledger. Open it from the file icon \u203a Archive old data \u203a View an archive.';
@@ -943,6 +947,7 @@ const cmp = (a, b) =>
 
 function nth(u, n) {
   switch (u.frequency) {
+    case 'once':      return n === 0 ? u.startDate : null;
     case 'weekly':    return addDays(u.startDate, 7 * n);
     case 'biweekly':  return addDays(u.startDate, 14 * n);
     case 'monthly':   return addMonths(u.startDate, n);
@@ -1517,6 +1522,8 @@ function drawGraph() {
     tip.style.left = (sx + 12 + tw > r.width ? Math.max(0, sx - 12 - tw) : sx + 12) + 'px'; tip.style.top = '6px';
   };
   svg.addEventListener('pointermove', showAt); svg.addEventListener('pointerdown', showAt);
+  svg.addEventListener('contextmenu', ev => ev.preventDefault());      // no iOS long-press menu or text selection while tracing
+  svg.addEventListener('selectstart', ev => ev.preventDefault());
   svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.hidden = true; });
   const L1 = isLiab(a) ? 'amount owing' : 'balance';
   $('gTitle').textContent = acctLabel(a) + ' · ' + L1;
@@ -1848,6 +1855,13 @@ $('avInput').addEventListener('change', async ev => { const fl = [...ev.target.f
 $('avAcct').addEventListener('change', renderArchiveView);
 $('avSearch').addEventListener('input', renderArchiveView);
 $('avClose').addEventListener('click', () => $('archDlg').close());
+$('btnReload').addEventListener('click', async () => {      // for the home-screen app, which has no refresh button
+  if (state.dirty && FS && state.handle) { try { await saveToHandle(true); } catch (e) { /* the draft below still keeps the changes */ } }
+  await persistDraft();
+  try { if (navigator.serviceWorker) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch (e) { /* ignore */ }
+  try { if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch (e) { /* ignore */ }
+  location.reload();
+});
 $('btnGear').addEventListener('click', openSettings);
 $('btnFile').addEventListener('click', openFileMenu);
 $('fClose').addEventListener('click', () => $('fileDlg').close());
@@ -2038,8 +2052,9 @@ function applyTypeUI() {
   noNeg($('amount'), t); $('text').readOnly = t; if (t) syncXferText(); else if ($('text').dataset.auto) { $('text').value = ''; delete $('text').dataset.auto; }
   $('rEnd').min = $('date').value || '';           // the last date cannot be before the first
   const rep_ = $('rFreq').value !== 'once';
-  for (const el of document.querySelectorAll ? document.querySelectorAll('.ronly') : []) el.hidden = !rep_;
-  $('dateLbl').textContent = rep_ ? 'First date' : 'Transaction date';
+  const one_ = $('rFreq').value === 'oneEst';
+  for (const el of document.querySelectorAll ? document.querySelectorAll('.ronly') : []) el.hidden = !rep_ || one_;
+  $('dateLbl').textContent = one_ ? 'Expected date' : rep_ ? 'First date' : 'Transaction date';
   if (rep_) $('amountLbl').textContent = t ? 'Estimated amount to move' : LBL.entryEst(acct());
 }
 function openNew(o) {                     // the one place every new item starts: single, transfer or recurring
@@ -2119,7 +2134,7 @@ function renderTable(A, P) {
     dc.title = (r.createdAt ? 'Entered ' + fmtTime(r.createdAt) : '') + (r.editedAt ? ' · edited ' + fmtTime(r.editedAt) : '');
     const t = addCell(tr, r.text, 'text');
     if (r.transferId) tag(t, '⇄', '', 'Transfer between your accounts');
-    if (r.recurringId) tag(t, '↻');
+    if (r.recurringId) { const ru = ruleById(r.recurringId); if (!ru || ru.frequency !== 'once') tag(t, '↻'); }
     if (r.reconciled) tag(t, '✓', 'ok', 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement');
     if (r.deleted) tag(t, 'deleted');
     addCell(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
@@ -2151,7 +2166,7 @@ function renderTable(A, P) {
       const tr = document.createElement('tr'); tr.className = 'proj' + (it.confirmed ? ' conf' : ''); tr.dataset.rid = 'occ|' + it.ruleId + '|' + it.orig;
       addCell(tr, (PHONE ? fmtShort : fmtDate)(it.date), 'time');
       const t = addCell(tr, it.text, 'text');
-      tag(t, '↻');
+      { const ru = ruleById(it.ruleId); if (!ru || ru.frequency !== 'once') tag(t, '↻'); }
       if (it.xfer) tag(t, '⇄', '', 'Transfer between accounts');
       if (!it.confirmed) tag(t, 'est.', '', it.adjusted ? 'Your own estimate for this occurrence (press Edit to change it or confirm it)' : 'Estimated amount: press Edit to adjust it or confirm the biller\'s amount');
       if (it.due) tag(t, 'due', 'due');
@@ -2188,7 +2203,7 @@ function ruleSummary(u) {
   const acc = acctById(u.accountId), v = u.transferTo ? Math.abs(u.amount) : u.amount * sgn(acc), neg = !u.transferTo && v < 0;
   s.appendChild(document.createTextNode(u.text + (u.transferTo ? (u.autoText ? ' \u00b7 transfer' : ' \u00b7 transfer ' + acctLabel(acc) + ' \u2192 ' + acctLabel(acctById(u.transferTo))) : '') + ' \u00b7 est. '));
   const am = document.createElement('span'); am.textContent = fmt(cents(v)); if (neg) am.className = 'neg'; s.appendChild(am);
-  s.appendChild(document.createTextNode(' \u00b7 ' + FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '') + (u.category ? ' \u00b7 ' + u.category : '')));
+  s.appendChild(document.createTextNode(' \u00b7 ' + (u.frequency === 'once' ? 'One time on ' + fmtDate(u.startDate) : FREQ[u.frequency] + ' from ' + fmtDate(u.startDate) + (u.endDate ? ' to ' + fmtDate(u.endDate) : '')) + (u.category ? ' \u00b7 ' + u.category : '')));
   return s;
 }
 const RULE_SORTS = { name:'Description A-Z', next:'Next date', amount:'Amount (largest first)' };
@@ -2696,9 +2711,9 @@ $('newForm').addEventListener('submit', async ev => {
       if (ctx.missed) state.recon.ticked.add(rec.id);
     }
   } else {                                   // repeating: stored as a recurring item, projected until posted
-    const endDate = $('rEnd').value || null;
+    const one = freq === 'oneEst', endDate = one ? date : ($('rEnd').value || null);
     if (endDate && endDate < date) { await ask({alert:1}, 'The last date must be on or after the first date.'); return; }
-    const rule = { id:uid(), accountId:from, text: X ? xferText(A, B) : text, autoText: X, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
+    const rule = { id:uid(), accountId:from, text: X ? xferText(A, B) : text, autoText: X, category:X ? '' : catValue($('cat')), amount:X ? -Math.abs(amount) : amount, frequency:one ? 'once' : freq, startDate:date, endDate, skipped:[], overrides:{}, changes:[], createdAt:now, deleted:false, deletedAt:null };
     if (X) rule.transferTo = to;
     state.data.recurring.push(rule);
   }

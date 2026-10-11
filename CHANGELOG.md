@@ -4,6 +4,13 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.63 (2026-10-10)
+- New item > Repeats has a new choice, **One time, estimated amount**: a single future item that shows in the list as a projected "est." row. When the real amount is known, press Edit on the row to confirm it, or Post it when it happens; it can also be skipped, like any projected item. It appears in Recurring items as "One time on <date>". (It only shows once its date is inside the Look ahead period.)
+- Balance graph on iPhone and iPad: tracing the line no longer starts text selection or the long-press menu; the read-out still follows your finger.
+
+## 4.62 (2026-10-10)
+- Settings > About has a **Reload app** button: it saves, clears the app's cached copy and reloads, so the home-screen app on iPhone and iPad (which has no refresh button) picks up a new version without closing it. Unsaved changes are kept in the browser draft.
+
 ## 4.61 (2026-10-10)
 - The Balance graph button is now an **expand** icon (a double-ended diagonal arrow) at the top right of the small balance graph beside the lowest-balance figure, instead of a text button in the Transactions row.
 

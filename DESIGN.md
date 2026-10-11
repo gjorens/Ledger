@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.60. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.63. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -49,7 +49,7 @@ Design constraints that explain most decisions:
 - `recurringId` + `recurringDate` mean the entry was posted from a recurring rule; `recurringDate` is the *original* scheduled date, even if the entry was later moved. `unposted: true` marks a posted entry that was undone, so its occurrence returns to the projected list.
 
 **Recurring rule:** `{ id, accountId, text, category, amount, frequency, startDate, endDate, skipped[], overrides{}, changes[], transferTo?, autoText?, createdAt, deleted?, deletedAt? }`
-- `frequency`: `weekly`, `biweekly`, `monthly`, `monthlyNoDec` (every month except December), `quarterly`, `yearly`.
+- `frequency`: `once` (a single projected item with an estimate: `startDate` = `endDate`; created by New item > Repeats > "One time, estimated amount"), `weekly`, `biweekly`, `monthly`, `monthlyNoDec` (every month except December), `quarterly`, `yearly`.
 - `skipped[]`: original dates of occurrences that will not happen. Skipped dates are listed under the rule with a restore button (`reinstateOcc`); dates in months already archived are not offered, because archiving also adds the dates of archived posted entries to `skipped[]`.
 - `overrides{ originalDate: { amount, date, editedAt, confirmedAt | estimate } }`: change one occurrence only. `estimate: true` means "my estimate for this month only"; `confirmedAt` means confirmed by the biller.
 - `changes[ { from, amount } ]`: scheduled amount changes; the estimate in force on a date is the latest change on or before it.
