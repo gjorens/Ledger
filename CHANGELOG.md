@@ -4,6 +4,12 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.61 (2026-10-10)
+- The Balance graph button is now an **expand** icon (a double-ended diagonal arrow) at the top right of the small balance graph beside the lowest-balance figure, instead of a text button in the Transactions row.
+
+## 4.60 (2026-10-10)
+- iPhone only: the item list no longer shows the Category column, dates drop the year (the month bars already show it, e.g. "Oct 14"), cell padding is tighter, and the Edit / Post / Delete buttons stack so the whole list fits the screen with Amount and Balance visible and no sideways scrolling. iPad and Mac are unchanged.
+
 ## 4.59 (2026-10-10)
 - Balance graph: the window now uses the full width of the app, and the graph is drawn at that width (taller on wide screens). Move the mouse over it (or touch and drag on iPhone and iPad) to see the date and balance at that point, plus the balance a year earlier. Weekly points; projected dates are marked.
 
