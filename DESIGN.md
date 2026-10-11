@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.66. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.67. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -27,7 +27,7 @@ Design constraints that explain most decisions:
 | `DESIGN.md` | This file. |
 | `ledger-test.json` | Sample data for testing. |
 
-## 3. Data model (file format version 4)
+## 3. Data model (file format version 5)
 
 ```
 { version, createdAt, savedAt,
@@ -37,7 +37,10 @@ Design constraints that explain most decisions:
   recurring: [ rule ],
   reconciliations: { "accountId|YYYY-MM": { accountId, month, statementBalance, difference, itemCount, completedAt } },
   archives:  [ { file, through, count, from, to, at } ],
-  records:   [ record ] }
+  records:   [ record ],
+  vehicles:  [ { id, name, plate, vin, unit:'km'|'mi', annual, readings:[{date,odo}], schedule:{ "service name":{months,km} }, deleted? } ],
+  serviceItems: [ names, kept A-Z ],
+  services:  [ { id, vehicleId, date, odo, items:[names], by, cost, note, deleted, editedAt } ] }
 ```
 
 **Record:** `{ id, accountId, text, category, amount, date, createdAt, deleted, deletedAt, reconciled?, reconAmt?, recurringId?, recurringDate?, transferId?, unposted?, editedAt? }`
@@ -55,7 +58,7 @@ Design constraints that explain most decisions:
 - `changes[ { from, amount } ]`: scheduled amount changes; the estimate in force on a date is the latest change on or before it.
 - `transferTo`: makes the rule a scheduled transfer from `accountId` to that account; `autoText` means the description is generated ("Transfer: A to B") and is regenerated if accounts change.
 
-**Versioning.** `DATA_VERSION = 4`. Older files are upgraded in memory on open (`migrate`) and written as v4 on the next save. A file from a *newer* version is refused so an out-of-date cached app cannot damage it. `savedAt` inside the JSON (not the file's modification time) decides which copy is newer, because iCloud can change file times.
+**Versioning.** `DATA_VERSION = 5` (5 added the Autos data). Older files are upgraded in memory on open (`migrate`, which adds empty `vehicles`/`services` and the default `serviceItems`) and written as v5 on the next save. A file from a *newer* version is refused so an out-of-date cached app cannot damage it. `savedAt` inside the JSON (not the file's modification time) decides which copy is newer, because iCloud can change file times.
 
 ## 4. How the numbers work
 
@@ -91,7 +94,7 @@ Three places hold data:
 
 **Test data** is flagged `settings.testData` (orange stripe, "TEST DATA" tag, title "myLedger (test)"). Real and test data use different standard file names so they cannot be confused.
 
-**Starting empty:** "Start a new ledger" creates an empty v4 file; one real ledger file is supported at a time (multiple ledgers are on the roadmap).
+**Starting empty:** "Start a new ledger" creates an empty v5 file; one real ledger file is supported at a time (multiple ledgers are on the roadmap).
 
 ## 7. Backups and recovery
 
@@ -133,6 +136,14 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - **Search:** searches all entries in the account (and optionally deleted ones), with a "show items exceeding a threshold" filter.
 - **Reports:** income and expense by category and month, with a frozen category column, categories sorted, for one account or all.
 
+**Autos page (v4.67).** `renderAutos` draws one vehicle at a time (drop-down when there are several; + and pencil buttons). Nothing derived is stored; it is all computed from the three arrays:
+- **Odometer model** (`odoModel`): all points = stand-alone `readings` plus the mileage on non-deleted service records. Distance per day is measured between the first point inside the last 730 days and the latest point once they are at least 90 days apart; otherwise the owner's `annual` estimate / 365; otherwise unknown. `estOdo` projects the current odometer from the latest point.
+- **Due rows** (`dueRows`): per schedule item, find the latest service record containing it; next date = date + months; next distance = its mileage + km; the distance date = when the estimated odometer reaches that distance. Due = the earlier of the two. Status: overdue (date passed, or the estimated odometer is past the distance), soon (within 45 days), ok, unknown (no usable date), none (never recorded). Only the *next* occurrence is shown per item.
+- **Service list:** `serviceItems` is shared by all vehicles, kept A-Z (`addCatalog`, case-insensitive duplicate check); names found on records are re-added on open. Schedules are per vehicle (`schedule`), edited in the vehicle dialog. New vehicles start with oil, tire rotation, brake inspection and brake pads/rotors defaults.
+- **Costs:** `cost` is a plain number per visit; totals are summed in cents (`svcTotal`).
+- Deleted records and removed vehicles are flagged (`deleted`), never dropped. Vehicles and services are not part of archiving and have no link to ledger entries (a service payment is entered in the account as usual).
+- iPhone: the due table drops the "Last done" column (shown under the service name) and the history table puts the mileage under the date; a global `table{min-width:720px}` rule had to be overridden (`.autot{min-width:0}`).
+
 ## 10. Adding, editing and repeating items
 
 - **New item:** payment/deposit or transfer (two linked entries); "Repeats" choice makes a recurring rule instead of an entry; "Add another" keeps the dialog open, keeps the date, and resets Repeats to "Does not repeat"; the last date of a repeating item cannot be before the first.
@@ -153,7 +164,29 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - Playwright + Chromium drive the real page from a local web server for screenshots and dialog behaviour, including a dark-mode check.
 - Not tested: Brave, iPhone and iPad hardware, File System Access API against a real iCloud folder. These are the usual places for surprises.
 
-## 13. Decisions and rationale
+## 13. Security and privacy
+
+**Where data lives.** Ledger data exists only in the user's own files (iCloud Drive folder, Downloads, Time Machine) and in the browser's IndexedDB draft on each device. It is never sent to a server. GitHub holds only the app code. No analytics, accounts or third-party libraries.
+
+**What the data contains, and its sensitivity** (assessment by the owner, Oct 2026):
+- Account numbers: the most sensitive item. Roughly as exposed as the numbers printed on a paper cheque.
+- Balances and transaction history: could help someone impersonate the owner or target them, and are private in themselves.
+- Not stored: online banking passwords, PINs, SIN / SSN, card security codes.
+
+**Current protection.** None inside the app (no lock, no encryption). Protection comes from the device (passcode, Face ID, FileVault) and from iCloud account security. Anyone using an unlocked device can open the app and the saved file. See section 15.
+
+**Planned (see ROADMAP.md, Extra security):** (1) an app lock screen; (2) optional encryption of the file and draft; (3) a privacy screen.
+
+**Design notes for optional encryption (not built):**
+- *Layer in the app, not the disk.* Use the browser's Web Crypto API (AES-GCM, random IV per save, key from the passphrase via PBKDF2 with a high iteration count, or Argon2 if a library is accepted). The file in iCloud and the IndexedDB draft are then ciphertext, so Apple, Microsoft and GitHub never hold a key. Keep `version` and a small plain header (format, salt, iteration count, wrapped keys) readable so the app can recognise an encrypted file.
+- *Envelope encryption.* A random data key encrypts the ledger. The data key is stored wrapped twice: once by a key derived from the passphrase, once by a generated **recovery key**. Either unlocks the file, and the passphrase can change without re-encrypting the data.
+- *Lost passphrase is the main risk.* Mitigations: the recovery key is shown once at setup and must be stored offline (printed, password manager or safe); setup forces a confirmation (re-enter part of the key); an unencrypted export stays available; encryption is optional with a plain "no recovery without the key" warning; optionally split the recovery key between trusted people (Shamir secret sharing); a hint is only a weak help. Face ID / Keychain can unlock on Apple devices as a convenience, but never as the only copy.
+- *Lock and encryption are separate layers.* A lock screen stops a casual onlooker but does not protect the stored file or draft. Encryption protects the stored data, not a device that is unlocked and running. Face ID from a plain web page is limited (WebAuthn platform authenticator at best); full biometric support is more likely in the native iOS version.
+- *Side effects to handle:* the Automator backup script only moves files, so it works with encrypted ones; the 45-second `refreshFromFile` check and the `savedAt` comparison need the header to carry `savedAt` in the clear (or a decrypt step); archives must be encrypted with the same key; search and reports work on decrypted data in memory only.
+
+**Apple and Microsoft disk encryption (background, not legal or security advice; verify current documentation).** No public evidence of an intentional back door in FileVault / APFS or BitLocker; the ciphers (AES-XTS) are standard. The practical exposure is **key escrow**: consumer BitLocker recovery keys are normally backed up to the user's Microsoft account and have been produced under legal process; FileVault can optionally unlock through iCloud; iCloud data is readable by Apple under standard data protection, but end-to-end encrypted with **Advanced Data Protection** turned on. Most real-world compromise comes from implementation bugs, malware, or someone who knows the device passcode. This is why in-app encryption is preferred for a file stored in iCloud.
+
+## 14. Decisions and rationale
 
 - **JSON file, not a database:** a year is about 500 records, so a single readable file is simple, portable and easy to back up.
 - **Projections are computed, not stored:** changing the look-ahead or a rule never leaves stale data.
@@ -162,10 +195,10 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - **`savedAt` in the file:** reliable across iCloud and devices, unlike file times.
 - **Custom dialogs, one file, no libraries:** consistent look, easy to host, easy to reuse.
 
-## 14. Known limits
+## 15. Known limits
 
 - One real ledger file at a time.
 - No automatic versioned backups (section 7).
-- No app lock or encryption; anyone using an unlocked device can open the app and a saved file.
+- No app lock or encryption; anyone using an unlocked device can open the app and a saved file (section 13).
 - No live bank feeds, investments, multi-currency conversion or dividends (roadmap).
 - No cross-device real-time sync; sharing is by the iCloud file plus the 45-second check.
