@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>myLedger</title>
 <meta name="theme-color" content="#1f3a8f">
+<script>try { var _t = localStorage.getItem('myLedger.theme'); if (_t === 'light' || _t === 'dark') document.documentElement.setAttribute('data-theme', _t); } catch (e) { /* default */ }</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="myLedger">
@@ -14,7 +15,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
   :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1f; --muted:#6b6b76; --line:#c9ccd6; --accent:#0a66d6; --warn-bg:#fff4d6; --warn-fg:#6b4a00; --ok-bg:#e3f5e6; --ok-fg:#14532d; --card:#f6f6f9; --btn:#eef0f4; --btn-bd:#c2c8d4; --btn-fg:#2a3040; --btn-hv:#e1e5ed; --ico:#46526b; --tab:#e3ebf8; --tab-bd:#4a6fa5; --tab-on-bd:#07408a; --dng-bg:#fdf0f0; --dng-bd:#e3a9a6; --dng-fg:#b3261e; --ok-ico:#1b7f4b; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#44444e; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; --btn:#2b2f3a; --btn-bd:#4b5160; --btn-fg:#e4e7ef; --btn-hv:#363b49; --ico:#b9c3d8; --tab:#243a5a; --tab-bd:#7fa3d9; --tab-on-bd:#a9c8f5; --dng-bg:#3a2223; --dng-bd:#7a4545; --dng-fg:#ff9a92; --ok-ico:#7ad9a0; } }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#44444e; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; --btn:#2b2f3a; --btn-bd:#4b5160; --btn-fg:#e4e7ef; --btn-hv:#363b49; --ico:#b9c3d8; --tab:#243a5a; --tab-bd:#7fa3d9; --tab-on-bd:#a9c8f5; --dng-bg:#3a2223; --dng-bd:#7a4545; --dng-fg:#ff9a92; --ok-ico:#7ad9a0; } }
+  :root[data-theme="dark"] { --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#44444e; --accent:#5aa2ff; --warn-bg:#3a2e0a; --warn-fg:#ffd98a; --ok-bg:#12301b; --ok-fg:#9be3b0; --card:#202026; --btn:#2b2f3a; --btn-bd:#4b5160; --btn-fg:#e4e7ef; --btn-hv:#363b49; --ico:#b9c3d8; --tab:#243a5a; --tab-bd:#7fa3d9; --tab-on-bd:#a9c8f5; --dng-bg:#3a2223; --dng-bd:#7a4545; --dng-fg:#ff9a92; --ok-ico:#7ad9a0; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.3 -apple-system, system-ui, sans-serif; }
   main { max-width:920px; margin:0 auto; padding:10px 12px; }
@@ -38,7 +40,8 @@
   .ico { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .touch button.icon { padding:7px 11px; }
   button:disabled { opacity:.5; }
-  @media (prefers-color-scheme: dark) { button.primary { color:#06203d; } .tab.on { color:#06203d; } }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) button.primary { color:#06203d; } :root:not([data-theme]) .tab.on { color:#06203d; } }
+  :root[data-theme="dark"] button.primary, :root[data-theme="dark"] .tab.on { color:#06203d; }
   input, select { min-width:0; font:inherit; padding:6px 9px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--fg); width:100%; }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }   /* no up/down spinner arrows */
   input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
@@ -191,14 +194,18 @@
   .sres { display:grid; grid-template-columns:auto 1fr auto auto; gap:6px 10px; align-items:center; padding:5px 2px; border-bottom:1px solid var(--line); }
   .sres .d { color:var(--muted); font-size:.85rem; white-space:nowrap; }
   .neg { color:#c62828; }
-  @media (prefers-color-scheme: dark) { .neg { color:#ff8a80; } }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) .neg { color:#ff8a80; } }
+  :root[data-theme="dark"] .neg { color:#ff8a80; }
   .sres .a { font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; }
   .sres small { color:var(--muted); display:block; }
   tr.deleted td.text, tr.deleted td.amt { text-decoration:line-through; }
   tr:not(.deleted):not(.proj):not(.start):not(.divider) td.amt { font-weight:700; }   /* actual amounts are bold */
   tr.start td { font-style:italic; color:var(--muted); }
   tr.divider td { background:var(--accent); color:#fff; font-size:.85rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:7px 8px; border-top:3px solid var(--tab-on-bd); border-bottom:3px solid var(--tab-on-bd); }
-  @media (prefers-color-scheme: dark) { tr.divider td { color:#06203d; } }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) tr.divider td { color:#06203d; } }
+  :root[data-theme="dark"] tr.divider td { color:#06203d; }
+  :root[data-theme="light"] { color-scheme:light; }
+  :root[data-theme="dark"] { color-scheme:dark; }
   tr.divider td button { margin-left:10px; text-transform:none; letter-spacing:0; }
   tr.proj td { font-style:italic; color:var(--muted); }
   tr.proj.conf td { color:var(--fg); }
@@ -397,6 +404,7 @@
 
   <details class="sset" open>
     <summary>Display</summary>
+    <div style="margin-top:8px"><label class="lbl" for="sTheme">Appearance (this device only)</label><select id="sTheme"><option value="">Default (follow the device)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
     <label style="display:flex; gap:8px; align-items:flex-start; margin-top:8px; cursor:pointer"><input type="checkbox" id="sShowDel" style="width:24px; height:24px; min-width:24px; margin:0; accent-color:var(--accent)"><span>Show deleted entries in the transaction list and in search<br><span class="small">Deleted entries stay in the file so they can be restored. Turn this on to see them (struck through, with a restore button). They never count toward balances either way.</span></span></label>
   </details>
 
@@ -833,8 +841,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.67';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-11 16:40';
+const APP_VERSION = '4.68';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-11 19:20';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1714,6 +1722,13 @@ function moveCategory(name, dir) {        // manual order only: swap with the ne
   if (i < 0 || j < 0 || j >= a.length) return;
   [a[i], a[j]] = [a[j], a[i]]; changed();
 }
+const THEME_KEY = 'myLedger.theme';
+function applyTheme() {                    // '' = follow the device's light / dark setting; kept per device (not in the ledger file) so an iPad can be dark while the Mac is light
+  const t = lsGet(THEME_KEY), r = document.documentElement;
+  if (!r || !r.setAttribute) return;
+  if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
+}
+$('sTheme').addEventListener('change', ev => { lsSet(THEME_KEY, ev.target.value); applyTheme(); });
 $('sShowDel').addEventListener('change', ev => { if (!state.data) return; state.data.settings.showDeleted = ev.target.checked; changed(); });
 $('sCatAdd').addEventListener('click', addCategory);
 $('sCatNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
@@ -1916,6 +1931,7 @@ function fillFile() {
 function fillSettings() {
   renderCatSettings();
   $('sShowDel').checked = !!(state.data && state.data.settings.showDeleted);
+  $('sTheme').value = lsGet(THEME_KEY) === 'light' || lsGet(THEME_KEY) === 'dark' ? lsGet(THEME_KEY) : '';
   $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
   $('aboutData').textContent = (PROFILE === 'test' ? 'Test data is open (orange stripe).' : 'Your ledger is open.') + (state.fileName ? ' File: ' + state.fileName + '.' : '');
   $('aboutMode').textContent = modeText();

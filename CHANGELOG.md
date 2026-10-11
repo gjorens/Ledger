@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.68 (2026-10-11)
+- **Appearance setting.** Settings > Display > Appearance: **Default** (follow the device's light or dark setting, as before), **Light** or **Dark**. The choice is remembered on that device only (not in the ledger file), so the iPad can be dark while the Mac is light. It is applied before the page draws, so there is no flash of the wrong colours.
+
 ## 4.67 (2026-10-11)
 - **Autos page built.** Pick **Autos** in the page drop-down. Add vehicles (name, plate, VIN, kilometres or miles, odometer now, your yearly distance estimate) and keep a **service history** for each.
 - **Service record form:** date, vehicle, mileage, services performed (tick boxes from a list kept A-Z), performed by (remembers earlier shops), cost and notes. A box lets you add a service that is not in the list; it is added to the list and ticked. The form shows the **total cost of service to date** for the vehicle, including the record being entered. The page also shows total, this year and number of visits.
