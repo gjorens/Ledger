@@ -4,6 +4,10 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.66 (2026-10-11)
+- **Pages framework.** The "ACCOUNTS" label at the top of the main box is now a drop-down: **Accounts** (the existing screen, unchanged), **Investments**, **Loans and mortgages** and **Autos**. The choice is remembered. The three new pages are placeholders for now: each lists what it is planned to hold, and Investments and Loans also list your real accounts of those types (Investment; Loan and Line of credit) with an "Open in Accounts" button. The + and pencil buttons show only on the Accounts page.
+- Investment and loan accounts remain ordinary accounts in the same list, so transfers between them and your other accounts already work with + New item > Transfer.
+
 ## 4.65 (2026-10-10)
 - Edit / change-amount / account dialogs on iPhone and iPad no longer flash the date picker or keyboard for a moment when they open: nothing is focused until you tap a field.
 

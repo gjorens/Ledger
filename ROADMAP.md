@@ -34,7 +34,7 @@ Goal: a real installable iOS app that keeps the existing web code, fixing the li
 - **Limits of this environment**: Claude can write the project files and the native file / lock code but cannot build or test on iOS here; builds and device testing are done by the user in Xcode, feeding results back.
 - **Alternative (not recommended unless the app outgrows the web code)**: full native rewrite in Swift / SwiftUI: best feel, widgets and iCloud sync, but everything is rewritten and two apps would need maintaining.
 
-## Section tabs (idea)
+## Section pages (framework built in v4.66; pages are placeholders)
 
 A second tab row above the account tabs for sections beyond individual accounts, for example **Accounts**, **Net worth** (all accounts and liabilities summed, with a history chart), **Loans** (balance, rate, payoff date), **Investments** (see above) and **Automobiles** (cost, odometer, service and fuel log). Each section would reuse the same file, categories and reports. Sensible first step: Net worth, because it needs no new data. The others need new record types and would be added one at a time.
 
@@ -45,3 +45,5 @@ Export one or more accounts, with their entries, recurring items, reconciliation
 ## TFSA account type with contribution tracking (idea, part of Investments)
 
 A **TFSA** (Tax-Free Savings Account, Canada) account type under investment accounts. It tracks **contributions** separately from growth: contributions and withdrawals by calendar year, the annual limit for each year, the lifetime contribution room used and remaining, and a warning before an over-contribution. Withdrawals are added back to room on 1 January of the following year, so the tracker needs to record when a withdrawal happened. The yearly limits come from the Canada Revenue Agency and are entered by the user or kept in a small table, and the app should say that it is not tax advice and that the person should check their CRA My Account for official room. The same design would suit an RRSP (deduction limit) or FHSA later.
+
+Status: the drop-down and page registry exist; the Investments, Loans and mortgages and Autos pages are placeholders. Open design points: whether investment and loan accounts should disappear from the Accounts page tabs once their own page exists (they must stay in transfer lists either way); a **Mortgage** account type (a liability, with rate, term and renewal); and, for Autos, vehicle and service-record types in the file (data version 5).

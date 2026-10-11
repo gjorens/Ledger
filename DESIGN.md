@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.63. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.66. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -124,6 +124,7 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - **Header:** app name with the short version (`v4.58`; the build time is in Settings > About and the tooltip), the Save button (shown when a ledger is open), the **File** icon and the gear. The banner under it reports file actions taken or needed.
 - **File window** (file icon): Open a file, Open any file (touch), choose folder / single file (Chrome, Edge), Start a new ledger, Archive old data and View an archive. All file-related actions live here.
 - **Settings** (gear) is a full-width dialog with a sticky X button; sections (Display, Categories, About, User guide) open one at a time. The File window works the same way.
+- **Pages:** a drop-down (`#viewSel`) replaces the "Accounts" heading and chooses the page: Accounts, Investments, Loans and mortgages, Autos (registry `VIEWS` in the code; choice kept in localStorage `myLedger.view`). Accounts is the original screen. The others are placeholder pages (`renderViewPage`) that list planned content and, where a page has `types`, the real accounts of those types. Design rule: a page is a *view* of the single data file. Investment, loan and mortgage accounts stay in `accounts` (types Investment, Loan, Line of credit), so the existing transfer machinery connects them to every other account; a page adds its own tools and, later, its own record types (positions, prices, vehicles, service history) in the same file.
 - **Accounts:** a + button (add) and a pencil button (edit selected) beside the heading; tabs are a fixed-size grid (about 12 characters, longer names truncated with a tooltip).
 - **Colours** are CSS variables with a dark-mode set. Negative amounts are red; on liability accounts the displayed negative (payments) is red. Buttons are tonal grey with icons, the primary action is blue.
 - **Balance graph:** full-width dialog; an SVG drawn at the dialog's pixel width and redrawn on resize, with a hover / touch read-out (guide line, dots and a box with the date, balance and the balance a year earlier). Points are weekly samples from `balanceSeries`.
