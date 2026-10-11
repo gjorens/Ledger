@@ -126,6 +126,7 @@
   #sX, #fX { font-size:22px; line-height:1; padding:2px 12px; }
   #archDlg { width:min(880px, calc(100% - 24px)); }
   #archDlg table { min-width:600px; }
+  dialog form.entry > .full:last-child { position:sticky; bottom:-12px; background:var(--bg); padding:6px 0 12px; }
   #gChart { position:relative; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
   #gChart svg text { pointer-events:none; }
   #gChart svg { width:100%; height:auto; display:block; touch-action:pan-y; }
@@ -754,8 +755,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.63';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-10 22:50';
+const APP_VERSION = '4.64';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-10 23:15';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1535,6 +1536,19 @@ function drawGraph() {
 }
 $('gClose').addEventListener('click', () => $('graphDlg').close());
 window.addEventListener('resize', () => { if ($('graphDlg').open) drawGraph(); });
+function fitDialogs() {                     // iPhone / iPad: while the keyboard is up, pin open dialogs to the top of what is visible and let them scroll
+  const vv = window.visualViewport; if (!vv) return;
+  const kb = vv.height < window.innerHeight - 120, props = ['maxHeight', 'overflowY', 'top', 'bottom', 'margin'];
+  document.querySelectorAll('dialog[open]').forEach(d => {
+    if (kb) {
+      if (!d.dataset.kb) { d.dataset.kb = JSON.stringify(props.map(p => d.style[p])); }
+      d.style.maxHeight = (vv.height - 16) + 'px'; d.style.overflowY = 'auto'; d.style.top = (vv.offsetTop + 8) + 'px'; d.style.bottom = 'auto'; d.style.margin = '0 auto';
+    } else if (d.dataset.kb) {
+      const o = JSON.parse(d.dataset.kb); props.forEach((p, i) => { d.style[p] = o[i]; }); delete d.dataset.kb;
+    }
+  });
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', fitDialogs); visualViewport.addEventListener('scroll', fitDialogs); }
 
 function whereText() {                    // where the ledger file lives, as far as the browser lets us know
   if (FS) {
@@ -1821,6 +1835,7 @@ function fillSettings() {
   $('aboutData').textContent = (PROFILE === 'test' ? 'Test data is open (orange stripe).' : 'Your ledger is open.') + (state.fileName ? ' File: ' + state.fileName + '.' : '');
   $('aboutMode').textContent = modeText();
 }
+function noAutoKeyboard() { if (TOUCH && document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); }   // opening a form must not pop the keyboard up over its buttons
 function openSettings() { fillSettings(); $('settingsDlg').showModal(); }
 function openFileMenu() { fillFile(); $('fileDlg').showModal(); }
 async function chooseFolder() {
@@ -2514,7 +2529,7 @@ function openEdit(ctx, o) {
   $('eNote').textContent = o.note || '';
   $('eSave').textContent = o.save;
   $('eRevert').hidden = !o.revert;
-  $('editDlg').showModal();
+  $('editDlg').showModal(); noAutoKeyboard();
 }
 function closeEdit() { const dlg = $('editDlg'); state.edit = null; if (dlg.open) dlg.close(); }
 const otherLeg = r => r.transferId ? state.data.records.find(x => x.transferId === r.transferId && x.id !== r.id) : null;
@@ -2628,7 +2643,7 @@ function openAcct(a) {
   $('aNote').textContent = a ? 'Changing the opening balance changes every balance in this account.'
     : 'Only the last 4 digits of an account number are ever shown. You can enter just those.';
   acctLabels();
-  $('acctDlg').showModal();
+  $('acctDlg').showModal(); noAutoKeyboard();
 }
 function closeAcct() { const dlg = $('acctDlg'); state.acctEdit = null; if (dlg.open) dlg.close(); }
 $('acctForm').addEventListener('submit', ev => {
@@ -2855,7 +2870,7 @@ function editRule(id) {
   fs.disabled = used; $('ruFirst').disabled = used; $('ruLast').min = u.startDate;
   $('ruNote').textContent = (used ? 'Entries from this item have already been posted, skipped or confirmed, so how often it repeats and its first date are locked. To change them, stop this item and create a new one. ' : '') +
     'Changing the amount here corrects the estimate for every occurrence that is not yet confirmed. Entries already posted keep their amounts; edit those in the transaction list.' + (X ? ' Changing the accounts only affects occurrences not yet posted.' : '');
-  $('ruleDlg').showModal();
+  $('ruleDlg').showModal(); noAutoKeyboard();
 }
 $('ruCancel').addEventListener('click', () => $('ruleDlg').close());
 $('ruFirst').addEventListener('change', () => { $('ruLast').min = $('ruFirst').value || ''; });

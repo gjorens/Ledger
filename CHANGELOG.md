@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 4` since v4.0. Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.64 (2026-10-10)
+- iPhone and iPad: opening Edit recurring item, Edit entry or Edit account no longer pops the keyboard up automatically, and while the keyboard is showing every dialog moves to the top of the visible area and scrolls, so the Save and Cancel buttons can always be reached. In forms the buttons also stay pinned at the bottom of the dialog.
+
 ## 4.63 (2026-10-10)
 - New item > Repeats has a new choice, **One time, estimated amount**: a single future item that shows in the list as a projected "est." row. When the real amount is known, press Edit on the row to confirm it, or Post it when it happens; it can also be skipped, like any projected item. It appears in Recurring items as "One time on <date>". (It only shows once its date is inside the Look ahead period.)
 - Balance graph on iPhone and iPad: tracing the line no longer starts text selection or the long-press menu; the read-out still follows your finger.
