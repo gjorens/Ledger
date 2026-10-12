@@ -101,7 +101,13 @@
   .st-soon { background:var(--warn-bg); color:var(--warn-fg); border-radius:6px; padding:0 5px; font-weight:700; }
   .st-ok { color:var(--ok-fg); }
   #svcListDlg { width:min(520px, calc(100% - 24px)); }
-  #svcListDlg { width:min(520px, calc(100% - 24px)); }
+  .btabw { overflow-x:auto; }
+  table.btab { min-width:0; width:100%; font-size:.74rem; }
+  .btab th, .btab td { padding:3px 4px; vertical-align:top; overflow-wrap:break-word; }
+  .btab td:first-child { font-weight:600; min-width:4.6em; }
+  .btab td { min-width:5.2em; }
+  .btab td:first-child { min-width:4.6em; }
+  .btab th { font-size:.66rem; }
   .slrow { display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--line); }
   .slrow .nm { flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
   .slrow .use { font-size:.8rem; color:var(--muted); text-align:right; }
@@ -489,10 +495,36 @@
       <ul><li>Open <b>Reports</b> to see spending and income by category (or by category and month) for a period you choose, for one account or all of them. Transfers, deleted items and projections are left out.</li></ul>
       <h4>Saving</h4>
       <ul>
-        <li><b>Chrome, Edge or Brave on a Mac:</b> use the file icon at the top to choose a folder. The app then autosaves to it every 30 seconds and when you leave the page. If it asks you to <b>Reconnect</b> after a restart, tap it once.</li>
+        <li><b>Chrome or Edge on a Mac:</b> use the file icon at the top to choose a folder. The app then autosaves to it every 30 seconds and when you leave the page. If it asks you to <b>Reconnect</b> after a restart, tap it once.</li>
+        <li><b>Brave on a Mac</b> (and other browsers that cannot write to a folder): <b>Save file</b> downloads the file to your Downloads folder, and you open the file from your ledger folder with <b>Open a file</b>. The optional Mac Automator folder action moves the download into your iCloud folder for you and keeps dated backups.</li>
+        <li><b>One folder on a Mac:</b> pick one ledger folder and use it everywhere. The app itself does not know about the Automator script, but the script copies files to the one folder written inside it (for example iCloud Drive &rsaquo; myLedger). If you use the script, open and save in that same folder, or you may open an old copy. Saving straight into a folder from Chrome or Edge bypasses the script, so those saves get no dated backups. If you only use Chrome or Edge you do not need the script, but then nothing makes dated backups for you.</li>
         <li><b>Safari, iPhone and iPad:</b> press <b>Save file</b> (or <b>Save to Files</b>) after making changes, choose the folder, and choose Replace. Use the file icon, then <b>Open a file</b>, to load your ledger on another device.</li>
         <li>An unsaved-changes banner shows when there is anything not yet saved. A safety copy is also kept inside the browser.</li>
         <li>Use the same version of the app on all your devices, and open the latest file before you start entering items.</li>
+      </ul>
+      <h4>Browsers and devices</h4>
+      <p class="small">Draft: cells marked (verify) come from general knowledge and have not been checked yet on real devices. Correct them as you find out.</p>
+      <p style="margin:6px 0 2px"><b>Mac</b></p>
+      <div class="btabw"><table class="btab">
+        <thead><tr><th>Browser</th><th>Saves into a folder</th><th>How you save</th><th>Install as app</th><th>Main weakness</th></tr></thead>
+        <tbody>
+        <tr><td>Chrome</td><td>Yes, after you pick the folder once (Reconnect after a restart)</td><td>Autosave every 30 seconds</td><td>Yes (Dock app)</td><td>Direct saves get no dated backups</td></tr>
+        <tr><td>Edge</td><td>Same as Chrome</td><td>Same</td><td>Yes</td><td>Same</td></tr>
+        <tr><td>Brave</td><td>No: blocked by default (verify whether a setting allows it)</td><td>Save file downloads; then Open a file</td><td>Yes (verify)</td><td>No autosave; needs the Automator script for backups</td></tr>
+        <tr><td>Safari</td><td>No</td><td>Download, then Open a file</td><td>Add to Dock in recent macOS (verify)</td><td>No autosave; manual saves only</td></tr>
+        </tbody></table></div>
+      <p style="margin:10px 0 2px"><b>iPhone and iPad</b> (every browser here uses Apple's Safari engine, so they behave alike)</p>
+      <div class="btabw"><table class="btab">
+        <thead><tr><th>Browser</th><th>Saves into a folder</th><th>How you save</th><th>Install as app</th><th>Main weakness</th></tr></thead>
+        <tbody>
+        <tr><td>Safari tab</td><td>No</td><td>Save to Files (share sheet); confirm and choose Replace</td><td>Add to Home Screen from the share menu</td><td>The phone picks the folder; stored data may be cleared after about 7 days unused (verify)</td></tr>
+        <tr><td>Home Screen app (from Safari)</td><td>No</td><td>Same</td><td>It is the installed app</td><td>Its stored copy is separate from the Safari tab's: use one or the other</td></tr>
+        <tr><td>Chrome on iOS</td><td>No</td><td>Same</td><td>Home Screen (verify)</td><td>Same limits as Safari</td></tr>
+        <tr><td>Brave on iOS</td><td>No</td><td>Same</td><td>Home Screen (verify)</td><td>Same limits as Safari</td></tr>
+        </tbody></table></div>
+      <ul>
+        <li><b>All phones and tablets:</b> no automatic dated backups; you confirm each save went to the right folder; always use the same app, tab or Home Screen icon.</li>
+        <li><b>Recommended:</b> on a Mac use Chrome or Edge (Brave works with the Automator script); on iPhone and iPad use the Home Screen app installed from Safari.</li>
       </ul>
       <h4>Test data</h4>
       <ul><li>To practise without touching your real ledger, open <b>ledger-test.json</b>. The file is marked as test data inside itself, so the app shows an orange stripe and a TEST DATA tag whenever it is open, on any device. (A file named like test data but not marked asks you to confirm once, then is marked.) It is saved under the same name.</li></ul>
@@ -856,8 +888,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.70';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-11 21:20';
+const APP_VERSION = '4.72';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-12 14:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };

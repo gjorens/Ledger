@@ -4,6 +4,12 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.72 (2026-10-12)
+- New **Browsers and devices** tables in the user guide (Settings > User guide) and in DESIGN.md: one table for Mac (Chrome, Edge, Brave, Safari) and one for iPhone and iPad (Safari tab, Home Screen app, Chrome, Brave), showing folder saving, how you save, install as an app, and the main weakness of each, with a recommended setup. It is a draft: cells marked (verify) are from general knowledge and still to be checked on real devices, and DESIGN.md lists what to verify. No behaviour change.
+
+## 4.71 (2026-10-12)
+- User guide (Settings > User guide > Saving) and DESIGN.md: new notes on Mac folders. Brave downloads the file instead of saving into a folder (the old text wrongly grouped Brave with Chrome and Edge), and a Mac user should use one folder everywhere and point the optional Automator script at that same folder. No behaviour change.
+
 ## 4.70 (2026-10-11)
 - **Manage service list** (Autos page). Lists every service name A-Z with how many records and vehicle schedules use it. **Rename** changes the name on every record and schedule; giving an item the name of an existing one (any capitalisation) **merges** them, so a typo can be folded into the right spelling. Where a vehicle has a schedule on both names, the schedule on the surviving name is kept. **Delete** is allowed only for names nothing uses (including deleted records); used names have the button greyed out.
 - Fixed: when one question dialog was answered and another opened straight away, the first dialog's late "closed" signal could cancel the second one. It now ignores that signal if the dialog has already reopened.

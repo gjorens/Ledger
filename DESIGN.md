@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.70. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.72. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -109,6 +109,8 @@ The app itself keeps **no versioned backups**. What exists:
 - **iCloud Drive and Time Machine** keep older versions of `ledger.json` (Mac: File > Revert To > Browse All Versions). This is the practical recovery route.
 - **Optional Mac Automator Folder Action** (script in `PATTERNS.md` section 9): moves downloaded ledger files from Downloads into the iCloud folder and keeps dated copies of each file it replaces in `myLedger/Backups` (newest 20 kept) and archive files in `myLedger/Archive`. It exists for Brave, which cannot write to the folder directly. It only runs on the Mac where it is installed, and only on files downloaded to Downloads, not on writes made directly by Chrome or Edge.
 
+**One folder on a Mac.** The app does not read or use the Automator script's folder; the two are independent. The script's destination is hard-coded (`DEST` in the script, `iCloud Drive/<APP>`, here myLedger) and it only acts on files that arrive in `~/Downloads`. So: (a) with Brave, which cannot write to a folder, the user must open the file from the same folder the script writes to, or an old copy may be opened; (b) with Chrome or Edge folder mode the app writes directly into whichever folder was chosen and the script never runs, so those saves get no dated backups, and if the chosen folder differs from the script's, two copies can drift apart. Guidance for the owner: choose one folder, use it on every device, and point the script's `DEST` at it. This is explained in the in-app user guide (Saving).
+
 Possible improvement: an automatic dated backup and a "Download backup" button (not built).
 
 ## 8. Archiving
@@ -161,6 +163,32 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - `manifest.webmanifest` + icons let the site be installed (Add to Home Screen from **Safari** on iPhone / iPad; install from Chrome/Edge on a Mac; `install-mac.command` for a Dock app).
 - `sw.js` is **network first**: when online, files are fetched fresh and the cache is refreshed; when offline, the cached copy is served. A new version therefore appears on the next load when online. It caches only the app files, never ledger data.
 - Third-party libraries: none.
+
+### Browser and device matrix (draft: to be verified on real devices)
+
+Written from general knowledge on 2026-10-12; cells marked (verify) are unchecked. Only Chromium (Playwright) has been used for testing. Also shown in the in-app user guide (Settings > User guide > Browsers and devices); keep the two in step.
+
+**Mac**
+
+| Browser | Saves into a folder | How you save | Install as app | Main weakness |
+|---|---|---|---|---|
+| Chrome | Yes, after picking the folder once (Reconnect after a restart) | Autosave every 30 s | Yes (Dock app) | Direct saves get no dated backups |
+| Edge | Same as Chrome | Same | Yes | Same |
+| Brave | No: File System Access is blocked by default (verify whether a setting enables it) | Save file downloads; then Open a file | Yes (verify) | No autosave; needs the Automator script for backups |
+| Safari | No | Download, then Open a file | Add to Dock in recent macOS (verify) | No autosave; manual saves only |
+
+**iPhone and iPad** (every browser uses Apple's WebKit engine, so capabilities match; in the EU, Apple's rules may allow other engines: verify)
+
+| Browser | Saves into a folder | How you save | Install as app | Main weakness |
+|---|---|---|---|---|
+| Safari tab | No | Share sheet > Save to Files; the owner confirms and chooses Replace | Add to Home Screen (share menu) | The phone picks the folder; script-writable storage may be cleared after ~7 days unused (verify) |
+| Home Screen app (from Safari) | No | Same | It is the installed app | Its storage is separate from the Safari tab's; use one or the other |
+| Chrome on iOS | No | Same | Home Screen (verify) | Same limits as Safari |
+| Brave on iOS | No | Same | Home Screen (verify) | Same limits as Safari |
+
+**Common to phones and tablets:** no automatic dated backups; the app cannot see where a shared file went (section 6, share-sheet saving); one app, tab or icon should be used consistently because storage is not shared between them.
+
+**To verify when time permits:** (1) can Brave on Mac enable the file-system API in a setting, and does it offer Install app; (2) can Safari on macOS add the site to the Dock and does it keep a folder; (3) which iOS browsers offer Add to Home Screen; (4) whether data in the Safari tab and the Home Screen app are separate on the current iOS; (5) whether stored drafts survive about a week of non-use in a Safari tab versus the Home Screen app. Update both tables with what you find and remove the "(verify)" marks.
 
 ## 12. Testing
 
