@@ -31,7 +31,7 @@ Goal: a phone or iPad that is passed around or left in public should not reveal 
 ## Native iOS app (Capacitor wrapper)
 Goal: a real installable iOS app that keeps the existing web code, fixing the limits of a Home Screen web app.
 - **Capacitor** (free, open source, from the Ionic team) generates an Xcode project containing a native app shell with the existing `index.html` running inside a web view; a bridge lets the JavaScript call native features. Compiled in Xcode, it installs like any app (own icon, no browser chrome). Can also target Android from the same project.
-- **What it fixes**: direct read/write of the iCloud Drive folder (no Share-sheet save, real autosave), reliable local storage (a Home Screen web app can lose its data after long disuse), Face ID / passcode app lock (ties in with the "Extra security" item), background / privacy-screen behaviour.
+- **What it fixes**: direct read/write of the iCloud Drive folder (no Share-sheet save, real autosave; today the phone chooses the save folder and the app can only ask the owner to confirm it, see DESIGN.md Storing and saving), reliable local storage (a Home Screen web app can lose its data after long disuse), Face ID / passcode app lock (ties in with the "Extra security" item), background / privacy-screen behaviour.
 - **Work involved**: replace the open/save code with native file plugins (keep the web path for the website version); native lock screen; iOS layout checks (safe areas, keyboard); app icon and launch screen; keep one codebase so the website and the app share `index.html`.
 - **Requirements**: a Mac with Xcode; an Apple Developer account (about US$99/year; check current pricing) to install on devices long-term and to use TestFlight. App Store publishing needs Apple review, a privacy policy and screenshots, but is not required for personal use (install via Xcode or TestFlight).
 - **Limits of this environment**: Claude can write the project files and the native file / lock code but cannot build or test on iOS here; builds and device testing are done by the user in Xcode, feeding results back.
@@ -54,3 +54,8 @@ Status: the drop-down and page registry exist. **Autos is built (v4.67)**: vehic
 ## Autos follow-ups (ideas)
 - **Reminders:** a web page cannot send email or SMS by itself (no server; a push service or a paid email/SMS provider would be needed, and the data would leave the device). Practical options: export a due service as a calendar event (an `.ics` file, so the phone's Calendar gives the alert), or a native-app local notification once the iOS app exists. A "mailto:" or "sms:" link can only prefill a message that the owner sends.
 - Fuel purchases and fuel economy; insurance, registration and licence renewal dates; yearly cost per vehicle; invoice notes or photos; remove or rename entries in the service list; link a service record to the ledger entry that paid it; show more than the next occurrence of each service.
+
+## Safer saving on phones: further ideas
+- **Dated file names option** for the share-sheet path (for example `ledger-2026-10-11-2010.json` each time) so nothing can ever be replaced by mistake, at the cost of clutter; the newest file would be the one to open.
+- Apply the same "did you save it?" confirmation to the archive export, which also uses the share sheet.
+- Show on open which device and time last saved the file (`savedAt` plus a device name), to make a stale copy easier to spot.

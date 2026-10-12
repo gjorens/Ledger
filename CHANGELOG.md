@@ -4,6 +4,14 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.69 (2026-10-11)
+- **Safer saving on iPhone, iPad and Android.** On these devices the Save button hands the file to the phone's share sheet, and the phone, not the app, chooses the starting folder. The app cannot see where the file went, so it no longer assumes success:
+  - The banner before saving says what to do: "Use Save to Files, then save ledger.json to <your folder> and choose Replace."
+  - After the share sheet closes, a question asks "Did you save ledger.json to <your folder> and choose Replace?" Only **Yes, saved it** clears the unsaved-changes warning. **Not yet** keeps the changes marked unsaved and shows "Shared at 8:10 PM but NOT confirmed as saved".
+  - After a confirmed save the banner says "All changes saved (time), and you confirmed it went to <your folder>."
+  - New setting in the File window (Open and save): **Where I keep my ledger file (this device only)**, for example "iCloud Drive › myLedger" on an iPhone or "Google Drive › myLedger" on Android. It is stored on that device only, not in the ledger file. If left empty the wording is generic ("the folder where you keep your ledger").
+  - Chrome or Edge on a Mac, with direct folder saving, is unchanged.
+
 ## 4.68 (2026-10-11)
 - **Appearance setting.** Settings > Display > Appearance: **Default** (follow the device's light or dark setting, as before), **Light** or **Dark**. The choice is remembered on that device only (not in the ledger file), so the iPad can be dark while the Mac is light. It is applied before the page draws, so there is no flash of the wrong colours.
 

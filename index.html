@@ -372,6 +372,9 @@
     </div>
     <div id="sManualBlock" hidden>
       <p class="small" style="margin:0 0 6px" id="sManualText"></p>
+      <label class="lbl" for="sLoc">Where I keep my ledger file (this device only)</label>
+      <input id="sLoc" type="text" maxlength="80" autocomplete="off" placeholder="e.g. iCloud Drive &rsaquo; myLedger">
+      <p class="small" style="margin:4px 0 0">Used only in the reminders shown when you save. The app cannot see where your phone puts a saved file, so it asks you to confirm. This is kept on this device, not in the ledger file, so each device can name its own folder.</p>
     </div>
   </details>
 
@@ -841,8 +844,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.68';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-11 19:20';
+const APP_VERSION = '4.69';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-11 20:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1161,15 +1164,23 @@ function outName() {              // save under the name the file was opened wit
   const n = (state.fileName || '').replace(/ \(\d+\)(?=\.json$)/i, '');
   return /^ledger[^\\\/]*\.json$/i.test(n) ? n : PFILE;
 }
+const LOC_KEY = 'myLedger.saveLoc';
+const locText = () => (lsGet(LOC_KEY) || '').trim() || 'the folder where you keep your ledger';
+async function confirmShared(name, savedAt) {   // the share sheet closing does not prove the file reached the right folder (the phone picks the starting folder), so the owner confirms
+  const ok = await ask({ ok:'Yes, saved it', cancel:'Not yet' }, 'Did you save ' + name + ' to ' + locText() + ' and choose Replace?\n\nThe app cannot see where the file went. Choose Not yet if you picked another folder, sent it somewhere else, or cancelled: your changes then stay marked as unsaved.');
+  if (ok) { state.shareConfirmedAt = savedAt; return true; }
+  state.msg = 'Shared ' + name + ' at ' + fmtTime(savedAt) + ' but NOT confirmed as saved to ' + locText() + '. Your changes are still marked unsaved. Press ' + SAVE_LABEL + ' again and choose Replace.'; state.msgKind = 'warn';
+  return false;
+}
 async function exportFile() {     // Safari / iPhone / iPad path: must run from a tap
   const savedAt = new Date().toISOString();
   const out = { ...state.data, savedAt };
   const json = JSON.stringify(out, null, 2);
   const NAME = outName();
   const file = new File([json], NAME, { type:'application/json' });
-  let done = false;
+  let done = false, shared = false;
   if (TOUCH && navigator.canShare && navigator.canShare({ files:[file] })) {
-    try { await navigator.share({ files:[file] }); done = true; }   // files only: a title or text makes iOS add a stray 'text' file to the save
+    try { await navigator.share({ files:[file] }); done = true; shared = true; }   // files only: a title or text makes iOS add a stray 'text' file to the save
     catch (e) { if (e.name === 'AbortError') return; }
   }
   if (!done) {
@@ -1179,6 +1190,7 @@ async function exportFile() {     // Safari / iPhone / iPad path: must run from 
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     done = true;
   }
+  if (shared && !await confirmShared(NAME, savedAt)) { render(); return; }
   if (done) {
     state.data.savedAt = savedAt; state.baseSavedAt = savedAt; state.dirty = false; state.msg = null;
     await persistDraft(); render();
@@ -1728,6 +1740,7 @@ function applyTheme() {                    // '' = follow the device's light / d
   if (!r || !r.setAttribute) return;
   if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
 }
+$('sLoc').addEventListener('input', ev => { lsSet(LOC_KEY, ev.target.value.trim()); if (state.data) render(); });
 $('sTheme').addEventListener('change', ev => { lsSet(THEME_KEY, ev.target.value); applyTheme(); });
 $('sShowDel').addEventListener('change', ev => { if (!state.data) return; state.data.settings.showDeleted = ev.target.checked; changed(); });
 $('sCatAdd').addEventListener('click', addCategory);
@@ -1926,6 +1939,7 @@ function fillFile() {
   $('sWhere').textContent = whereText();
   $('sFsBlock').hidden = !FS; $('sManualBlock').hidden = FS;
   $('sFileName').textContent = PFILE;
+  $('sLoc').value = lsGet(LOC_KEY) || '';
   $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open a file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome or Edge on a Mac.';
 }
 function fillSettings() {
@@ -2007,9 +2021,9 @@ function render() {
     cls = 'warn'; withBtn = true;
     if (FS && state.handle) text = 'Unsaved changes. Autosave in progress (' + state.fileName + ').';
     else if (FS) text = 'Unsaved changes stored in this browser only. Choose a save file to enable autosave.';
-    else text = 'Unsaved changes (kept in this browser only' + (state.draftAt ? ', last edit ' + fmtTime(state.draftAt) : '') + '). Use ' + SAVE_LABEL + '.';
+    else text = 'Unsaved changes (kept in this browser only' + (state.draftAt ? ', last edit ' + fmtTime(state.draftAt) : '') + '). Use ' + SAVE_LABEL + (TOUCH ? ', then save ' + outName() + ' to ' + locText() + ' and choose Replace.' : '.');
   } else if (state.data) {
-    text = state.baseSavedAt ? 'All changes saved' + (state.fileName ? ' to ' + state.fileName : '') + ' (' + fmtTime(state.baseSavedAt) + ').' : 'No changes.';
+    text = state.baseSavedAt ? 'All changes saved' + (state.fileName ? ' to ' + state.fileName : '') + ' (' + fmtTime(state.baseSavedAt) + ')' + (state.shareConfirmedAt && state.shareConfirmedAt === state.baseSavedAt ? ', and you confirmed it went to ' + locText() : '') + '.' : 'No changes.';
   }
   if (text) {
     b.className = 'banner ' + cls;

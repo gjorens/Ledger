@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.68. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.69. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -93,6 +93,8 @@ Three places hold data:
 **Without it (Brave, Safari, iPhone, iPad):** the file is opened through a file picker and saved with **Save file** (Mac download) or **Save to Files** (Web Share sheet on touch devices). Changes are unsaved until the user does this, and the app warns when closing with unsaved changes.
 
 **Test data** is flagged `settings.testData` (orange stripe, "TEST DATA" tag, title "myLedger (test)"). Real and test data use different standard file names so they cannot be confused.
+
+**Share-sheet saving (iPhone, iPad, Android; `exportFile`).** The file is passed to `navigator.share`; the operating system picks the starting folder and the page is told only that the sheet closed (or was cancelled), not where the file went. So after a successful share `confirmShared` asks the owner whether it was saved to the right folder and replaced; only a Yes sets `savedAt` / `baseSavedAt` and clears `dirty`. A No leaves the ledger flagged unsaved with a warning banner. The folder name shown in the reminders comes from the per-device setting `localStorage myLedger.saveLoc` (File window > Open and save); it is never written to the ledger file because each device differs (iCloud Drive, Google Drive, Dropbox...). The plain-download fallback (Mac Brave) is not asked, since the Automator folder action handles that file. The archive export has a similar share path that is not yet confirmed this way.
 
 **Starting empty:** "Start a new ledger" creates an empty v5 file; one real ledger file is supported at a time (multiple ledgers are on the roadmap).
 
