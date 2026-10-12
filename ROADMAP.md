@@ -53,7 +53,7 @@ Status: the drop-down and page registry exist. **Autos is built (v4.67)**: vehic
 
 ## Autos follow-ups (ideas)
 - **Reminders:** a web page cannot send email or SMS by itself (no server; a push service or a paid email/SMS provider would be needed, and the data would leave the device). Practical options: export a due service as a calendar event (an `.ics` file, so the phone's Calendar gives the alert), or a native-app local notification once the iOS app exists. A "mailto:" or "sms:" link can only prefill a message that the owner sends.
-- Fuel purchases and fuel economy; insurance, registration and licence renewal dates; yearly cost per vehicle; invoice notes or photos; remove or rename entries in the service list; link a service record to the ledger entry that paid it; show more than the next occurrence of each service.
+- Fuel purchases and fuel economy; insurance, registration and licence renewal dates; yearly cost per vehicle; invoice notes or photos; link a service record to the ledger entry that paid it; show more than the next occurrence of each service.
 
 ## Safer saving on phones: further ideas
 - **Dated file names option** for the share-sheet path (for example `ledger-2026-10-11-2010.json` each time) so nothing can ever be replaced by mistake, at the cost of clutter; the newest file would be the one to open.

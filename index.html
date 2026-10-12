@@ -100,6 +100,11 @@
   .st-over { color:var(--dng-fg); font-weight:700; }
   .st-soon { background:var(--warn-bg); color:var(--warn-fg); border-radius:6px; padding:0 5px; font-weight:700; }
   .st-ok { color:var(--ok-fg); }
+  #svcListDlg { width:min(520px, calc(100% - 24px)); }
+  #svcListDlg { width:min(520px, calc(100% - 24px)); }
+  .slrow { display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .slrow .nm { flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+  .slrow .use { font-size:.8rem; color:var(--muted); text-align:right; }
   #vehDlg, #svcDlg { width:min(560px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
   .chkgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0 10px; }
   form.entry label.chk { display:flex; gap:8px; align-items:center; padding:4px 0; margin:0; cursor:pointer; font-size:.95rem; color:var(--fg); }
@@ -793,6 +798,13 @@
   </form>
 </dialog>
 
+<dialog id="svcListDlg">
+  <h3 tabindex="-1" autofocus>Service list</h3>
+  <p class="small" style="margin:4px 0 8px">Every service name, shared by all vehicles. <b>Rename</b> changes the name on every record and schedule. Giving an item the name of another one <b>merges</b> them (for example to fix a typo). <b>Delete</b> is only possible for names nothing uses.</p>
+  <div id="svcListBody" style="max-height:60vh; overflow-y:auto"></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" class="primary" id="svcListClose">Close</button></div>
+</dialog>
+
 <dialog id="svcDlg">
   <form id="svcForm" class="entry" style="margin-top:0">
     <h3 tabindex="-1" autofocus class="full" id="svcTitle">Add service record</h3>
@@ -844,8 +856,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.69';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-11 20:40';
+const APP_VERSION = '4.70';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-11 21:20';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1494,7 +1506,7 @@ function ask(o, msg) {                 // resolves true (OK) or false (Cancel); 
     inp.hidden = !o.input; inp.value = o.input ? (o.value || '') : '';
     let done = false;
     const fin = v => { if (done) return; done = true; ok.onclick = no.onclick = inp.onkeydown = null; dlg.onclose = null; if (dlg.open) dlg.close(); res(v); };
-    ok.onclick = () => fin(o.input ? inp.value : true); no.onclick = () => fin(o.input ? null : false); dlg.onclose = () => fin(o.input ? null : false);
+    ok.onclick = () => fin(o.input ? inp.value : true); no.onclick = () => fin(o.input ? null : false); dlg.onclose = () => { if (!dlg.open) fin(o.input ? null : false); };   // a late 'close' event from the previous question must not cancel this one (dialog already reopened)
     inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); fin(inp.value); } };
     dlg.showModal(); if (o.input) { inp.focus(); inp.select(); } else (o.danger ? no : ok).focus();
   });
@@ -2171,6 +2183,29 @@ function addCatalog(name) {               // adds a new service name to the shar
   if (hit) return hit;
   list.push(name); list.sort(aCmp); return name;
 }
+function serviceUse(name) {              // where a service name is used: visible records, deleted records, vehicle schedules
+  const sv = state.data.services.filter(x => x.items.includes(name));
+  return { records:sv.filter(x => !x.deleted).length, deleted:sv.filter(x => x.deleted).length, schedules:state.data.vehicles.filter(v => v.schedule && v.schedule[name]).length };
+}
+function renameServiceItem(oldName, newName) {   // renames everywhere; a name that already exists in the list merges the two. Returns { merged }
+  newName = newName.trim().replace(/\s+/g, ' ').slice(0, 50);
+  const d = state.data, other = d.serviceItems.find(x => x !== oldName && x.toLowerCase() === newName.toLowerCase());
+  const target = other || newName, merged = !!other;
+  if (!newName || (target === oldName)) return { merged:false, same:true };
+  for (const sv of d.services) if (sv.items.includes(oldName)) sv.items = [...new Set(sv.items.map(n => n === oldName ? target : n))].sort(aCmp);
+  for (const v of d.vehicles) if (v.schedule && v.schedule[oldName]) {
+    if (!v.schedule[target]) v.schedule[target] = v.schedule[oldName];      // a merge keeps the schedule already on the target name
+    delete v.schedule[oldName];
+  }
+  d.serviceItems = d.serviceItems.filter(x => x !== oldName);
+  if (!d.serviceItems.includes(target)) d.serviceItems.push(target);
+  d.serviceItems.sort(aCmp);
+  return { merged };
+}
+function deleteServiceItem(name) {       // only names nothing refers to
+  const u = serviceUse(name); if (u.records || u.deleted || u.schedules) return false;
+  state.data.serviceItems = state.data.serviceItems.filter(x => x !== name); return true;
+}
 function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
 function renderAutos(box) {
@@ -2199,6 +2234,7 @@ function renderAutos(box) {
   const bar = mk('div'); bar.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin:6px 0';
   const add = mk('button', 'primary', '+ Service record'); add.type = 'button'; add.onclick = () => openSvc(null); bar.appendChild(add);
   const rd = mk('button', '', 'Odometer reading'); rd.type = 'button'; rd.onclick = () => addReading(v); bar.appendChild(rd);
+  const ml = mk('button', '', 'Manage service list'); ml.type = 'button'; ml.onclick = openSvcList; bar.appendChild(ml);
   box.appendChild(bar);
   const sv = svcOf(v), yr = todayStr().slice(0, 4), st = mk('div', 'autostats');
   for (const [val, lbl] of [[fmt(svcTotal(v)), 'Total cost of service to date'], [fmt(svcTotal(v, yr)), 'This year'], [String(sv.length), sv.length === 1 ? 'Service visit' : 'Service visits']]) { const d = mk('div'); d.appendChild(mk('b', '', val)); d.appendChild(mk('span', '', lbl)); st.appendChild(d); }
@@ -2262,6 +2298,32 @@ async function addReading(v) {
   const today = todayStr(); v.readings = (v.readings || []).filter(r => r.date !== today); v.readings.push({ date:today, odo });
   changed();
 }
+
+/* service list manager */
+function drawSvcList() {
+  const body = $('svcListBody'); body.innerHTML = '';
+  for (const n of state.data.serviceItems.slice().sort(aCmp)) {
+    const u = serviceUse(n), r = mk('div', 'slrow'), nm = mk('span', 'nm', n); r.appendChild(nm);
+    const bits = [u.records + (u.records === 1 ? ' record' : ' records')]; if (u.deleted) bits.push(u.deleted + ' deleted'); if (u.schedules) bits.push(u.schedules + (u.schedules === 1 ? ' schedule' : ' schedules'));
+    r.appendChild(mk('span', 'use', bits.join(', ')));
+    r.appendChild(iconBtn('edit', 'Rename or merge ' + n, () => renameSvcItem(n)));
+    const used = u.records || u.deleted || u.schedules, del = iconBtn('trash', used ? 'In use, so it cannot be deleted. Rename it to merge it into another name.' : 'Delete ' + n, () => delSvcItem(n));
+    if (used) del.disabled = true; r.appendChild(del); body.appendChild(r);
+  }
+}
+async function renameSvcItem(n) {
+  const t = await askText({}, 'Rename "' + n + '" to:', n); if (t === null) return;
+  const nn = t.trim().replace(/\s+/g, ' ').slice(0, 50); if (!nn || nn === n) return;
+  const other = state.data.serviceItems.find(x => x !== n && x.toLowerCase() === nn.toLowerCase());
+  if (other && !await ask({ ok:'Merge' }, '"' + other + '" already exists.\n\nMerge "' + n + '" into it? Every record that used "' + n + '" will use "' + other + '" instead. Where a vehicle has a schedule for both, the one on "' + other + '" is kept.')) return;
+  renameServiceItem(n, nn); changed(); drawSvcList();
+}
+async function delSvcItem(n) {
+  if (!await ask({ danger:1, ok:'Delete' }, 'Delete "' + n + '" from the service list? Nothing uses it.')) return;
+  if (deleteServiceItem(n)) { changed(); drawSvcList(); }
+}
+function openSvcList() { drawSvcList(); $('svcListDlg').showModal(); noAutoKeyboard(); }
+$('svcListClose').addEventListener('click', () => $('svcListDlg').close());
 
 /* vehicle dialog */
 function fillSched(v, sched) {

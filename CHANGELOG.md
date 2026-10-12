@@ -4,6 +4,10 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.70 (2026-10-11)
+- **Manage service list** (Autos page). Lists every service name A-Z with how many records and vehicle schedules use it. **Rename** changes the name on every record and schedule; giving an item the name of an existing one (any capitalisation) **merges** them, so a typo can be folded into the right spelling. Where a vehicle has a schedule on both names, the schedule on the surviving name is kept. **Delete** is allowed only for names nothing uses (including deleted records); used names have the button greyed out.
+- Fixed: when one question dialog was answered and another opened straight away, the first dialog's late "closed" signal could cancel the second one. It now ignores that signal if the dialog has already reopened.
+
 ## 4.69 (2026-10-11)
 - **Safer saving on iPhone, iPad and Android.** On these devices the Save button hands the file to the phone's share sheet, and the phone, not the app, chooses the starting folder. The app cannot see where the file went, so it no longer assumes success:
   - The banner before saving says what to do: "Use Save to Files, then save ledger.json to <your folder> and choose Replace."

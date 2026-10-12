@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.69. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.70. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -143,6 +143,7 @@ File window > Archive old data moves **reconciled** entries up to a chosen month
 - **Odometer model** (`odoModel`): all points = stand-alone `readings` plus the mileage on non-deleted service records. Distance per day is measured between the first point inside the last 730 days and the latest point once they are at least 90 days apart; otherwise the owner's `annual` estimate / 365; otherwise unknown. `estOdo` projects the current odometer from the latest point.
 - **Due rows** (`dueRows`): per schedule item, find the latest service record containing it; next date = date + months; next distance = its mileage + km; the distance date = when the estimated odometer reaches that distance. Due = the earlier of the two. Status: overdue (date passed, or the estimated odometer is past the distance), soon (within 45 days), ok, unknown (no usable date), none (never recorded). Only the *next* occurrence is shown per item.
 - **Service list:** `serviceItems` is shared by all vehicles, kept A-Z (`addCatalog`, case-insensitive duplicate check); names found on records are re-added on open. Schedules are per vehicle (`schedule`), edited in the vehicle dialog. New vehicles start with oil, tire rotation, brake inspection and brake pads/rotors defaults.
+- **Managing the list:** `renameServiceItem(old, new)` rewrites `items` on every service record (including deleted ones), moves the vehicle schedule entry, and removes the old name from `serviceItems`; if the new name already exists (case-insensitive) it is a merge and the schedule already on the surviving name wins. `deleteServiceItem` refuses a name still referenced by any record (deleted ones too, so a restore cannot bring it back) or schedule. UI: `openSvcList` / `drawSvcList`.
 - **Costs:** `cost` is a plain number per visit; totals are summed in cents (`svcTotal`).
 - Deleted records and removed vehicles are flagged (`deleted`), never dropped. Vehicles and services are not part of archiving and have no link to ledger entries (a service payment is entered in the account as usual).
 - iPhone: the due table drops the "Last done" column (shown under the service name) and the history table puts the mileage under the date; a global `table{min-width:720px}` rule had to be overridden (`.autot{min-width:0}`).
