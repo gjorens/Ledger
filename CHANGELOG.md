@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.74 (2026-10-12)
+- Autos page: the vehicle drop-down now sits where the repeated "Autos" label was, and fills the row beside the + and edit buttons. The page drop-down at the top (Accounts, Investments, Loans and mortgages, Autos) is larger and darker, so it is easier to read and tap.
+
 ## 4.73 (2026-10-12)
 - Fixed: on the Autos page the vehicle drop-down appeared only when there were two or more vehicles, so with one vehicle its name was not shown anywhere. The drop-down now always shows, with the current vehicle's name.
 

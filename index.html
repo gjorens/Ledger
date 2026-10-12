@@ -77,14 +77,14 @@
   .stat span { font-size:.75rem; color:var(--muted); }
   .stat b.neg { color:#c62828; }
   .acctrow { display:flex; gap:10px; align-items:center; justify-content:space-between; }
-  .viewsel { width:auto; max-width:70%; font-weight:700; text-transform:uppercase; letter-spacing:.06em; font-size:.8rem; padding:5px 8px; color:var(--muted); }
+  .viewsel { width:auto; max-width:70%; min-width:11em; font-weight:700; text-transform:uppercase; letter-spacing:.06em; font-size:1rem; padding:8px 12px; color:var(--fg); }
   .vpage { margin-top:8px; }
   .vpage h3 { margin:0 0 4px; }
   .vpage ul { margin:6px 0 8px; padding-left:20px; }
   .vpage .vplace { border:2px dashed var(--line); border-radius:10px; padding:10px 12px; margin:8px 0; }
   .autohead { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
   .autohead h3 { margin:0; flex:1 1 auto; }
-  .autohead select { width:auto; max-width:100%; }
+  .autohead select { width:auto; flex:1 1 12em; min-width:0; max-width:100%; font-weight:600; }
   .autostats { display:flex; gap:18px; flex-wrap:wrap; margin:10px 0; }
   .autostats b { display:block; font-size:1.05rem; }
   .autostats span { font-size:.8rem; color:var(--muted); }
@@ -888,8 +888,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.73';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-12 17:05';
+const APP_VERSION = '4.74';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-12 17:25';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2241,7 +2241,7 @@ function deleteServiceItem(name) {       // only names nothing refers to
 function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
 function renderAutos(box) {
-  const h = mk('div', 'autohead'); h.appendChild(mk('h3', '', 'Autos'));
+  const h = mk('div', 'autohead');          // no 'Autos' heading: the page drop-down above already says it; the vehicle drop-down takes its place
   box.appendChild(h);
   if (!state.data) { box.appendChild(mk('div', 'small', 'Open or create a ledger first.')); return; }
   const vs = vehicles(), v = curVehicle();
