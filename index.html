@@ -888,8 +888,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.72';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-12 14:40';
+const APP_VERSION = '4.73';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-12 17:05';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2245,7 +2245,7 @@ function renderAutos(box) {
   box.appendChild(h);
   if (!state.data) { box.appendChild(mk('div', 'small', 'Open or create a ledger first.')); return; }
   const vs = vehicles(), v = curVehicle();
-  if (vs.length > 1) {
+  if (vs.length >= 1) {                    // always shown, even with one vehicle, so the vehicle's name is visible
     const sel = mk('select'); sel.setAttribute('aria-label', 'Vehicle');
     for (const x of vs) { const o = mk('option', '', x.name); o.value = x.id; sel.appendChild(o); }
     sel.value = v.id; sel.onchange = () => { lsSet(VEH_KEY, sel.value); render(); }; h.appendChild(sel);

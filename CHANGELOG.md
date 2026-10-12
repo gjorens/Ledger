@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.73 (2026-10-12)
+- Fixed: on the Autos page the vehicle drop-down appeared only when there were two or more vehicles, so with one vehicle its name was not shown anywhere. The drop-down now always shows, with the current vehicle's name.
+
 ## 4.72 (2026-10-12)
 - New **Browsers and devices** tables in the user guide (Settings > User guide) and in DESIGN.md: one table for Mac (Chrome, Edge, Brave, Safari) and one for iPhone and iPad (Safari tab, Home Screen app, Chrome, Brave), showing folder saving, how you save, install as an app, and the main weakness of each, with a recommended setup. It is a draft: cells marked (verify) are from general knowledge and still to be checked on real devices, and DESIGN.md lists what to verify. No behaviour change.
 
