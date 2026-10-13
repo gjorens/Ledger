@@ -831,8 +831,8 @@
 </dialog>
 
 <dialog id="svcListDlg">
-  <h3 tabindex="-1" autofocus>Service list</h3>
-  <p class="small" style="margin:4px 0 8px">Every service name, shared by all vehicles. <b>Rename</b> changes the name on every record and schedule. Giving an item the name of another one <b>merges</b> them (for example to fix a typo). <b>Delete</b> is only possible for names nothing uses.</p>
+  <div style="display:flex; align-items:center; gap:8px"><h3 tabindex="-1" autofocus style="flex:1">Service list</h3><span id="svcListAdd"></span></div>
+  <p class="small" style="margin:4px 0 8px">Every service name, shared by all vehicles. Use <b>+</b> to add a new name. <b>Rename</b> changes the name on every record and schedule. Giving an item the name of another one <b>merges</b> them (for example to fix a typo). <b>Delete</b> is only possible for names nothing uses.</p>
   <div id="svcListBody" style="max-height:60vh; overflow-y:auto"></div>
   <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" class="primary" id="svcListClose">Close</button></div>
 </dialog>
@@ -888,8 +888,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.74';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-12 17:25';
+const APP_VERSION = '4.75';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-13 15:05';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2354,7 +2354,18 @@ async function delSvcItem(n) {
   if (!await ask({ danger:1, ok:'Delete' }, 'Delete "' + n + '" from the service list? Nothing uses it.')) return;
   if (deleteServiceItem(n)) { changed(); drawSvcList(); }
 }
-function openSvcList() { drawSvcList(); $('svcListDlg').showModal(); noAutoKeyboard(); }
+async function addSvcListItem() {
+  const t = await askText({}, 'New service name:', ''); if (t === null) return;
+  const nn = t.trim().replace(/\s+/g, ' ').slice(0, 50); if (!nn) return;
+  const have = state.data.serviceItems.find(x => x.toLowerCase() === nn.toLowerCase());
+  if (have) { await ask({ alert:1 }, '"' + have + '" is already in the list.'); return; }
+  addCatalog(nn); changed(); drawSvcList();
+  const row = [...$('svcListBody').querySelectorAll('.slrow')].find(r => r.firstChild.textContent === nn);
+  if (row) row.scrollIntoView({ block:'nearest' });
+}
+function openSvcList() {
+  const sa = $('svcListAdd'); if (!sa.firstChild) sa.appendChild(iconBtn('plus', 'Add a new service name', addSvcListItem));
+  drawSvcList(); $('svcListDlg').showModal(); noAutoKeyboard(); }
 $('svcListClose').addEventListener('click', () => $('svcListDlg').close());
 
 /* vehicle dialog */

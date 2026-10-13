@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.75 (2026-10-13)
+- **Manage service list:** a **+** button at the top adds a new service name directly (it joins the list A-Z and is then available on every vehicle's schedule and on the service form). Adding a name that already exists, in any capitalisation, says so instead of adding a duplicate.
+
 ## 4.74 (2026-10-12)
 - Autos page: the vehicle drop-down now sits where the repeated "Autos" label was, and fills the row beside the + and edit buttons. The page drop-down at the top (Accounts, Investments, Loans and mortgages, Autos) is larger and darker, so it is easier to read and tap.
 
