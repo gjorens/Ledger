@@ -9,6 +9,7 @@ Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before
 - **Account number** field on each account in Manage portfolios.
 - **Dividends tab:** projected income per symbol, account, portfolio, by month (Jan–Dec), from shares x yield. Payment months come from the owner's sheet where known (ENB, BMO, FTS, TXF, ZWU, DKL, FLVC, TRP), otherwise assumed (quarterly for stocks, monthly for funds); tap a symbol to override the yearly amount or months.
 - Data format 7 (`holdings`, `instruments`).
+- Dividends tab: symbols that can be edited are marked with a pencil and the hint says to tap them.
 
 ## 4.81 (2026-10-19)
 - **Investments chart:** a third choice, **Value**, shows the portfolio's total value in CAD for each year (deposits and withdrawals included, so a deposit shows as a step). The switch is now % / $ / Value.

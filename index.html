@@ -1010,7 +1010,7 @@ const state = {
 };
 let saving = false;
 const APP_VERSION = '4.82';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 21:30';
+const APP_BUILD = '2026-10-19 22:10';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -3586,13 +3586,13 @@ function renderDividends(box, S) {
   const d = state.data, sections = [];
   for (const p of S.pfs) { const accts = []; for (const a of p.accounts || []) { const hs = acctHoldings(a).filter(h => divInfo(h.symbol).perYear > 0); if (hs.length) accts.push({ a, hs }); } if (accts.length) sections.push({ p, accts }); }
   if (!sections.length) { box.appendChild(mk('div', 'small', 'No dividend-paying holdings yet. Import your holdings first (Holdings tab).')); return; }
-  box.appendChild(mk('div', 'small', 'Projected from each position’s shares and its yearly dividend per share. The yearly amount starts from the yield in your broker’s file; the payment months come from your sheet where known, otherwise they are assumed. Choose a symbol to correct them. These are forecasts, not declared amounts. All figures are in CAD.'));
+  box.appendChild(mk('div', 'small', 'Projected from each position’s shares and its yearly dividend per share. The yearly amount starts from the yield in your broker’s file; the payment months come from your sheet where known, otherwise they are assumed. Tap a symbol (marked \u270E) to edit its yearly amount and payment months. These are forecasts, not declared amounts. All figures are in CAD.'));
   const cf = PHONE ? (n => Math.round(n).toLocaleString()) : cadFmt, w = mk('div'); w.style.overflowX = 'auto';
   const t = mk('table', 'autot invt divt'), hr = mk('tr'); ['Symbol', 'Per year'].concat(MONTH_ABBR).forEach((c, i) => hr.appendChild(mk('th', i > 0 ? 'num' : '', c))); const th = mk('thead'); th.appendChild(hr); t.appendChild(th);
   const tb = mk('tbody'), grand = new Array(12).fill(0); let grandY = 0;
   const monthsOf = h => { const di = divInfo(h.symbol), m = new Array(12).fill(0), pay = h.shares * di.perPay * curRate(h.cur); for (const mo of di.months) m[mo - 1] += pay; return m; };
   const line = (cls, label, sub, arr, onclick) => {
-    const tr = mk('tr', cls), c0 = mk('td'); c0.appendChild(mk('span', 'nw', label)); if (sub) c0.appendChild(mk('span', 'sub', sub)); tr.appendChild(c0);
+    const tr = mk('tr', cls), c0 = mk('td'); c0.appendChild(mk('span', 'nw', label + (onclick ? ' \u270E' : ''))); if (sub) c0.appendChild(mk('span', 'sub', sub)); tr.appendChild(c0);
     tr.appendChild(mk('td', 'num', cf(arr.reduce((a, b) => a + b, 0)))); arr.forEach(x => tr.appendChild(mk('td', 'num', x ? cf(x) : ''))); if (onclick) { tr.onclick = onclick; tr.style.cursor = 'pointer'; } tb.appendChild(tr);
   };
   for (const sec of sections) {
