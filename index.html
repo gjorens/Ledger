@@ -297,7 +297,7 @@
       <summary>Monthly reconciliation</summary>
       <div id="reconWork">
         <div class="recon-top">
-          <div><label class="lbl" for="cMonth">Statement month</label><select id="cMonth"></select></div>
+          <div><label class="lbl" for="cMonth">Statement</label><select id="cMonth"></select></div>
           <div><label class="lbl" for="cStmt" id="cStmtLbl">Statement closing balance</label><input id="cStmt" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="From your bank statement"></div>
         </div>
         <p class="small" style="margin:8px 0 0">Tick each item that appears on the statement. Items not ticked can be edited here and carry over to the next month if they stay unticked.</p>
@@ -802,6 +802,10 @@
       <label for="aWarn" id="aWarnLbl">Warn me if the balance is projected to drop below (optional)</label>
       <input id="aWarn" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="No warning">
     </div>
+    <div class="full">
+      <label for="aStmt">Statement closes on (optional)</label>
+      <select id="aStmt"></select>
+    </div>
     <p class="small full" id="aNote" style="margin:0"></p>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
       <button type="button" id="aCancel">Cancel</button>
@@ -888,8 +892,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.75';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-13 15:05';
+const APP_VERSION = '4.76';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-19 10:00';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1017,6 +1021,23 @@ const dmoney = (c, a) => { a = a || acct(); return money((sgn(a) * c) || 0, a); 
 const acctSub = a => [a.institution, a.type, last4(a.number), a.currency].filter(Boolean).join(' · ');
 // Where the running balance starts. Until a month is reconciled it is the opening balance; afterwards it is the latest
 // statement closing balance, less what that statement already contained (each entry remembers its reconciled amount).
+/* Statement closing day: a = account, ym = the month the statement closes in. No day set means the last day of the month. */
+function stmtEnd(a, ym) {
+  const me = monthEnd(ym), d = a && Number(a.stmtDay);
+  if (!d || d < 1 || d > 30) return me;
+  const day = String(d).padStart(2, '0');
+  return me.slice(0, 8) + (day < me.slice(8) ? day : me.slice(8));
+}
+function stmtLabel(a, ym) { return a && a.stmtDay ? 'closing ' + fmtDate(stmtEnd(a, ym)) : monthLabel(ym); }
+function stmtStart(a, ym) { return addDays(stmtEnd(a, addMonths(ym + '-01', -1).slice(0, 7)), 1); }
+function stmtOf(a, date) {              // the statement (closing month) a date falls in
+  const ym = date.slice(0, 7);
+  return date <= stmtEnd(a, ym) ? ym : addMonths(ym + '-01', 1).slice(0, 7);
+}
+function lastStmtMonth(a) {             // the newest statement whose closing date has passed
+  const cur = todayStr().slice(0, 7);
+  return stmtEnd(a, cur) < todayStr() ? cur : addMonths(cur + '-01', -1).slice(0, 7);
+}
 function anchorOf(a) {
   let last = null;
   for (const v of Object.values(state.data.reconciliations)) if (v.accountId === a.id && (!last || v.month > last.month)) last = v;
@@ -1861,7 +1882,7 @@ function archivePlan(month) {             // what would move: reconciled (or del
   for (const a of d.accounts) { const L = lastReconMonth(a); if (!L) continue; const p = prevMonthOf(L); eff.set(a.id, p < month ? p : month); }
   for (const r of d.records) {
     const e = eff.get(r.accountId); if (!e) continue;
-    if (r.date <= monthEnd(e) && ((r.reconciled && r.reconciled <= e) || r.deleted)) cand.add(r.id);
+    if (r.date <= stmtEnd(acctById(r.accountId), e) && ((r.reconciled && r.reconciled <= e) || r.deleted)) cand.add(r.id);
   }
   const drop = [];
   for (const r of d.records) if (r.transferId && cand.has(r.id)) { const o = otherLeg(r); if (!o || !cand.has(o.id)) drop.push(r.id); }
@@ -2653,7 +2674,7 @@ function renderTable(A, P) {
   let anchor = null;                    // the latest real transaction before today
   const start = document.createElement('tr'); start.className = 'start';
   addCell(start, (PHONE ? fmtShort : fmtDate)(a.openedOn || localDate(a.createdAt || new Date().toISOString())), 'time');
-  addCell(start, anchorOf(a).month ? 'Starting point (from the ' + monthLabel(anchorOf(a).month) + ' statement)' : LBL.opening(a));
+  addCell(start, anchorOf(a).month ? 'Starting point (from the ' + stmtLabel(a, anchorOf(a).month) + ' statement)' : LBL.opening(a));
   addCell(start, '', 'cat');
   addCell(start, '', 'num');
   addCell(start, dfmt(anchorOf(a).base), 'num');
@@ -2672,7 +2693,7 @@ function renderTable(A, P) {
     const t = addCell(tr, r.text, 'text');
     if (r.transferId) tag(t, '⇄', '', 'Transfer between your accounts');
     if (r.recurringId) { const ru = ruleById(r.recurringId); if (!ru || ru.frequency !== 'once') tag(t, '↻'); }
-    if (r.reconciled) tag(t, '✓', 'ok', 'Reconciled with the ' + monthLabel(r.reconciled) + ' statement');
+    if (r.reconciled) tag(t, '✓', 'ok', 'Reconciled with the ' + stmtLabel(a, r.reconciled) + ' statement');
     if (r.deleted) tag(t, 'deleted');
     addCell(tr, r.transferId ? 'Transfer' : (r.category || ''), 'cat');
     const am = addCell(tr, dfmt(cents(r.amount)), 'num amt');
@@ -2836,7 +2857,7 @@ async function cleanUpRules() {
 
 /* ---------- Monthly reconciliation (per account) ---------- */
 function reconItems() {               // unreconciled, live entries up to the end of the chosen month (earlier leftovers carry over)
-  const a = acct(), end = monthEnd(state.recon.month);
+  const a = acct(), end = stmtEnd(a, state.recon.month);
   return state.data.records.filter(r => r.accountId === a.id && !r.deleted && !r.reconciled && r.date <= end).sort(cmp);
 }
 function reconSums(items) {
@@ -2851,31 +2872,31 @@ function reconSums(items) {
   const restSum = rest.reduce((s, r) => s + cents(r.amount), 0);
   const hasStmt = R.stmt !== '' && isFinite(parseFloat(R.stmt));
   const stmtCents = hasStmt ? cents(parseFloat(R.stmt)) * sgn(a) : null;
-  const end = monthEnd(R.month);
+  const end = stmtEnd(a, R.month);
   const ledgerEnd = base0 + mine.filter(r => r.date <= end).reduce((s, r) => s + cents(r.amount), 0);
   return { opening, ticked, tickedSum, cleared, rest, restSum, stmtCents, diff: hasStmt ? stmtCents - cleared : null, ledgerEnd };
 }
 
 function openMonths() {               // ended months that still need reconciling for this account, oldest first
-  const d = state.data, a = acct(), cur = todayStr().slice(0, 7), justEnded = monthsList()[1];
+  const d = state.data, a = acct(), justEnded = lastStmtMonth(a);
   const set = new Set([justEnded]);
-  for (const r of d.records) if (r.accountId === a.id && !r.deleted && !r.reconciled) set.add(r.date.slice(0, 7));
-  return [...set].filter(m => m < cur && !d.reconciliations[a.id + '|' + m]).sort();
+  for (const r of d.records) if (r.accountId === a.id && !r.deleted && !r.reconciled) set.add(stmtOf(a, r.date));
+  return [...set].filter(m => m <= justEnded && !d.reconciliations[a.id + '|' + m]).sort();
 }
 
 function renderRecon() {
   const R = state.recon, d = state.data, a = acct();
-  const open = openMonths(), justEnded = monthsList()[1];
+  const open = openMonths(), justEnded = lastStmtMonth(a);
   $('reconWork').hidden = !open.length;
   $('reconDone').hidden = !!open.length;
-  $('reconDone').textContent = 'Every month up to ' + monthLabel(justEnded) + ' is reconciled for ' + acctLabel(a) + '.';
+  $('reconDone').textContent = (a.stmtDay ? 'Every statement up to the one ' : 'Every month up to ') + stmtLabel(a, justEnded) + ' is reconciled for ' + acctLabel(a) + '.';
 
   if (open.length) {
     if (!R.month || !open.includes(R.month)) { R.month = open[0]; R.ticked.clear(); R.stmt = ''; }
-    const sel = $('cMonth'), key = a.id + '|' + open.join(',');
+    const sel = $('cMonth'), key = a.id + '|' + (a.stmtDay || 0) + '|' + open.join(',');
     if (sel.dataset.key !== key) {
       sel.innerHTML = '';
-      for (const m of open) { const o = document.createElement('option'); o.value = m; o.textContent = monthLabel(m) + (m === justEnded ? ' (just ended)' : ''); sel.appendChild(o); }
+      for (const m of open) { const o = document.createElement('option'); o.value = m; o.textContent = (a.stmtDay ? 'Closing ' + fmtDate(stmtEnd(a, m)) : monthLabel(m)) + (m === justEnded ? ' (just ended)' : ''); sel.appendChild(o); }
       sel.dataset.key = key;
     }
     sel.value = R.month;
@@ -2886,7 +2907,7 @@ function renderRecon() {
     const ids = new Set(items.map(r => r.id));
     for (const id of [...R.ticked]) if (!ids.has(id)) R.ticked.delete(id);
     const list = $('reconList'); list.innerHTML = '';
-    const start = R.month + '-01';
+    const start = stmtStart(a, R.month);
     if (!items.length) { const p = document.createElement('div'); p.className = 'small'; p.textContent = 'Nothing to tick yet. Use "Add missed item" if the statement has something that is not in your ledger.'; list.appendChild(p); }
     for (const r of items) {
       const row = document.createElement('div'); row.className = 'ritem';
@@ -2929,7 +2950,7 @@ function updateReconSummary() {
   line('Statement closing balance', S.stmtCents === null ? 'enter above' : dmoney(S.stmtCents));
   if (S.diff !== null) line(S.diff === 0 ? 'Difference: balanced' : 'Difference', dmoney(S.diff), 'total ' + (S.diff === 0 ? 'good' : 'bad'));
   line('Not ticked / not on the statement (' + S.rest.length + ')', dmoney(S.restSum));
-  line((isLiab(acct()) ? 'Ledger amount owing at ' : 'Ledger balance at ') + fmtDate(monthEnd(state.recon.month)), dmoney(S.ledgerEnd));
+  line((isLiab(acct()) ? 'Ledger amount owing at ' : 'Ledger balance at ') + fmtDate(stmtEnd(acct(), state.recon.month)), dmoney(S.ledgerEnd));
 }
 
 async function finishRecon() {
@@ -2938,7 +2959,7 @@ async function finishRecon() {
   const S = reconSums(reconItems());
   if (S.diff === null) { await ask({alert:1}, 'Enter the closing balance from your bank statement first.'); return; }
   if (!S.ticked.length) { await ask({alert:1}, 'Tick the items that appear on the statement first.'); return; }
-  if (S.diff !== 0 && !await ask({ok:'Reconcile anyway'}, 'There is still a difference of ' + dfmt(S.diff) + '.\n\nMark ' + monthLabel(R.month) + ' as reconciled anyway?')) return;
+  if (S.diff !== 0 && !await ask({ok:'Reconcile anyway'}, 'There is still a difference of ' + dfmt(S.diff) + '.\n\nMark the statement ' + stmtLabel(a, R.month) + ' as reconciled anyway?')) return;
   for (const r of S.ticked) { r.reconciled = R.month; r.reconAmt = cents(r.amount); }
   for (const r of S.rest) delete r.reconAmt;      // not on the statement, so counted in full again
   d.reconciliations[key] = { accountId:a.id, month:R.month, statementBalance:S.stmtCents / 100, difference:S.diff / 100, itemCount:S.ticked.length, completedAt:new Date().toISOString() };
@@ -2947,7 +2968,7 @@ async function finishRecon() {
 }
 async function reopenMonth(month) {
   const a = acct();
-  if (!await ask({ok:'Undo reconciliation',danger:1}, 'Undo the reconciliation of ' + monthLabel(month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
+  if (!await ask({ok:'Undo reconciliation',danger:1}, 'Undo the reconciliation of the statement ' + stmtLabel(a, month) + ' for ' + acctLabel(a) + '? Its items will be marked as not reconciled again.')) return;
   for (const r of state.data.records) if (r.accountId === a.id && r.reconciled === month) { delete r.reconciled; delete r.reconAmt; }
   delete state.data.reconciliations[a.id + '|' + month];
   changed();
@@ -3063,7 +3084,7 @@ function editRecord(r) {
   openEdit({ kind:'rec', id:r.id }, { title:'Edit entry', date:r.date, amount:isT ? Math.abs(r.amount) : r.amount, text:r.text, cat:r.category, note, save:'Save', canRepeat:!r.recurringId, withText:!isT, withCat:!isT, noNeg:isT, flip:!isT && isLiab(acct()), xfer:isT && otherLeg(r) ? { from:(r.amount < 0 ? r : otherLeg(r)).accountId, to:(r.amount < 0 ? otherLeg(r) : r).accountId } : null });
 }
 function addMissed() {                    // quick add from the reconciliation panel; the new item is ticked automatically
-  openNew({ missed:true, title:'Add missed item', date:monthEnd(state.recon.month),
+  openNew({ missed:true, title:'Add missed item', date:stmtEnd(acct(), state.recon.month),
     note:'For something on the statement that is missing from your ledger. Change the date to the one on the statement; the item is ticked for you.' });
 }
 function editOcc(it) {
@@ -3164,6 +3185,10 @@ function openAcct(a) {
   setMoney($('aBal'), a ? a.startingBalance * sg0 : ''); setMoney($('aWarn'), a && typeof a.warnBelow === 'number' ? a.warnBelow * sg0 : ''); $('aOpen').value = a ? a.openedOn : todayStr();
   $('aNote').textContent = a ? 'Changing the opening balance changes every balance in this account.'
     : 'Only the last 4 digits of an account number are ever shown. You can enter just those.';
+  const ss = $('aStmt');
+  if (!ss.dataset.filled) { ss.innerHTML = ''; const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Last day of the month'; ss.appendChild(o0);
+    for (let i = 1; i <= 30; i++) { const o = document.createElement('option'); o.value = String(i); o.textContent = 'Day ' + i + ' of the month' + (i > 28 ? ' (or the last day if shorter)' : ''); ss.appendChild(o); } ss.dataset.filled = '1'; }
+  ss.value = a && a.stmtDay ? String(a.stmtDay) : '';
   acctLabels();
   $('acctDlg').showModal(); noAutoKeyboard();
 }
@@ -3174,16 +3199,19 @@ $('acctForm').addEventListener('submit', ev => {
   const sgA = LIAB_TYPES.includes(type) ? -1 : 1;
   const startingBalance = parseFloat($('aBal').value) * sgA, openedOn = $('aOpen').value;
   if (!isFinite(startingBalance) || !openedOn) return;
+  const stmtDay = Number($('aStmt').value) || null;
   const wv = parseFloat($('aWarn').value), warnBelow = isFinite(wv) ? wv * sgA : null;
   if (state.acctEdit) {
     const a = acctById(state.acctEdit); if (!a) return;
     const oldLabel = acctLabel(a);
     Object.assign(a, { type, currency, institution, name, number, startingBalance, openedOn, warnBelow });
+    if (stmtDay) a.stmtDay = stmtDay; else delete a.stmtDay;
     const newLabel = acctLabel(a);
     if (newLabel !== oldLabel) normTransferTexts(state.data);      // transfers carry the standard "From → To" description, so they follow the new name
   } else {
     if (!state.data) state.data = newData();
     const a = { id:uid(), name, type, currency, institution, number, startingBalance, openedOn, warnBelow, createdAt:new Date().toISOString(), closed:false };
+    if (stmtDay) a.stmtDay = stmtDay;
     state.data.accounts.push(a);
     state.accountId = a.id; lsSet(ACCT_KEY, a.id);
     state.initialScroll = true; state.recon = { month:null, ticked:new Set(), stmt:'' };
@@ -3280,7 +3308,7 @@ async function unpostRecord(id) {              // undo a Post: the entry is remo
   if (!r || r.deleted || !r.recurringId) return;
   const other = otherLeg(r);
   const msg = 'Unpost "' + r.text + '" on ' + fmtDate(r.date) + '? It goes back to the projected list' + (other ? ' (both sides of the transfer)' : '') + ' and balances adjust.';
-  if (!await ask({ok:'Unpost'}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  if (!await ask({ok:'Unpost'}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + stmtLabel(acctById(r.accountId), r.reconciled) + ' statement.' : ''))) return;
   const now = new Date().toISOString();
   for (const x of [r, other]) if (x && !x.deleted) { x.deleted = true; x.deletedAt = now; x.unposted = true; }
   changed();
@@ -3292,7 +3320,7 @@ async function deleteRecord(id) {
   const msg = other
     ? 'Delete this transfer? Both sides (here and in ' + acctLabel(acctById(other.accountId)) + ') stay in the file marked as deleted, and balances adjust.'
     : 'Delete "' + r.text + '"? It stays in the file marked as deleted, and later balances adjust.';
-  if (!await ask({ok:'Delete',danger:1}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + monthLabel(r.reconciled) + ' statement.' : ''))) return;
+  if (!await ask({ok:'Delete',danger:1}, msg + (r.reconciled ? '\n\nNote: it was reconciled with the ' + stmtLabel(acctById(r.accountId), r.reconciled) + ' statement.' : ''))) return;
   const now = new Date().toISOString();
   r.deleted = true; r.deletedAt = now;
   if (other && !other.deleted) { other.deleted = true; other.deletedAt = now; }

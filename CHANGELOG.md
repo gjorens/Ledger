@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 5` since v4.67 (4 before; v4 files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.76 (2026-10-19)
+- **Statement closing day per account:** the account dialog has a new **Statement closes on** setting (day 1 to 30, or the last day of the month, which is the default and leaves existing accounts unchanged). Reconciliation then follows that account's statements: the statement list shows closing dates ("Closing Oct 12, 2026"), a statement is offered once its closing date has passed, items dated after the closing date wait for the next statement, "(earlier)" marks items from before the statement period, the ledger balance shown is as at the closing date, and "Add missed item" starts on the closing date. Days later than a short month's end (for example 30 in February) use the last day. Archiving also follows each account's closing day. The setting is stored as `stmtDay` on the account (no data format change; files without it behave as before). If you change the day after reconciling, earlier reconciliations keep their month label; change it before you start for the cleanest history.
+
 ## 4.75 (2026-10-13)
 - **Manage service list:** a **+** button at the top adds a new service name directly (it joins the list A-Z and is then available on every vehicle's schedule and on the service form). Adding a name that already exists, in any capitalisation, says so instead of adding a duplicate.
 

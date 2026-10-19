@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.75. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.76. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -48,6 +48,7 @@ Design constraints that explain most decisions:
 - `date` is a plain `YYYY-MM-DD` string (no time zones).
 - `deleted` records stay in the file (so they can be restored) and no longer affect balances. Settings > Display can hide or show them.
 - `reconciled` holds the statement month (`YYYY-MM`) the entry was ticked against; `reconAmt` the amount at that time.
+- **Statement closing day.** An account may carry `stmtDay` (1-30; absent means the last day of the month). The reconciliation key and `reconciled` still use `YYYY-MM`, meaning the month the statement *closes* in. `stmtEnd(a, ym)` gives its closing date (clamped to short months), `stmtOf(a, date)` the statement a date belongs to, `stmtStart` the first day of its period, `lastStmtMonth(a)` the newest closed statement. Reconciliation, the missed-item date and archive eligibility use these instead of `monthEnd`. Changing the day after reconciling leaves earlier months labelled as they were.
 - `transferId` ties the two legs of a transfer (one entry in each account).
 - `recurringId` + `recurringDate` mean the entry was posted from a recurring rule; `recurringDate` is the *original* scheduled date, even if the entry was later moved. `unposted: true` marks a posted entry that was undone, so its occurrence returns to the projected list.
 
