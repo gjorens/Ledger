@@ -9,7 +9,51 @@ To support several:
 4. Archive files would carry the ledger name (`ledger-<name>-archive-YYYY-MM.json`).
 5. Folder mode: look for the chosen ledger's file name rather than the fixed standard name.
 
-## Investments (prices, exchange rates, dividends)
+## Investments (portfolio tracking, then prices, exchange rates, dividends)
+
+### Owner's requirements (Oct 19 2026)
+**Hierarchy:** Institution > Portfolio > Account > Holding. For example, at BMO there may be several portfolios, each with accounts of different types (RRSP, RESP, RRIF, TFSA, FHSA, cash, margin and more). Tax treatment is irrelevant to the app, so the account type is only a label. An account holds one or more products (stocks, bonds, HISA funds, ETFs and so on) plus cash. Each product is listed on a US or Canadian exchange and has a currency, USD or CAD; cash can be in either currency.
+
+**Main function 1: daily portfolio record.** The user enters the portfolio value each day, plus any deposits or withdrawals. The app keeps the history of daily values and shows a daily table like the owner's spreadsheet (screenshot of the 2026 sheet):
+- Date and weekday; **Value (Net)** = the value entered; **Change (Net)** = today's value minus the previous value minus deposits (plus withdrawals), so deposits and withdrawals do not count as performance; **Deposits (-Withdrawals)** column.
+- **Weekly summary row** (Saturday): week's net change, **% Week (Net)**, **YTD (Net)** in dollars, **% YTD (Gross)**, **% YTD (Net)**. Sunday is a shaded spacer row.
+- **Average Daily (Net)** = YTD net change divided by the number of **trading days** so far (not the number of entries), so a missed entry does not distort the average. Trading days are Monday to Friday minus market holidays; the US and Canadian holidays differ.
+- **Projected Year End Value** = today's value plus the average daily change times the remaining trading days (about 252 at the start of the year; to confirm against the sheet), using the same trading-day calendar.
+- **TSX %** column: the index's YTD % alongside, for comparison (needs index data, see below).
+- Gross includes deposits and withdrawals; net excludes them. Example from the sheet: 976,170 on Jan 1, a 335,000 deposit on Jan 2 and a value of 1,318,102 gives a net change of 6,932, a gross YTD of 35.03% and a net YTD of 0.71%.
+- **Year-to-date** starts from a January 1 value the user gives initially, and is **reconciled each following January 1** (the closing value of the old year becomes the opening value of the new one, with the option to correct it against the year-end statement).
+
+**Main function 2: graphs.** Performance of the portfolio against previous years (one line per year, from Jan 1) and against stock exchange indexes (TSX, S&P 500 and so on). (Owner's second main function not yet described.)
+
+**Main function 2: performance of individual instruments.** Performance means the change in the instrument's value **plus any dividends or distributions paid** (total return). The user sees at a glance how each instrument is doing, alone and compared with the other instruments in the portfolio (for example a ranked table of total return % for the year, with price return and dividend return shown separately, a small trend line per row, and colour for best and worst).
+
+**Dividend projection (owner's spreadsheet, "Total Portfolio" sheet).** One row per holding, with cash, GIC and HISA lines above them:
+- Columns: currency, **shares**, **yearly dividend per share**, **annualized income** (shares x yearly dividend, converted to CAD; e.g. 6,260 x 0.888 = 5,558.88), **total value in CAD**, **% yield** (annualized income / value), **dividend payments per year** (12 monthly, 4 quarterly) and the **payment each time** (annual income / payments per year).
+- A **Jan to Dec grid** showing what is expected in each month. Monthly payers appear every month; quarterly payers appear only in their own months (for example ENB in Mar/Jun/Sep/Dec, BMO in Feb/May/Aug/Nov, ZWU in Jan/Apr/Jul/Oct), so the monthly totals differ (6,403.65 / 6,016.64 / 9,348.20 in the sample). Totals row for value, annual income and portfolio yield (87,073.97 and 6.34% in the sample).
+- Cash can be in CAD and USD. USD holdings and USD dividends are converted to CAD with an exchange rate (the sample implies about 1.40), so the app needs a CAD/USD rate (fetched, with manual override).
+- The projection is "based on their past dividends": the yearly dividend per share and the payment months come from the instrument's dividend history (entered by the user as each dividend arrives, or fetched where a source exists), and can be overridden by hand.
+
+### Decisions (owner, Oct 19 2026)
+- **Entry is one portfolio balance per day, in CAD.** No per-account or per-holding entry, no currency conversion in the daily record. (Holdings, USD and CAD products, and prices stay in the later add-ons.)
+- **Index closes are fetched by the app** (TSX and S&P 500 at least), best effort: it does not have to be 100% reliable; missing days can be typed in by hand. Open point: a browser can only call a data source that allows cross-origin requests, which many free sources do not, so a source must be tested from the real app before the design is fixed (a key-based free API is the likely fallback; only the index symbol is sent, never any balance).
+- **One file:** investments data goes into the same ledger file (data format v6).
+- **Transfers between investment accounts and bank accounts:** the existing transfer feature is extended so an investment account can be the From or To account. A transfer in or out creates the matching **deposit / withdrawal** on that day for the portfolio, so the bank side and the portfolio side stay in step and the net performance excludes it.
+- **Trading-day calendar:** weekdays minus holidays for the TSX and the NYSE/Nasdaq, worked out by rule inside the app (New Year, Family Day, Good Friday, Victoria Day, Canada Day, Civic Holiday, Labour Day, Thanksgiving, Christmas, Boxing Day for Canada; New Year, MLK, Presidents, Good Friday, Memorial, Juneteenth, July 4, Labour, Thanksgiving, Christmas for the US). A day counts as a trading day when at least one of the two markets is open (a setting could change this). No data source is needed for holidays.
+
+### Decisions on holdings (owner, Oct 19 2026)
+- **Calculated totals with overrides:** the portfolio total is calculated from holdings x prices (plus cash, GIC, HISA), and the user can override it, and record deposits, withdrawals and other deviations by hand.
+- **No trade entry required:** the user does a **true-up of the number of shares per account** (a periodic count per account, as on the owner's "S-RRIF" sheet), not a record of each buy and sell. Per account the sheet has: cash in CAD and USD, GICs (up to four, with rates), a HISA with a rate per currency, then one row per symbol with shares and value in CAD or USD, converted to a CAD total. Between true-ups the share counts carry forward; the difference between two true-ups, together with deposits and withdrawals, explains the change.
+- **Several institutions and portfolios** are normal (a typical user spreads money across a few banks and investment firms), so the hierarchy stays Institution > Portfolio > Account, each account with its own true-up and a rolled-up total.
+- **Price availability:** to be tested from the real app. `price-test.html` (a one-page test) tries Yahoo, Stooq, Frankfurter, Bank of Canada and optional keyed sources for Canadian ETFs, US ETFs, the TSX and S&P indexes and USD/CAD, and reports which work in the browser. Results decide the design.
+
+### Design questions still open
+- **Total value:** with holdings entered (shares, price) the portfolio total can be calculated from them, instead of typed daily. Does the owner still want to type the daily total, or should holdings x prices replace it (and the typed value remain as an override)?
+- Cost / start-of-year reference per holding for the return calculation (Jan 1 price for year-to-date, or purchase price), and how buys, sells and reinvested distributions are recorded.
+- Prices for each instrument carry the same free-source browser-access question as the index closes (symbols with exchange suffix; Canadian ETFs are often missing on free sources).
+- Which Institution > Portfolio > Account levels carry the daily balance if the user has several portfolios (one balance series per portfolio, with a combined total)?
+- Whether Investment accounts also stay in the Accounts tabs (see the section pages note).
+
+### Later add-ons (from the earlier notes)
 Goal: transfers can use investment accounts (buy / sell / contribute / withdraw), and investment accounts show a market value.
 - **Holdings** per investment account: symbol (with exchange suffix for TSX etc.), shares, optional cost.
 - **Refresh prices** button (no constant polling). Free provider with the user's own API key stored in Settings, never in the code on GitHub. Delayed or end-of-day prices only; real-time streaming is a paid service. Only symbols are sent to the provider, never balances or transactions.

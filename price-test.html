@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>myLedger price source test</title>
+<style>
+body{font:15px/1.4 -apple-system,system-ui,sans-serif;margin:16px;max-width:900px}
+button{font:inherit;padding:8px 14px;margin:4px 6px 4px 0}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #bbb;padding:5px 7px;text-align:left;vertical-align:top;font-size:13px;word-break:break-word}
+.ok{background:#d8f2d8}.bad{background:#f7d4d4}
+input{font:inherit;padding:5px;width:260px}
+pre{white-space:pre-wrap;background:#f2f2f2;padding:8px;font-size:12px}
+</style></head><body>
+<h2>myLedger price source test</h2>
+<p>Open this page in the browser you use for myLedger (best from the same web address as the app, then also from the Home Screen on the iPhone/iPad). Press <b>Run test</b>, wait about 20 seconds, then press <b>Copy results</b> and paste them back to Claude. Nothing is sent anywhere except the public price requests below. No balances or ledger data are involved.</p>
+<p>Optional free API keys (leave blank to skip): Twelve Data <input id="kTD" placeholder="twelvedata.com key"> Alpha Vantage <input id="kAV" placeholder="alphavantage.co key"></p>
+<button id="go">Run test</button><button id="cp">Copy results</button>
+<table id="t"><thead><tr><th>Source</th><th>What</th><th>Result</th><th>Detail</th></tr></thead><tbody></tbody></table>
+<pre id="out"></pre>
+<script>
+const tb=document.querySelector('#t tbody'), lines=[];
+function row(src,what,ok,detail){const tr=document.createElement('tr');tr.className=ok?'ok':'bad';
+ [src,what,ok?'WORKS':'FAILED',detail].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.appendChild(td)});tb.appendChild(tr);
+ lines.push([src,what,ok?'WORKS':'FAILED',detail].join(' | '));}
+async function tryUrl(src,what,url,parse){
+ try{const c=new AbortController();const to=setTimeout(()=>c.abort(),12000);
+  const r=await fetch(url,{signal:c.signal});clearTimeout(to);const txt=await r.text();
+  if(!r.ok){row(src,what,false,'HTTP '+r.status+' '+txt.slice(0,80));return}
+  let d;try{d=parse(txt)}catch(e){row(src,what,false,'unreadable reply: '+txt.slice(0,80));return}
+  row(src,what,!!d,String(d||txt.slice(0,80)));
+ }catch(e){row(src,what,false,(e.name==='AbortError'?'timeout':'blocked or no network (probably CORS): '+e.message))}}
+const yj=t=>{const j=JSON.parse(t),m=j.chart.result[0].meta;return m.symbol+' '+m.regularMarketPrice+' '+m.currency+' ('+(j.chart.result[0].timestamp||[]).length+' days)'};
+const stq=t=>{const l=t.trim().split('\n');if(l.length<2||/N\/D/.test(l[1]))return null;return l[1]};
+document.getElementById('go').onclick=async()=>{
+ tb.innerHTML='';lines.length=0;
+ const tests=[];
+ for(const s of ['ZEB.TO','HUTS.TO','TXF.TO','ZWU.TO','ENB.TO','JEPQ','^GSPTSE','^GSPC','USDCAD=X'])
+  tests.push(tryUrl('Yahoo chart',s,'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(s)+'?range=1mo&interval=1d',yj));
+ tests.push(tryUrl('Yahoo (query2)','ZEB.TO','https://query2.finance.yahoo.com/v8/finance/chart/ZEB.TO?range=5d&interval=1d',yj));
+ for(const s of ['zeb.to','huts.to','jepq.us','^spx','^tsx'])
+  tests.push(tryUrl('Stooq',s,'https://stooq.com/q/l/?s='+encodeURIComponent(s)+'&f=sd2c&h&e=csv',stq));
+ tests.push(tryUrl('Frankfurter','USD to CAD','https://api.frankfurter.dev/v1/latest?base=USD&symbols=CAD',t=>'CAD '+JSON.parse(t).rates.CAD));
+ tests.push(tryUrl('Bank of Canada Valet','USD/CAD','https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1',t=>{const o=JSON.parse(t).observations[0];return o.d+' '+o.FXUSDCAD.v}));
+ const td=document.getElementById('kTD').value.trim(), av=document.getElementById('kAV').value.trim();
+ if(td){for(const s of ['ZEB:TSX','HUTS:TSX','JEPQ'])tests.push(tryUrl('Twelve Data',s,'https://api.twelvedata.com/price?symbol='+encodeURIComponent(s)+'&apikey='+td,t=>{const j=JSON.parse(t);return j.price?j.price:null}))}
+ if(av){for(const s of ['ZEB.TRT','JEPQ'])tests.push(tryUrl('Alpha Vantage',s,'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol='+s+'&apikey='+av,t=>{const q=JSON.parse(t)['Global Quote'];return q&&q['05. price']?q['05. price']:null}))}
+ await Promise.all(tests);
+ document.getElementById('out').textContent='Browser: '+navigator.userAgent+'\nPage: '+location.href+'\n\n'+lines.join('\n');
+};
+document.getElementById('cp').onclick=()=>{const t=document.getElementById('out').textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(()=>{const r=document.createRange();r.selectNodeContents(document.getElementById('out'));getSelection().removeAllRanges();getSelection().addRange(r)})};
+</script></body></html>
