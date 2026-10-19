@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.77. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.78. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -199,6 +199,7 @@ Written from general knowledge on 2026-10-12; cells marked (verify) are unchecke
 - **January 1 value:** `invStart` if set, otherwise the last value entered before January 1; each year therefore carries forward, and the owner can correct it against the year-end statement.
 - **Combined view:** the portfolios' values are added (each carried forward from its last entry), so the daily change is the sum; a deposit in one portfolio is kept out of the combined change.
 - **Trading days:** `holidays(year)` returns TSX and US closures by rule (Family Day, Good Friday, Victoria Day, Canada Day, Civic Holiday, Labour Day, Thanksgiving, Christmas and Boxing Day with Monday/Tuesday observance; MLK, Presidents, Memorial, Juneteenth, Independence Day, Labor Day, Thanksgiving, Christmas with Friday/Monday observance; a Saturday New Year is not observed by the NYSE). Special one-off closures are not modelled.
+- **CSV import:** `parseInvCsv(text)` reads the owner's yearly sheets (year in cell A1, value column = the one before "Change", a column whose header starts with "Deposit", a "Forward" row, dates as "Jan 02"); rows with a "total" label are not deposits; extra columns after the deposits column become optional extra portfolios. Verified against the 2024 sheet in the test script.
 - **Not built yet:** prices, index columns, holdings and share-count true-ups, dividend projection, transfers to bank accounts (see ROADMAP).
 
 ## 12. Testing

@@ -99,6 +99,8 @@
   .invchart .grid { stroke:var(--line); stroke-width:1; }
   .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
   .invchart .axt { fill:var(--muted); font-size:11px; }
+  .impf { margin:6px 0; padding:6px 8px; border:1px solid var(--line); border-radius:8px; }
+  .impx { margin:8px 0; display:grid; gap:6px; }
   .pfarow { display:grid; grid-template-columns:9em 1fr auto; gap:6px; margin-bottom:6px; }
   #pfListDlg .vacc { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); }
   #pfListDlg .sub { display:block; font-size:.78rem; color:var(--muted); }
@@ -851,7 +853,23 @@
   <p class="small" style="margin:4px 0 8px">Institution, then portfolio, then account. The daily value is recorded per portfolio.</p>
   <div id="pfListBody" style="max-height:50vh; overflow-y:auto"></div>
   <div style="margin-top:10px"><label for="iCal" class="lbl">Trading days (for the daily average and the year-end projection)</label><select id="iCal"></select></div>
-  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" class="primary" id="pfListClose">Close</button></div>
+  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px"><button type="button" id="pfListImport" style="margin-right:auto">Import yearly CSV files…</button><button type="button" class="primary" id="pfListClose">Close</button></div>
+</dialog>
+
+<dialog id="impDlg">
+  <form id="impForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full">Import yearly sheets (CSV)</h3>
+    <p class="small full" style="margin:0">Choose one or more files in the layout of your yearly sheets (for example <i>Investments - 2024.csv</i>: the year in the top left cell, the value before the Change column, a Deposits column, and a Forward row with the January 1 value). Export each sheet from your spreadsheet as CSV first. Nothing is changed until you press Import.</p>
+    <div class="full"><input id="impFile" type="file" accept=".csv,text/csv,text/plain" multiple></div>
+    <div class="full"><label for="impPf">Import the daily values into</label><select id="impPf"></select></div>
+    <div class="full" id="impNew" style="grid-template-columns:1fr 1fr; gap:6px"><input id="impInst" type="text" maxlength="40" placeholder="Institution" autocomplete="off"><input id="impName" type="text" maxlength="40" placeholder="Portfolio name" autocomplete="off"></div>
+    <div class="full" id="impList"></div>
+    <div class="full" id="impExtraBox"></div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="impCancel">Cancel</button>
+      <button type="submit" class="primary" id="impGo" disabled>Import</button>
+    </div>
+  </form>
 </dialog>
 
 <dialog id="pfDlg">
@@ -946,8 +964,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.77';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 16:00';
+const APP_VERSION = '4.78';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-19 18:00';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -3042,6 +3060,7 @@ function renderInvest(box) {
   if (!pfs.length) {
     box.appendChild(mk('div', 'small', 'Track the daily value of your investment portfolios, with deposits and withdrawals kept apart from performance. Organise them as institution, then portfolio, then account (for example BMO > Main portfolio > RRSP, TFSA, Cash). You enter one total value per portfolio per day, in CAD.'));
     const b = mk('button', 'primary', 'Add your first portfolio'); b.type = 'button'; b.onclick = () => openPf(null); box.appendChild(b);
+    const im = mk('button', '', 'Import yearly CSV files'); im.type = 'button'; im.style.marginLeft = '8px'; im.onclick = openImport; box.appendChild(im);
     const mine = d.accounts.filter(a => a.type === 'Investment');
     if (mine.length) box.appendChild(mk('div', 'small', 'Your existing accounts of the type Investment (' + mine.map(acctLabel).join(', ') + ') stay on the Accounts page.'));
     return;
@@ -3204,6 +3223,116 @@ $('invForm').addEventListener('submit', ev => {
   $('invDlg').close(); changed();
 });
 
+/* import of the owner's yearly sheets (CSV): one row per date, the value in the column before "Change", deposits and withdrawals in the
+   "Deposits" column (brackets or a minus sign = withdrawal), the January 1 value on the "Forward" row, and optional extra columns after the
+   deposits column that hold another portfolio's daily value. Weekly summary rows (no value) and the "Total deposits" row are skipped. */
+function csvRows(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+function parseNum(s) {
+  let t = String(s == null ? '' : s).trim(); if (!t) return null;
+  const neg = /^\(.*\)$/.test(t) || /^[-−]/.test(t); t = t.replace(/[()\s,$\-−]/g, '');
+  if (!t || !isFinite(Number(t))) return null; return neg ? -Number(t) : Number(t);
+}
+function parseInvCsv(text) {
+  const rows = csvRows(String(text).replace(/^﻿/, '')), hi = rows.findIndex(r => /^\d{4}$/.test((r[0] || '').trim()));
+  if (hi < 0) return { error:'This does not look like one of your yearly sheets: the year (for example 2024) should be in the first cell.' };
+  const hdr = rows[hi], year = Number(hdr[0].trim()), ci = hdr.findIndex(h => /^change$/i.test(String(h).trim())), vc = ci > 0 ? ci - 1 : 2;
+  const dc = hdr.findIndex(h => /^\s*deposits?\b/i.test(h));
+  if (dc < 0) return { error:'No "Deposits" column was found in the header row.' };
+  const extras = []; hdr.forEach((h, i) => { if (i > dc && String(h).trim()) extras.push({ name:String(h).trim(), col:i, days:[] }); });
+  const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], days = []; let start = null, depTotal = 0, skipped = 0;
+  for (const r of rows.slice(hi + 1)) {
+    if (/^forward/i.test((r[0] || '').trim())) { start = parseNum(r[vc]); continue; }
+    const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})$/.exec((r[1] || '').trim()); if (!m) continue;
+    const mo = MON.indexOf(m[1].toLowerCase()), dd = Number(m[2]); if (mo < 0) continue;
+    const dt = new Date(Date.UTC(year, mo, dd)); if (dt.getUTCMonth() !== mo) { skipped++; continue; }
+    const date = ymdStr(year, mo + 1, dd), isTotal = r.some(x => /total/i.test(x || ''));
+    const v = parseNum(r[vc]), dep = isTotal ? null : parseNum(r[dc]);
+    if (v !== null || (dep !== null && dep !== 0)) { days.push({ date, v, dep:dep || null }); if (dep) depTotal = r2(depTotal + dep); }
+    for (const e of extras) { const x = parseNum(r[e.col]); if (x !== null) e.days.push({ date, v:x }); }
+  }
+  return { year, start, days, extras:extras.filter(e => e.days.length), depTotal, skipped };
+}
+
+state.imp = null;
+function openImport() {
+  state.imp = { files:[] }; $('impFile').value = ''; $('impList').innerHTML = ''; $('impGo').disabled = true; $('impExtraBox').innerHTML = '';
+  const sel = $('impPf'); sel.innerHTML = '';
+  for (const p of invPfs()) { const o = mk('option', '', pfLabel(p)); o.value = p.id; sel.appendChild(o); }
+  { const o = mk('option', '', 'A new portfolio…'); o.value = 'new'; sel.appendChild(o); }
+  const cur = invSel().single; sel.value = cur ? cur.id : (invPfs().length ? invPfs()[0].id : 'new'); impNewToggle();
+  if ($('pfListDlg').open) $('pfListDlg').close();
+  $('impDlg').showModal(); noAutoKeyboard();
+}
+function impNewToggle() { $('impNew').style.display = $('impPf').value === 'new' ? 'grid' : 'none'; }
+$('impPf').addEventListener('change', () => { impNewToggle(); drawImpList(); });
+$('impCancel').addEventListener('click', () => $('impDlg').close());
+$('impFile').addEventListener('change', async () => {
+  const fs = [...$('impFile').files], out = [];
+  for (const f of fs) { let r; try { r = parseInvCsv(await f.text()); } catch (e) { r = { error:String(e.message || e) }; } r.name = f.name; out.push(r); }
+  out.sort((a, b) => (a.year || 0) - (b.year || 0)); state.imp.files = out; drawImpList();
+});
+function drawImpList() {
+  const L = $('impList'); L.innerHTML = ''; const X = $('impExtraBox'); const keep = {};
+  X.querySelectorAll('.impx').forEach(r => { keep[r.dataset.name] = [r.querySelector('select').value, r.querySelector('input').value]; });
+  X.innerHTML = '';
+  const files = (state.imp && state.imp.files) || [], good = files.filter(f => !f.error);
+  const pid = $('impPf').value, have = pid === 'new' ? {} : (state.data.invDays[pid] || {});
+  for (const f of files) {
+    const row = mk('div', 'impf');
+    if (f.error) { row.appendChild(mk('b', '', f.name)); row.appendChild(mk('div', 'neg', f.error)); L.appendChild(row); continue; }
+    const exist = f.days.filter(d => have[d.date]).length;
+    row.appendChild(mk('b', '', f.year + ' (' + f.name + ')'));
+    row.appendChild(mk('div', 'small', f.days.filter(d => d.v !== null).length + ' daily values, ' + f.days.filter(d => d.dep).length + ' deposits or withdrawals (net ' + cadFmt(f.depTotal) + '), January 1 value ' + (f.start === null ? 'not found' : cadFmt(f.start)) + (exist ? '. ' + exist + ' days already recorded will be replaced' : '') + (f.skipped ? '. ' + f.skipped + ' impossible dates skipped' : '') + '.'));
+    L.appendChild(row);
+  }
+  const names = [...new Set(good.flatMap(f => f.extras.map(e => e.name)))];
+  for (const n of names) {
+    const cnt = good.reduce((t, f) => t + (f.extras.find(e => e.name === n) || { days:[] }).days.length, 0);
+    const r = mk('div', 'impx'); r.dataset.name = n;
+    r.appendChild(mk('div', 'small', 'The sheets also have a column named “' + n + '” (' + cnt + ' daily values). Import it as:'));
+    const s = mk('select'); for (const [v, t] of [['skip', 'Do not import it'], ['new', 'A new portfolio, named below']].concat(invPfs().map(p => [p.id, pfLabel(p)]))) { const o = mk('option', '', t); o.value = v; s.appendChild(o); }
+    const i = mk('input'); i.type = 'text'; i.maxLength = 40; i.value = n; i.setAttribute('aria-label', 'Name of the new portfolio');
+    s.value = keep[n] ? keep[n][0] : 'skip'; i.value = keep[n] ? keep[n][1] : n;
+    const sync = () => { i.hidden = s.value !== 'new'; }; s.onchange = sync; sync();
+    r.append(s, i); X.appendChild(r);
+  }
+  $('impGo').disabled = !good.length;
+}
+$('impForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const good = state.imp.files.filter(f => !f.error); if (!good.length) return;
+  const d = state.data; let pid = $('impPf').value;
+  const mkPf = (inst, name) => { const p = { id:uid(), institution:inst, name:name || 'Imported portfolio', accounts:[], createdAt:new Date().toISOString() }; d.portfolios.push(p); return p.id; };
+  if (pid === 'new') pid = mkPf($('impInst').value.trim(), $('impName').value.trim());
+  const targets = { main:pid }; let nDays = 0, nDep = 0; const made = [];
+  for (const r of $('impExtraBox').querySelectorAll('.impx')) {
+    const v = r.querySelector('select').value; if (v === 'skip') continue;
+    targets[r.dataset.name] = v === 'new' ? mkPf('', r.querySelector('input').value.trim() || r.dataset.name) : v;
+  }
+  for (const f of good) {
+    const m = d.invDays[pid] || (d.invDays[pid] = {});
+    for (const x of f.days) { const e = {}; if (x.v !== null) e.v = x.v; if (x.dep) e.dep = x.dep; setInvDay(pid, x.date, e); if (x.v !== null) nDays++; if (x.dep) nDep++; }
+    if (typeof f.start === 'number') (d.invStart[pid] = d.invStart[pid] || {})[f.year] = f.start;
+    for (const ex of f.extras) { const tp = targets[ex.name]; if (!tp) continue; for (const x of ex.days) setInvDay(tp, x.date, { v:x.v }); }
+  }
+  lsSet(INV_KEY, pid); lsSet(INV_YEAR_KEY, String(good[good.length - 1].year));
+  $('impDlg').close(); changed();
+  const extra = Object.keys(targets).filter(k => k !== 'main').length;
+  await ask({ alert:1 }, 'Imported ' + nDays + ' daily values and ' + nDep + ' deposits or withdrawals from ' + good.length + ' file' + (good.length === 1 ? '' : 's') + (extra ? ', plus ' + extra + ' extra column' + (extra === 1 ? '' : 's') : '') + '.' + (extra ? ' A portfolio made from an extra column has no January 1 value in the file; choose it and set the January 1 value once.' : ''));
+});
+
 /* portfolios: list and edit */
 function openPfList() { drawPfList(); const sc = $('iCal'); if (!sc.options.length) INV_CALS.forEach(([v, t]) => { const o = mk('option', '', t); o.value = v; sc.appendChild(o); }); sc.value = invCal(); const a = $('pfListAdd'); if (!a.firstChild) a.appendChild(iconBtn('plus', 'Add a portfolio', () => openPf(null))); $('pfListDlg').showModal(); noAutoKeyboard(); }
 function drawPfList() {
@@ -3219,6 +3348,7 @@ function drawPfList() {
   }
 }
 $('pfListClose').addEventListener('click', () => $('pfListDlg').close());
+$('pfListImport').addEventListener('click', openImport);
 $('iCal').addEventListener('change', () => { state.data.settings.invCal = $('iCal').value; changed(); });
 function pfAcctRow(a) {
   const r = mk('div', 'pfarow'), ty = mk('select'); ty.setAttribute('aria-label', 'Account type');
