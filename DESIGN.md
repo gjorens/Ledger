@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.81. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.82. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -246,3 +246,7 @@ Written from general knowledge on 2026-10-12; cells marked (verify) are unchecke
 - No app lock or encryption; anyone using an unlocked device can open the app and a saved file (section 13).
 - No live bank feeds, investments, multi-currency conversion or dividends (roadmap).
 - No cross-device real-time sync; sharing is by the iCloud file plus the 45-second check.
+
+
+## Holdings, true-up and dividends (v4.82)
+Data v7: `holdings[{id,accountId,symbol,shares,cur,avgCost,cost}]` and `instruments{symbol:{name,cur,cls,sector,price,priceDate,yld,perShare?,months?}}`; accounts may carry `number`. `parseHoldCsv` reads the broker file (header row starting "Account #"). `holdPlan` / `holdApply` match accounts by number only inside the chosen portfolio (a same number elsewhere is left alone), create missing accounts, set share counts, optionally remove missing positions and update instruments and `settings.usdcad`. `divInfo(symbol)` gives yearly per-share amount (override `perShare`, else price x yield%) and payment months (override, `DIV_KNOWN`, else assumed). Dividend lookup from a free web source is not built; `price-test.html` probes Alpha Vantage DIVIDENDS.

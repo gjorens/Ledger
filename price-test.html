@@ -12,7 +12,7 @@ pre{white-space:pre-wrap;background:#f2f2f2;padding:8px;font-size:12px}
 </style></head><body>
 <h2>myLedger price source test</h2>
 <p>Open this page in the browser you use for myLedger (best from the same web address as the app, then also from the Home Screen on the iPhone/iPad). Press <b>Run test</b>, wait about 20 seconds (it now asks for prices one at a time), then press <b>Copy results</b> and paste them back to Claude. Nothing is sent anywhere except the public price requests below. No balances or ledger data are involved.</p>
-<p>Alpha Vantage free key: <input id="kAV" placeholder="paste key here"> (the key stays in this page only; the test uses about 8 of the 25 daily requests and takes about 15 seconds)</p>
+<p>Alpha Vantage free key: <input id="kAV" placeholder="paste key here"> (the key stays in this page only; the test this version tests dividend history for 5 symbols: 5 of the 25 daily requests, about 10 seconds)</p>
 <button id="go">Run test</button><button id="cp">Copy results</button>
 <table id="t"><thead><tr><th>Source</th><th>What</th><th>Result</th><th>Detail</th></tr></thead><tbody></tbody></table>
 <pre id="out"></pre>
@@ -37,8 +37,8 @@ document.getElementById('go').onclick=async()=>{
  tests.push(tryUrl('Bank of Canada Valet','USD/CAD','https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1',t=>{const o=JSON.parse(t).observations[0];return o.d+' '+o.FXUSDCAD.v}));
  const av=document.getElementById('kAV').value.trim();
  if(av){ // Alpha Vantage free keys allow about 1 request per second and 25 per day, so these go one at a time
-  for(const s of ['ZEB.TRT','HUTS.TRT','TXF.TRT','ZWU.TRT','ENB.TRT','JEPQ','SPY','XIU.TRT']){
-   await tryUrl('Alpha Vantage',s,'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol='+s+'&apikey='+av,t=>{const q=JSON.parse(t)['Global Quote'];return q&&q['05. price']?q['05. price']+' on '+q['07. latest trading day']:null});
+  for(const s of ['HDIV.TRT','ENB.TRT','TXF.TRT','JEPQ','ZEB.TRT']){
+   await tryUrl('AV DIVIDENDS',s,'https://www.alphavantage.co/query?function=DIVIDENDS&symbol='+s+'&apikey='+av,t=>{const q=JSON.parse(t).data;return q&&q.length?q.length+' payments; latest '+q[0].payment_date+' amount '+q[0].amount+'; next-before '+(q[1]&&q[1].payment_date)+' '+(q[1]&&q[1].amount):null});
    await new Promise(r=>setTimeout(r,1300));
   }
  } else row('Alpha Vantage','(no key entered)',false,'Paste your free key in the box above and run again');

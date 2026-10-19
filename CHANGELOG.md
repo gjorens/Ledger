@@ -2,7 +2,13 @@
 
 The version number and build time are shown next to the app name at the top of the page. Newest first.
 
-Data file format: `version: 6` since v4.77 (5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
+Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
+
+## 4.82 (2026-10-19)
+- **Holdings and true-up:** Investments has three tabs: Daily record, Holdings, Dividends. *Import holdings (CSV)* reads the broker's Portfolio Details file. You choose the portfolio first; the file applies to that portfolio. Accounts are matched by account number inside it, accounts not yet there are created (named by their last four digits, type taken from the file), each position is set to the file's share count, positions no longer in the file are removed (option), and prices, yields and the USD/CAD rate are updated (option). The cash can be kept on the portfolio. A preview shows what will change before anything is touched. Run it again any time to true up.
+- **Account number** field on each account in Manage portfolios.
+- **Dividends tab:** projected income per symbol, account, portfolio, by month (Jan–Dec), from shares x yield. Payment months come from the owner's sheet where known (ENB, BMO, FTS, TXF, ZWU, DKL, FLVC, TRP), otherwise assumed (quarterly for stocks, monthly for funds); tap a symbol to override the yearly amount or months.
+- Data format 7 (`holdings`, `instruments`).
 
 ## 4.81 (2026-10-19)
 - **Investments chart:** a third choice, **Value**, shows the portfolio's total value in CAD for each year (deposits and withdrawals included, so a deposit shows as a step). The switch is now % / $ / Value.

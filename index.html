@@ -102,6 +102,14 @@
   .invchart .grid { stroke:var(--line); stroke-width:1; }
   .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
   .invchart .axt { fill:var(--muted); font-size:11px; }
+  .invtabs { display:flex; gap:6px; margin:6px 0; flex-wrap:wrap; }
+  .invtabs button { font-weight:600; }
+  .invt tr.sect td { background:var(--card); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .divt { min-width:900px; }
+  .divt td:first-child, .divt th:first-child { position:sticky; left:0; background:var(--bg); }
+  .divt tr.wk td:first-child { background:var(--card); }
+  .invt tr.grandrow td { border-top:2px solid var(--line); }
+  .pfarow .pfnum { grid-column:1 / 3; }
   .impf { margin:6px 0; padding:6px 8px; border:1px solid var(--line); border-radius:8px; }
   .impx { margin:8px 0; display:grid; gap:6px; }
   .pfarow { display:grid; grid-template-columns:9em 1fr auto; gap:6px; margin-bottom:6px; }
@@ -856,7 +864,41 @@
   <p class="small" style="margin:4px 0 8px">Institution, then portfolio, then account. The daily value is recorded per portfolio.</p>
   <div id="pfListBody" style="max-height:50vh; overflow-y:auto"></div>
   <div style="margin-top:10px"><label for="iCal" class="lbl">Trading days (for the daily average and the year-end projection)</label><select id="iCal"></select></div>
-  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px"><button type="button" id="pfListImport" style="margin-right:auto">Import yearly CSV files…</button><button type="button" class="primary" id="pfListClose">Close</button></div>
+  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px"><button type="button" id="pfListImport">Import yearly CSV…</button><button type="button" id="pfListHold" style="margin-right:auto">Import holdings…</button><button type="button" class="primary" id="pfListClose">Close</button></div>
+</dialog>
+
+<dialog id="holdDlg">
+  <form id="holdForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full">Import holdings (true-up)</h3>
+    <p class="small full" style="margin:0">Choose the Portfolio Details CSV from your broker. Accounts are matched by account number and each position is set to the number of shares in the file, so you do not record trades one by one. Accounts that do not exist yet are created. Nothing changes until you press Import.</p>
+    <div class="full"><input id="hFile" type="file" accept=".csv,text/csv,text/plain" multiple></div>
+    <div class="full"><label for="hPf">Portfolio for new accounts (and the cash)</label><select id="hPf"></select></div>
+    <div class="full" id="hNew" style="grid-template-columns:1fr 1fr; gap:6px"><input id="hInst" type="text" maxlength="40" placeholder="Institution" autocomplete="off"><input id="hName" type="text" maxlength="40" placeholder="Portfolio name" autocomplete="off"></div>
+    <div class="full" id="hPlan"></div>
+    <div class="full" id="hOpts" hidden>
+      <label style="display:flex; gap:8px; align-items:flex-start; margin:4px 0"><input type="checkbox" id="hRemove" checked style="width:auto; margin-top:3px"><span>Remove positions that are not in the file (for the accounts in the file)</span></label>
+      <label style="display:flex; gap:8px; align-items:flex-start; margin:4px 0"><input type="checkbox" id="hPrices" checked style="width:auto; margin-top:3px"><span>Update prices, yields and the exchange rate from the file</span></label>
+      <div id="hCashRow"><label style="display:flex; gap:8px; align-items:flex-start; margin:4px 0"><input type="checkbox" id="hCash" checked style="width:auto; margin-top:3px"><span id="hCashLbl"></span></label></div>
+    </div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="hCancel">Cancel</button>
+      <button type="submit" class="primary" id="hGo" disabled>Import</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="divDlg">
+  <form id="divForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full" id="dvTitle">Dividends</h3>
+    <p class="small full" id="dvInfo" style="margin:0"></p>
+    <div class="full"><label for="dvAmt">Dividend or distribution per share, per year (in the position’s own currency)</label><input id="dvAmt" type="text" inputmode="decimal" autocomplete="off"></div>
+    <div class="full"><div class="lbl">Months in which it is paid</div><div id="dvMonths" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px 8px"></div></div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="dvReset" class="danger" style="margin-right:auto" hidden>Back to the defaults</button>
+      <button type="button" id="dvCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
 </dialog>
 
 <dialog id="impDlg">
@@ -955,7 +997,7 @@ function setTest(on) {                                      // orange stripe + T
   document.title = on ? 'myLedger (test)' : 'myLedger';
 }
 const $ = id => document.getElementById(id);
-const DATA_VERSION = 6;               // 6 adds portfolios, invDays and invStart (Investments page); 5 added vehicles, serviceItems and services (Autos page)
+const DATA_VERSION = 7;               // 7 adds holdings and instruments (positions and dividends); 6 added portfolios, invDays and invStart (Investments page); 5 added vehicles, serviceItems and services (Autos page)
 const SERVICE_DEFAULTS = ['Air filter (cabin)', 'Air filter (engine)', 'Alignment', 'Battery replacement', 'Brake fluid flush', 'Brake inspection', 'Brake pads and rotors', 'Coolant flush', 'Oil and filter change', 'Safety inspection', 'Seasonal tire swap', 'Spark plugs', 'Tire replacement', 'Tire rotation', 'Transmission service', 'Wheel balance', 'Wiper blades'];
 const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
 const DEFAULT_CATEGORIES = ['Income', 'Housing', 'Utilities', 'Groceries', 'Dining', 'Transport', 'Health', 'Shopping', 'Subscriptions', 'Entertainment', 'Gifts', 'Insurance', 'Other'];
@@ -967,8 +1009,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.81';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 20:30';
+const APP_VERSION = '4.82';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-19 21:30';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1122,7 +1164,7 @@ function anchorOf(a) {
   return { base:cents(last.statementBalance) - inStmt, month:last.month };
 }
 const balanceOf = a => anchorOf(a).base + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
-const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[], vehicles:[], serviceItems:SERVICE_DEFAULTS.slice(), services:[], portfolios:[], invDays:{}, invStart:{} });
+const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[], vehicles:[], serviceItems:SERVICE_DEFAULTS.slice(), services:[], portfolios:[], invDays:{}, invStart:{}, holdings:[], instruments:{} });
 
 function ensureAccount() {
   const ids = state.data.accounts.map(a => a.id);
@@ -1146,6 +1188,8 @@ function migrate(d) {                 // upgrades older files in memory; saved a
   if (!Array.isArray(d.portfolios)) d.portfolios = [];
   if (!d.invDays || typeof d.invDays !== 'object') d.invDays = {};
   if (!d.invStart || typeof d.invStart !== 'object') d.invStart = {};
+  if (!Array.isArray(d.holdings)) d.holdings = [];
+  if (!d.instruments || typeof d.instruments !== 'object') d.instruments = {};
   if (!Array.isArray(d.serviceItems)) d.serviceItems = SERVICE_DEFAULTS.slice();
   { const have = new Set(d.serviceItems.map(x => x.toLowerCase()));
     for (const s of d.services) for (const n of (s.items || [])) if (!have.has(n.toLowerCase())) { d.serviceItems.push(n); have.add(n.toLowerCase()); }
@@ -3064,6 +3108,7 @@ function renderInvest(box) {
     box.appendChild(mk('div', 'small', 'Track the daily value of your investment portfolios, with deposits and withdrawals kept apart from performance. Organise them as institution, then portfolio, then account (for example BMO > Main portfolio > RRSP, TFSA, Cash). You enter one total value per portfolio per day, in CAD.'));
     const b = mk('button', 'primary', 'Add your first portfolio'); b.type = 'button'; b.onclick = () => openPf(null); box.appendChild(b);
     const im = mk('button', '', 'Import yearly CSV files'); im.type = 'button'; im.style.marginLeft = '8px'; im.onclick = openImport; box.appendChild(im);
+    const ih = mk('button', '', 'Import holdings (CSV)'); ih.type = 'button'; ih.style.marginLeft = '8px'; ih.onclick = openHoldImport; box.appendChild(ih);
     const mine = d.accounts.filter(a => a.type === 'Investment');
     if (mine.length) box.appendChild(mk('div', 'small', 'Your existing accounts of the type Investment (' + mine.map(acctLabel).join(', ') + ') stay on the Accounts page.'));
     return;
@@ -3078,6 +3123,11 @@ function renderInvest(box) {
   for (const y of invYears(pfs)) { const o = mk('option', '', y); o.value = y; ys.appendChild(o); }
   ys.value = year; ys.onchange = () => { lsSet(INV_YEAR_KEY, ys.value); render(); }; h.appendChild(ys);
 
+  const tab = ['hold', 'div'].includes(lsGet(INV_TAB_KEY)) ? lsGet(INV_TAB_KEY) : 'rec', tabs = mk('div', 'invtabs');
+  for (const [k, t] of [['rec', 'Daily record'], ['hold', 'Holdings'], ['div', 'Dividends']]) { const b = mk('button', tab === k ? 'primary' : '', t); b.type = 'button'; b.onclick = () => { lsSet(INV_TAB_KEY, k); render(); }; tabs.appendChild(b); }
+  box.appendChild(tabs);
+  if (tab === 'hold') return renderHoldings(box, S);
+  if (tab === 'div') return renderDividends(box, S);
   const bar = mk('div'); bar.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin:6px 0';
   const add = mk('button', 'primary', '+ Record'); add.type = 'button'; add.onclick = () => openInv(S.single ? S.single.id : null, todayStr()); bar.appendChild(add);
   const mg = mk('button', '', 'Manage portfolios'); mg.type = 'button'; mg.onclick = openPfList; bar.appendChild(mg);
@@ -3346,6 +3396,240 @@ $('impForm').addEventListener('submit', async ev => {
   await ask({ alert:1 }, 'Imported ' + nDays + ' daily values and ' + nDep + ' deposits or withdrawals from ' + good.length + ' file' + (good.length === 1 ? '' : 's') + (extra ? ', plus ' + extra + ' extra column' + (extra === 1 ? '' : 's') : '') + '.' + (extra ? ' A portfolio made from an extra column has no January 1 value in the file; choose it and set the January 1 value once.' : ''));
 });
 
+/* ---------- Holdings: accounts, positions, true-up by import, and projected dividends ----------
+   Data (file version 7): portfolios[].accounts[{id,name,type,number}], holdings[{id,accountId,symbol,shares,avgCost,cost,cur}],
+   instruments{symbol:{name,cur,price,priceDate,yld,sector,cls,perShare?,months?}}, settings.usdcad (+ usdcadAsOf), portfolios[].cash{amount,asOf}.
+   Positions are trued up by importing the broker's Portfolio Details CSV: accounts are matched by account number, so a position is set to the
+   share count in the file instead of recording each trade. Values are in CAD (USD positions use the exchange rate saved from the file). */
+const ALL12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const INV_TAB_KEY = 'myLedger.invTab';
+const DIV_KNOWN = { ENB:[3, 6, 9, 12], BMO:[2, 5, 8, 11], FTS:[3, 6, 9, 12], TXF:[3, 6, 9, 12], ZWU:[1, 4, 7, 10], DKL:[2, 5, 8, 11], FLVC:[1, 4, 7, 10], TRP:[1, 4, 7, 10], TRP_CA:[1, 4, 7, 10] };   // payment months taken from the owner's dividend sheet
+const normNum = s => String(s || '').replace(/\D/g, '');
+const symBase = s => String(s || '').split(':')[0];
+const fxRate = () => Number(state.data.settings.usdcad) > 0 ? Number(state.data.settings.usdcad) : 1.4;
+const curRate = c => c === 'USD' ? fxRate() : 1;
+const instOf = sym => state.data.instruments[sym] || {};
+const holdValue = h => r2(h.shares * (instOf(h.symbol).price || 0) * curRate(h.cur));       // in CAD
+function divInfo(sym) {                  // dividend parameters: yearly amount per share (from the yield unless set by hand) and the months paid
+  const i = instOf(sym); let months = Array.isArray(i.months) && i.months.length ? i.months : null, src = months ? 'set by you' : '';
+  const perYear = typeof i.perShare === 'number' ? i.perShare : (i.price || 0) * (i.yld || 0) / 100;
+  if (!months) { if (DIV_KNOWN[symBase(sym)]) { months = DIV_KNOWN[symBase(sym)]; src = 'from your sheet'; } else { const fund = i.cls !== 'Equity' || /\b(ETF|FUND|INDEX|COVERED CALL|CLL)\b/i.test(i.name || '') || i.sector === 'Equity Funds'; months = fund ? ALL12 : [1, 4, 7, 10]; src = fund ? 'assumed monthly' : 'assumed quarterly'; } }
+  return { months, perYear, perPay:months.length ? perYear / months.length : 0, src };
+}
+const holdIncome = h => h.shares * divInfo(h.symbol).perYear * curRate(h.cur);              // yearly, in CAD
+function acctByNumber(num, pfId) {            // with pfId, only that portfolio is searched (the import applies to the chosen portfolio)
+  const n = normNum(num); if (!n) return null;
+  for (const p of state.data.portfolios) if (!p.deleted && (!pfId || p.id === pfId)) for (const a of p.accounts || []) if (normNum(a.number) === n) return { pf:p, acct:a };
+  return null;
+}
+const acctHoldings = a => state.data.holdings.filter(h => h.accountId === a.id);
+
+/* reading the broker's Portfolio Details CSV */
+function parseHoldCsv(text) {
+  const rows = csvRows(String(text).replace(/^﻿/, '')), hi = rows.findIndex(r => /^account\s*#/i.test((r[0] || '').trim()));
+  if (hi < 0) return { error:'This does not look like a Portfolio Details file: the header row starting with "Account #" was not found.' };
+  const hdr = rows[hi].map(x => String(x).trim().toLowerCase()), ix = n => hdr.findIndex(h => h === n);
+  const c = { acct:ix('account #'), cls:ix('asset class'), sector:ix('sector'), kind:ix('account type'), cur:ix('currency'), sym:ix('symbol'), name:ix('security description'), qty:ix('quantity'), avg:ix('average cost'), price:ix('current price'), cost:ix('total cost'), mv:ix('market value'), yld:ix('yield %') };
+  if ([c.acct, c.sym, c.qty, c.price].some(v => v < 0)) return { error:'The Portfolio Details file is missing one of the columns Account #, Symbol, Quantity or Current price.' };
+  const out = { rows:[], asOf:null, fx:null, cash:null, totalMV:null };
+  for (const r of rows.slice(0, hi)) { const t = r.join(' '); const m = /as of\s+(\d{4}-\d\d-\d\d)/i.exec(t); if (m) out.asOf = m[1]; if (/^\s*cash\s*$/i.test(r[0] || '')) { const n = parseNum(String(r[2] || '').replace(/[A-Za-z]/g, '')); if (n !== null) out.cash = n; } if (/total market value/i.test(r[0] || '')) out.totalMV = parseNum(String(r[2] || '').replace(/[A-Za-z]/g, '')); }
+  for (const r of rows.slice(hi + 1)) { const m = /1\s*USD\s*=\s*([\d.]+)\s*CAD/i.exec(r.join(' ')); if (m) out.fx = Number(m[1]); }
+  for (const r of rows.slice(hi + 1)) {
+    const acct = (r[c.acct] || '').trim(); if (!/^\d+$/.test(acct)) continue;
+    const qty = parseNum(r[c.qty]), sym = (r[c.sym] || '').trim(); if (qty === null || !sym) continue;
+    out.rows.push({ acct, cls:(r[c.cls] || '').trim(), sector:(r[c.sector] || '').trim(), kind:(r[c.kind] || '').trim(), cur:((r[c.cur] || '').trim().toUpperCase()) || 'CAD', sym, name:(r[c.name] || '').trim(),
+      qty, avg:parseNum(r[c.avg]), price:parseNum(r[c.price]), cost:parseNum(r[c.cost]), mv:parseNum(r[c.mv]), yld:parseNum(r[c.yld]) });
+  }
+  if (!out.rows.length) return { error:'No positions were found in the file.' };
+  return out;
+}
+function holdPlan(files, opt) {          // what an import would do, without changing anything
+  const d = state.data, by = new Map();
+  for (const P of files) for (const r of P.rows) {
+    const k = normNum(r.acct); if (!by.has(k)) by.set(k, { num:r.acct, kind:r.kind, syms:new Map() });
+    const e = by.get(k).syms.get(r.sym); if (e) e.qty = r2(e.qty + r.qty); else by.get(k).syms.set(r.sym, { ...r });
+  }
+  const accts = [];
+  for (const [k, A] of by) {
+    const f = acctByNumber(A.num, opt.pfId || 'none'), elsewhere = !f && opt.pfId ? acctByNumber(A.num) : null, cur = f ? acctHoldings(f.acct) : [], item = { num:A.num, kind:A.kind, found:f, elsewhere, adds:[], changes:[], same:0, removes:[], syms:A.syms };
+    for (const [sym, r] of A.syms) { const h = cur.find(x => x.symbol === sym); if (!h) item.adds.push({ sym, to:r.qty }); else if (Math.abs(h.shares - r.qty) > 1e-9) item.changes.push({ sym, from:h.shares, to:r.qty }); else item.same++; }
+    if (opt.removeMissing) for (const h of cur) if (!A.syms.has(h.symbol)) item.removes.push({ sym:h.symbol, from:h.shares });
+    accts.push(item);
+  }
+  return accts;
+}
+function holdApply(files, opt, targetPfId) {
+  const d = state.data, plan = holdPlan(files, Object.assign({}, opt, { pfId:targetPfId })), made = []; let touched = 0;
+  for (const it of plan) {
+    let a = it.found && it.found.acct;
+    if (!a) {
+      const pf = d.portfolios.find(p => p.id === targetPfId); if (!pf) continue;
+      a = { id:uid(), name:'Account …' + normNum(it.num).slice(-4), type:INV_ACCT_TYPES.includes(it.kind) ? it.kind : 'Other', number:it.num };
+      (pf.accounts = pf.accounts || []).push(a); made.push(a.name + ' (' + it.num + ')');
+    }
+    for (const [sym, r] of it.syms) {
+      let h = d.holdings.find(x => x.accountId === a.id && x.symbol === sym);
+      if (!h) { h = { id:uid(), accountId:a.id, symbol:sym }; d.holdings.push(h); }
+      Object.assign(h, { shares:r.qty, cur:r.cur, avgCost:r.avg, cost:r.cost }); touched++;
+    }
+    if (opt.removeMissing) for (const rm of it.removes) { const i = d.holdings.findIndex(x => x.accountId === a.id && x.symbol === rm.sym); if (i >= 0) d.holdings.splice(i, 1); }
+  }
+  if (opt.prices) for (const P of files) {
+    for (const r of P.rows) { const o = d.instruments[r.sym] || (d.instruments[r.sym] = {}); Object.assign(o, { name:r.name || o.name, cur:r.cur, cls:r.cls, sector:r.sector }); if (r.price !== null) { o.price = r.price; o.priceDate = P.asOf || todayStr(); } if (r.yld !== null) o.yld = r.yld; }
+    if (P.fx) { d.settings.usdcad = P.fx; d.settings.usdcadAsOf = P.asOf || todayStr(); }
+  }
+  return { made, touched, plan };
+}
+
+/* import dialog */
+state.hold = null;
+function openHoldImport() {
+  state.hold = { files:[] }; $('hFile').value = ''; $('hPlan').innerHTML = ''; $('hOpts').hidden = true; $('hGo').disabled = true;
+  const sel = $('hPf'); sel.innerHTML = '';
+  for (const p of invPfs()) { const o = mk('option', '', pfLabel(p)); o.value = p.id; sel.appendChild(o); }
+  { const o = mk('option', '', 'A new portfolio…'); o.value = 'new'; sel.appendChild(o); }
+  const cur = invSel().single; sel.value = cur ? cur.id : (invPfs().length ? invPfs()[0].id : 'new'); holdNewToggle();
+  if ($('pfListDlg').open) $('pfListDlg').close();
+  $('holdDlg').showModal(); noAutoKeyboard();
+}
+function holdNewToggle() { $('hNew').style.display = $('hPf').value === 'new' ? 'grid' : 'none'; }
+$('hPf').addEventListener('change', () => { holdNewToggle(); if (state.hold.files.length) drawHoldPlan(); });
+$('hCancel').addEventListener('click', () => $('holdDlg').close());
+['hRemove', 'hPrices'].forEach(id => $(id).addEventListener('change', drawHoldPlan));
+$('hFile').addEventListener('change', async () => {
+  const out = []; for (const f of [...$('hFile').files]) { let r; try { r = parseHoldCsv(await f.text()); } catch (e) { r = { error:String(e.message || e) }; } r.name = f.name; out.push(r); }
+  state.hold.files = out; drawHoldPlan();
+});
+function drawHoldPlan() {
+  const L = $('hPlan'); L.innerHTML = ''; const files = state.hold.files, good = files.filter(f => !f.error);
+  for (const f of files) if (f.error) { const r = mk('div', 'impf'); r.appendChild(mk('b', '', f.name)); r.appendChild(mk('div', 'neg', f.error)); L.appendChild(r); }
+  $('hOpts').hidden = !good.length; $('hGo').disabled = !good.length; if (!good.length) return;
+  for (const f of good) {
+    const r = mk('div', 'impf'); r.appendChild(mk('b', '', f.name));
+    const nA = new Set(f.rows.map(x => normNum(x.acct))).size;
+    r.appendChild(mk('div', 'small', f.rows.length + ' positions in ' + nA + ' accounts' + (f.asOf ? ', as of ' + fmtDate(f.asOf) : '') + (f.fx ? '; 1 USD = ' + f.fx + ' CAD' : '') + (f.cash !== null ? '; cash ' + cadFmt(f.cash) : '') + (f.totalMV !== null ? '; market value ' + cadFmt(f.totalMV) : '') + '.'));
+    L.appendChild(r);
+  }
+  const plan = holdPlan(good, { removeMissing:$('hRemove').checked, pfId:$('hPf').value });
+  for (const it of plan) {
+    const r = mk('div', 'impf'), t = it.found ? 'Account ' + it.num + ' → ' + pfLabel(it.found.pf) + ' · ' + it.found.acct.name : 'Account ' + it.num + ': new, will be created in ' + ($('hPf').value === 'new' ? 'the new portfolio' : pfLabel(state.data.portfolios.find(p => p.id === $('hPf').value))) + (it.elsewhere ? ' (an account with this number already exists in ' + pfLabel(it.elsewhere.pf) + ' and is left alone)' : '');
+    r.appendChild(mk('b', '', t));
+    const bits = []; if (it.adds.length) bits.push('adds ' + it.adds.length + ' (' + it.adds.map(x => symBase(x.sym)).join(', ') + ')'); if (it.changes.length) bits.push('changes ' + it.changes.map(x => symBase(x.sym) + ' ' + x.from + ' → ' + x.to).join(', ')); if (it.removes.length) bits.push('removes ' + it.removes.map(x => symBase(x.sym)).join(', ')); if (it.same) bits.push(it.same + ' unchanged');
+    r.appendChild(mk('div', 'small', bits.join('; ') || 'nothing to do'));
+    L.appendChild(r);
+  }
+  const cash = good.map(f => f.cash).find(x => x !== null && x !== undefined); $('hCashRow').style.display = cash ? 'block' : 'none'; if (cash) $('hCashLbl').textContent = 'Record the cash of ' + cadFmt(cash) + ' (not split by account) on the portfolio chosen above';
+}
+$('holdForm').addEventListener('submit', async ev => {
+  ev.preventDefault(); const good = state.hold.files.filter(f => !f.error); if (!good.length) return;
+  const d = state.data, opt = { removeMissing:$('hRemove').checked, prices:$('hPrices').checked }; let pf = $('hPf').value;
+  {
+    if (pf === 'new') { const p = { id:uid(), institution:$('hInst').value.trim(), name:$('hName').value.trim() || 'Imported portfolio', accounts:[], createdAt:new Date().toISOString() }; d.portfolios.push(p); pf = p.id; }
+  }
+  const res = holdApply(good, opt, pf);
+  const cash = good.map(f => f.cash).find(x => x !== null && x !== undefined), asOf = good.map(f => f.asOf).find(Boolean) || todayStr();
+  if ($('hCash').checked && cash && pf) { const p = d.portfolios.find(x => x.id === pf); if (p) p.cash = { amount:cash, asOf }; }
+  lsSet(INV_KEY, pf || lsGet(INV_KEY)); lsSet(INV_TAB_KEY, 'hold');
+  $('holdDlg').close(); changed();
+  await ask({ alert:1 }, 'Set ' + res.touched + ' positions' + (res.made.length ? '; created ' + res.made.length + ' new account' + (res.made.length === 1 ? '' : 's') + ': ' + res.made.join(', ') : '') + '. Prices' + (opt.prices ? ' and yields were updated from the file.' : ' were left as they were.') + '\n\nNew accounts are named by their last four digits; use Manage portfolios to give them proper names and types.');
+});
+
+function renderHoldings(box, S) {
+  const d = state.data, groups = [];
+  for (const p of S.pfs) for (const a of p.accounts || []) { const hs = acctHoldings(a); if (hs.length) groups.push({ p, a, hs }); }
+  const imp = mk('button', 'primary', 'Import holdings (CSV)'); imp.type = 'button'; imp.onclick = openHoldImport; const bar = mk('div'); bar.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin:6px 0'; bar.appendChild(imp); box.appendChild(bar);
+  if (!groups.length) { box.appendChild(mk('div', 'small', 'No holdings yet. Import the Portfolio Details CSV from your broker: accounts are matched by account number (new ones are created), and each position is set to the share count in the file. Use it again whenever you want to true up.')); return; }
+  const tot = groups.reduce((t, g) => t + g.hs.reduce((s, h) => s + holdValue(h), 0), 0), inc = groups.reduce((t, g) => t + g.hs.reduce((s, h) => s + holdIncome(h), 0), 0);
+  const cash = S.pfs.reduce((t, p) => t + (p.cash ? p.cash.amount : 0), 0), dates = [...new Set(Object.values(d.instruments).map(i => i.priceDate).filter(Boolean))].sort();
+  const st = mk('div', 'autostats'), tile = (v, l) => { const x = mk('div'); x.appendChild(mk('b', '', v)); x.appendChild(mk('span', '', l)); st.appendChild(x); };
+  tile(cadFmt(tot), 'Positions' + (dates.length ? ', prices of ' + fmtShort(dates[dates.length - 1]) : '')); if (cash) tile(cadFmt(cash), 'Cash'); tile(cadFmt(tot + cash), 'Calculated total'); tile(cadFmt(inc), 'Projected income per year'); if (tot) tile((inc / tot * 100).toFixed(2) + '%', 'Yield on positions');
+  box.appendChild(st);
+  if (S.single) {
+    const days = d.invDays[S.single.id] || {}, last = Object.keys(days).filter(k => typeof days[k].v === 'number').sort().pop();
+    const row = mk('div', 'small'); row.appendChild(document.createTextNode(last ? 'Latest recorded daily value: ' + cadFmt(days[last].v) + ' on ' + fmtDate(last) + '. ' : 'No daily value recorded yet. '));
+    const b = miniBtn('Record ' + cadFmt(tot + cash) + ' as today’s value', async () => {
+      if (!await ask({ ok:'Record' }, 'Record ' + cadFmt(tot + cash) + ' as the value of ' + pfLabel(S.single) + ' on ' + fmtDate(todayStr()) + '? A deposit or withdrawal on that day, if any, is kept.')) return;
+      const e = Object.assign({}, days[todayStr()] || {}, { v:r2(tot + cash) }); setInvDay(S.single.id, todayStr(), e); changed();
+    }); row.appendChild(b); box.appendChild(row);
+  }
+  for (const g of groups) {
+    box.appendChild(mk('div', 'boxhead outer', (S.single ? '' : pfLabel(g.p) + ' · ') + g.a.name + (g.a.number ? ' (' + g.a.number + ')' : '') + (g.a.type ? ' · ' + g.a.type : '')));
+    const t = mk('table', 'autot invt'), th = mk('thead'), hr = mk('tr');
+    (PHONE ? ['Symbol', 'Shares', 'Value'] : ['Symbol', 'Shares', 'Price', 'Value (CAD)', 'Yield', 'Income / year', '']).forEach((c, i) => hr.appendChild(mk('th', i > 0 && c ? 'num' : '', c))); th.appendChild(hr); t.appendChild(th);
+    const tb = mk('tbody'); let sv = 0, si = 0;
+    for (const h of g.hs.slice().sort((a, b) => aCmp(symBase(a.symbol), symBase(b.symbol)))) {
+      const i = instOf(h.symbol), v = holdValue(h), inc1 = holdIncome(h); sv += v; si += inc1;
+      const tr = mk('tr'), c0 = mk('td'); c0.appendChild(mk('span', 'nw', symBase(h.symbol) + (h.cur === 'USD' ? ' (USD)' : ''))); if (i.name) c0.appendChild(mk('span', 'sub', i.name)); tr.appendChild(c0);
+      tr.appendChild(mk('td', 'num', String(h.shares)));
+      if (PHONE) { tr.appendChild(mk('td', 'num', Math.round(v).toLocaleString())); tr.onclick = () => openDivSet(h.symbol); tr.style.cursor = 'pointer'; }
+      else {
+        tr.appendChild(mk('td', 'num', i.price ? cadFmt(i.price) : '')); tr.appendChild(mk('td', 'num', cadFmt(v))); tr.appendChild(mk('td', 'num', i.yld ? i.yld.toFixed(2) + '%' : ''));
+        tr.appendChild(mk('td', 'num', cadFmt(inc1)));
+        const ce = mk('td', 'num'); ce.style.whiteSpace = 'nowrap'; ce.appendChild(iconBtn('edit', 'Change the number of shares', () => editShares(h))); ce.appendChild(iconBtn('trash', 'Remove this position', () => deleteHolding(h), 'danger')); tr.appendChild(ce);
+      }
+      tb.appendChild(tr);
+    }
+    const ft = mk('tr', 'wk'); ft.appendChild(mk('td', '', 'Total')); ft.appendChild(mk('td'));
+    if (PHONE) ft.appendChild(mk('td', 'num', Math.round(sv).toLocaleString())); else { ft.appendChild(mk('td')); ft.appendChild(mk('td', 'num', cadFmt(sv))); ft.appendChild(mk('td')); ft.appendChild(mk('td', 'num', cadFmt(si))); ft.appendChild(mk('td')); }
+    tb.appendChild(ft); t.appendChild(tb); box.appendChild(t);
+  }
+  box.appendChild(mk('div', 'small', 'Values use the prices from your last import (and 1 USD = ' + fxRate() + ' CAD' + (d.settings.usdcadAsOf ? ', ' + fmtShort(d.settings.usdcadAsOf) : '') + '). ' + (PHONE ? 'Tap a position to set its dividend months and amount.' : 'Click a symbol’s dividend settings under the Dividends tab.')));
+}
+async function editShares(h) {
+  const t = await askText({}, 'Number of shares of ' + symBase(h.symbol) + ':', String(h.shares)); if (t === null) return;
+  const n = parseNum(t); if (n === null || n < 0) { await ask({ alert:1 }, 'Enter a number.'); return; } h.shares = n; changed();
+}
+async function deleteHolding(h) { if (!await ask({ danger:1, ok:'Remove' }, 'Remove ' + symBase(h.symbol) + ' (' + h.shares + ' shares) from this account?')) return; state.data.holdings = state.data.holdings.filter(x => x.id !== h.id); changed(); }
+
+/* projected dividends by month */
+function renderDividends(box, S) {
+  const d = state.data, sections = [];
+  for (const p of S.pfs) { const accts = []; for (const a of p.accounts || []) { const hs = acctHoldings(a).filter(h => divInfo(h.symbol).perYear > 0); if (hs.length) accts.push({ a, hs }); } if (accts.length) sections.push({ p, accts }); }
+  if (!sections.length) { box.appendChild(mk('div', 'small', 'No dividend-paying holdings yet. Import your holdings first (Holdings tab).')); return; }
+  box.appendChild(mk('div', 'small', 'Projected from each position’s shares and its yearly dividend per share. The yearly amount starts from the yield in your broker’s file; the payment months come from your sheet where known, otherwise they are assumed. Choose a symbol to correct them. These are forecasts, not declared amounts. All figures are in CAD.'));
+  const cf = PHONE ? (n => Math.round(n).toLocaleString()) : cadFmt, w = mk('div'); w.style.overflowX = 'auto';
+  const t = mk('table', 'autot invt divt'), hr = mk('tr'); ['Symbol', 'Per year'].concat(MONTH_ABBR).forEach((c, i) => hr.appendChild(mk('th', i > 0 ? 'num' : '', c))); const th = mk('thead'); th.appendChild(hr); t.appendChild(th);
+  const tb = mk('tbody'), grand = new Array(12).fill(0); let grandY = 0;
+  const monthsOf = h => { const di = divInfo(h.symbol), m = new Array(12).fill(0), pay = h.shares * di.perPay * curRate(h.cur); for (const mo of di.months) m[mo - 1] += pay; return m; };
+  const line = (cls, label, sub, arr, onclick) => {
+    const tr = mk('tr', cls), c0 = mk('td'); c0.appendChild(mk('span', 'nw', label)); if (sub) c0.appendChild(mk('span', 'sub', sub)); tr.appendChild(c0);
+    tr.appendChild(mk('td', 'num', cf(arr.reduce((a, b) => a + b, 0)))); arr.forEach(x => tr.appendChild(mk('td', 'num', x ? cf(x) : ''))); if (onclick) { tr.onclick = onclick; tr.style.cursor = 'pointer'; } tb.appendChild(tr);
+  };
+  for (const sec of sections) {
+    const pt = new Array(12).fill(0);
+    for (const { a, hs } of sec.accts) {
+      const hd = mk('tr', 'sect'), hc = mk('td', '', (S.single ? '' : pfLabel(sec.p) + ' · ') + a.name + (a.number ? ' (' + a.number + ')' : '')); hc.colSpan = 14; hd.appendChild(hc); tb.appendChild(hd);
+      const at = new Array(12).fill(0);
+      for (const h of hs.slice().sort((x, y) => aCmp(symBase(x.symbol), symBase(y.symbol)))) { const m = monthsOf(h), di = divInfo(h.symbol); m.forEach((x, i) => { at[i] += x; }); line('', symBase(h.symbol), di.src === 'set by you' ? '' : di.src, m, () => openDivSet(h.symbol)); }
+      line('wk', 'Account total', '', at); at.forEach((x, i) => { pt[i] += x; });
+    }
+    if (sections.length > 1 || sec.accts.length > 1) line('wk grandrow', (S.single ? 'Portfolio total' : pfLabel(sec.p) + ' total'), '', pt);
+    pt.forEach((x, i) => { grand[i] += x; });
+  }
+  if (sections.length > 1) line('wk grandrow', 'All portfolios', '', grand);
+  t.appendChild(tb); w.appendChild(t); box.appendChild(w);
+}
+
+/* dividend settings for one symbol */
+function openDivSet(sym) {
+  state.divSym = sym; const i = instOf(sym), di = divInfo(sym);
+  $('dvTitle').textContent = symBase(sym) + (i.name ? ' · ' + i.name : '');
+  $('dvInfo').textContent = 'Price ' + (i.price ? cadFmt(i.price) + ' ' + (i.cur || '') : 'unknown') + (i.yld ? ', yield ' + i.yld + '% in your broker’s file' : '') + '. Months are ' + (di.src || 'set by you') + '.';
+  $('dvAmt').value = di.perYear ? di.perYear.toFixed(4) : '0'; const g = $('dvMonths'); g.innerHTML = '';
+  for (let m = 1; m <= 12; m++) { const l = mk('label', 'chk'); const c = mk('input'); c.type = 'checkbox'; c.value = String(m); c.checked = di.months.includes(m); l.appendChild(c); l.appendChild(document.createTextNode(' ' + MONTH_ABBR[m - 1])); g.appendChild(l); }
+  $('dvReset').hidden = !(typeof i.perShare === 'number' || (i.months && i.months.length));
+  $('divDlg').showModal(); noAutoKeyboard();
+}
+$('dvCancel').addEventListener('click', () => $('divDlg').close());
+$('dvReset').addEventListener('click', () => { const i = state.data.instruments[state.divSym]; if (i) { delete i.perShare; delete i.months; } $('divDlg').close(); changed(); });
+$('divForm').addEventListener('submit', ev => {
+  ev.preventDefault(); const i = state.data.instruments[state.divSym] || (state.data.instruments[state.divSym] = {});
+  const a = parseFloat($('dvAmt').value), months = [...$('dvMonths').querySelectorAll('input')].filter(c => c.checked).map(c => Number(c.value));
+  if (isFinite(a) && a >= 0) i.perShare = a; if (months.length) i.months = months; $('divDlg').close(); changed();
+});
+
+async function removeAcctHoldingsAsk(ids) { return ids.reduce((n, id) => n + state.data.holdings.filter(h => h.accountId === id).length, 0); }
+
 /* portfolios: list and edit */
 function openPfList() { drawPfList(); const sc = $('iCal'); if (!sc.options.length) INV_CALS.forEach(([v, t]) => { const o = mk('option', '', t); o.value = v; sc.appendChild(o); }); sc.value = invCal(); const a = $('pfListAdd'); if (!a.firstChild) a.appendChild(iconBtn('plus', 'Add a portfolio', () => openPf(null))); $('pfListDlg').showModal(); noAutoKeyboard(); }
 function drawPfList() {
@@ -3362,13 +3646,15 @@ function drawPfList() {
 }
 $('pfListClose').addEventListener('click', () => $('pfListDlg').close());
 $('pfListImport').addEventListener('click', openImport);
+$('pfListHold').addEventListener('click', openHoldImport);
 $('iCal').addEventListener('change', () => { state.data.settings.invCal = $('iCal').value; changed(); });
 function pfAcctRow(a) {
   const r = mk('div', 'pfarow'), ty = mk('select'); ty.setAttribute('aria-label', 'Account type');
   const types = INV_ACCT_TYPES.slice(); if (a.type && !types.includes(a.type)) types.push(a.type);
   for (const t of types) { const o = mk('option', '', t); o.value = t; ty.appendChild(o); } ty.value = a.type || 'Other';
   const nm = mk('input'); nm.type = 'text'; nm.maxLength = 40; nm.autocomplete = 'off'; nm.placeholder = 'Account name'; nm.value = a.name || ''; nm.setAttribute('aria-label', 'Account name'); nm.dataset.id = a.id || '';
-  const rm = iconBtn('trash', 'Remove this account', () => r.remove(), 'danger'); r.append(ty, nm, rm); return r;
+  const nu = mk('input', 'pfnum'); nu.type = 'text'; nu.maxLength = 30; nu.autocomplete = 'off'; nu.placeholder = 'Account number (used to match your broker\u2019s file)'; nu.value = a.number || ''; nu.setAttribute('aria-label', 'Account number');
+  const rm = iconBtn('trash', 'Remove this account', () => r.remove(), 'danger'); r.append(ty, nm, rm, nu); return r;
 }
 function openPf(p) {
   state.pfEdit = p ? p.id : null; $('pfTitle').textContent = p ? 'Edit portfolio' : 'Add portfolio';
@@ -3385,11 +3671,13 @@ $('pfRemove').addEventListener('click', async () => {
   if (!await ask({ danger:1, ok:'Remove' }, 'Remove ' + pfLabel(p) + ' from the Investments page?' + (n ? ' Its ' + n + ' recorded days stay in the file.' : ''))) return;
   p.deleted = true; $('pfDlg').close(); changed(); if ($('pfListDlg').open) drawPfList();
 });
-$('pfForm').addEventListener('submit', ev => {
+$('pfForm').addEventListener('submit', async ev => {
   ev.preventDefault();
   const name = $('pfName').value.trim(); if (!name) return;
-  const accts = [...$('pfAccts').querySelectorAll('.pfarow')].map(r => ({ id:r.querySelector('input').dataset.id || uid(), name:r.querySelector('input').value.trim(), type:r.querySelector('select').value })).filter(a => a.name);
+  const accts = [...$('pfAccts').querySelectorAll('.pfarow')].map(r => ({ id:r.querySelector('input').dataset.id || uid(), name:r.querySelector('input').value.trim(), type:r.querySelector('select').value, number:r.querySelector('.pfnum').value.trim() })).filter(a => a.name);
   let p = state.pfEdit && state.data.portfolios.find(x => x.id === state.pfEdit);
+  if (p) { const gone = (p.accounts || []).filter(a => !accts.some(x => x.id === a.id)).map(a => a.id), n = await removeAcctHoldingsAsk(gone);
+    if (n) { if (!await ask({ danger:1, ok:'Remove' }, 'Removing these accounts also removes their ' + n + ' positions. Continue?')) return; state.data.holdings = state.data.holdings.filter(h => !gone.includes(h.accountId)); } }
   if (!p) { p = { id:uid(), createdAt:new Date().toISOString() }; state.data.portfolios.push(p); }
   Object.assign(p, { institution:$('pfInst').value.trim(), name, accounts:accts }); lsSet(INV_KEY, p.id);
   $('pfDlg').close(); changed(); if ($('pfListDlg').open) drawPfList();
