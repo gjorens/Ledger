@@ -1010,7 +1010,7 @@ const state = {
 };
 let saving = false;
 const APP_VERSION = '4.82';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 22:10';
+const APP_BUILD = '2026-10-19 22:40';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -3465,7 +3465,7 @@ function holdApply(files, opt, targetPfId) {
     if (!a) {
       const pf = d.portfolios.find(p => p.id === targetPfId); if (!pf) continue;
       a = { id:uid(), name:'Account …' + normNum(it.num).slice(-4), type:INV_ACCT_TYPES.includes(it.kind) ? it.kind : 'Other', number:it.num };
-      (pf.accounts = pf.accounts || []).push(a); made.push(a.name + ' (' + it.num + ')');
+      (pf.accounts = pf.accounts || []).push(a); made.push(a.name);
     }
     for (const [sym, r] of it.syms) {
       let h = d.holdings.find(x => x.accountId === a.id && x.symbol === sym);
@@ -3512,7 +3512,7 @@ function drawHoldPlan() {
   }
   const plan = holdPlan(good, { removeMissing:$('hRemove').checked, pfId:$('hPf').value });
   for (const it of plan) {
-    const r = mk('div', 'impf'), t = it.found ? 'Account ' + it.num + ' → ' + pfLabel(it.found.pf) + ' · ' + it.found.acct.name : 'Account ' + it.num + ': new, will be created in ' + ($('hPf').value === 'new' ? 'the new portfolio' : pfLabel(state.data.portfolios.find(p => p.id === $('hPf').value))) + (it.elsewhere ? ' (an account with this number already exists in ' + pfLabel(it.elsewhere.pf) + ' and is left alone)' : '');
+    const r = mk('div', 'impf'), t = it.found ? 'Account ' + last4(it.num) + ' → ' + pfLabel(it.found.pf) + ' · ' + it.found.acct.name : 'Account ' + last4(it.num) + ': new, will be created in ' + ($('hPf').value === 'new' ? 'the new portfolio' : pfLabel(state.data.portfolios.find(p => p.id === $('hPf').value))) + (it.elsewhere ? ' (an account with this number already exists in ' + pfLabel(it.elsewhere.pf) + ' and is left alone)' : '');
     r.appendChild(mk('b', '', t));
     const bits = []; if (it.adds.length) bits.push('adds ' + it.adds.length + ' (' + it.adds.map(x => symBase(x.sym)).join(', ') + ')'); if (it.changes.length) bits.push('changes ' + it.changes.map(x => symBase(x.sym) + ' ' + x.from + ' → ' + x.to).join(', ')); if (it.removes.length) bits.push('removes ' + it.removes.map(x => symBase(x.sym)).join(', ')); if (it.same) bits.push(it.same + ' unchanged');
     r.appendChild(mk('div', 'small', bits.join('; ') || 'nothing to do'));
@@ -3553,7 +3553,7 @@ function renderHoldings(box, S) {
     }); row.appendChild(b); box.appendChild(row);
   }
   for (const g of groups) {
-    box.appendChild(mk('div', 'boxhead outer', (S.single ? '' : pfLabel(g.p) + ' · ') + g.a.name + (g.a.number ? ' (' + g.a.number + ')' : '') + (g.a.type ? ' · ' + g.a.type : '')));
+    box.appendChild(mk('div', 'boxhead outer', (S.single ? '' : pfLabel(g.p) + ' · ') + g.a.name + (g.a.type ? ' · ' + g.a.type : '')));
     const t = mk('table', 'autot invt'), th = mk('thead'), hr = mk('tr');
     (PHONE ? ['Symbol', 'Shares', 'Value'] : ['Symbol', 'Shares', 'Price', 'Value (CAD)', 'Yield', 'Income / year', '']).forEach((c, i) => hr.appendChild(mk('th', i > 0 && c ? 'num' : '', c))); th.appendChild(hr); t.appendChild(th);
     const tb = mk('tbody'); let sv = 0, si = 0;
@@ -3598,7 +3598,7 @@ function renderDividends(box, S) {
   for (const sec of sections) {
     const pt = new Array(12).fill(0);
     for (const { a, hs } of sec.accts) {
-      const hd = mk('tr', 'sect'), hc = mk('td', '', (S.single ? '' : pfLabel(sec.p) + ' · ') + a.name + (a.number ? ' (' + a.number + ')' : '')); hc.colSpan = 14; hd.appendChild(hc); tb.appendChild(hd);
+      const hd = mk('tr', 'sect'), hc = mk('td', '', (S.single ? '' : pfLabel(sec.p) + ' · ') + a.name); hc.colSpan = 14; hd.appendChild(hc); tb.appendChild(hd);
       const at = new Array(12).fill(0);
       for (const h of hs.slice().sort((x, y) => aCmp(symBase(x.symbol), symBase(y.symbol)))) { const m = monthsOf(h), di = divInfo(h.symbol); m.forEach((x, i) => { at[i] += x; }); line('', symBase(h.symbol), di.src === 'set by you' ? '' : di.src, m, () => openDivSet(h.symbol)); }
       line('wk', 'Account total', '', at); at.forEach((x, i) => { pt[i] += x; });
