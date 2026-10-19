@@ -95,6 +95,9 @@
   .phone .invt td, .phone .invt th { padding:5px 3px; font-size:.82rem; }
   .phone .invt td.num:last-child { width:auto; }
   .phone .invt td.num:last-child button { display:inline-block; margin:0; }
+  .invchart .chhead { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .invchart .chtog button { padding:2px 12px; font-weight:700; }
+  .invchart .chtog button + button { margin-left:4px; }
   .invchart svg { width:100%; height:auto; display:block; }
   .invchart .grid { stroke:var(--line); stroke-width:1; }
   .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
@@ -964,8 +967,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.78';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 18:00';
+const APP_VERSION = '4.81';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-19 20:30';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2936,7 +2939,7 @@ async function cleanUpRules() {
    (v = the portfolio value in CAD that day, dep = deposit (+) or withdrawal (-), note), invStart{portfolioId:{'YYYY':value}} (Jan 1 value, optional).
    Net figures leave out deposits and withdrawals; gross figures include them. Accounts inside a portfolio are labels for now (a later release
    adds the share-count true-up per account). */
-const INV_KEY = 'myLedger.invPf', INV_YEAR_KEY = 'myLedger.invYear', INV_ASC_KEY = 'myLedger.invAsc';
+const INV_CHART_KEY = 'myLedger.invChart', INV_KEY = 'myLedger.invPf', INV_YEAR_KEY = 'myLedger.invYear', INV_ASC_KEY = 'myLedger.invAsc';
 const INV_ACCT_TYPES = ['RRSP', 'RRIF', 'TFSA', 'FHSA', 'RESP', 'LIRA', 'Non-registered', 'Margin', 'Cash', 'Other'];
 const INV_COLORS = ['#0a66d6', '#d97706', '#059669', '#9333ea', '#dc2626', '#0891b2'];
 const dowOf = s => new Date(ymdMs(s)).getUTCDay();
@@ -3149,7 +3152,7 @@ function renderInvest(box) {
         tr.appendChild(mk('td', 'num' + (hasV ? pcls(r.net) : ''), hasV ? pctFmt(r.net) : '')); tr.appendChild(mk('td', 'num', hasV ? cf(r.avg) : '')); tr.appendChild(mk('td', 'num', hasV ? cf(r.proj) : ''));
       }
       if (PHONE) { if (S.single) { tr.onclick = () => openInv(S.single.id, r.date); tr.style.cursor = 'pointer'; } }       // on a phone a tap on the row edits that day
-      else { const ce = mk('td', 'num'); if (S.single) ce.appendChild(iconBtn('edit', 'Edit this day', () => openInv(S.single.id, r.date))); tr.appendChild(ce); }
+      else { const ce = mk('td', 'num'); if (S.single) { ce.appendChild(iconBtn('edit', 'Edit this day', () => openInv(S.single.id, r.date))); ce.appendChild(iconBtn('trash', 'Delete this day', () => deleteInvDay(S.single.id, r.date), 'danger')); } ce.style.whiteSpace = 'nowrap'; tr.appendChild(ce); }
       if (r.note) { tr.title = r.note; c0.appendChild(mk('span', 'sub', r.note)); }
     }
     tb.appendChild(tr);
@@ -3160,24 +3163,27 @@ function renderInvest(box) {
   box.appendChild(mk('div', 'small', 'Net figures leave out deposits and withdrawals; gross figures include them. The average and the projected year end use trading days (Monday to Friday, less market holidays): ' + INV_CALS.find(c => c[0] === invCal())[1].toLowerCase() + '. The exchange index columns will come with automatic prices.'));
 }
 
-function invChart(pfs, years) {              // net % return since January 1, one line per year, so years can be compared
-  const series = [];
+function invChart(pfs, years) {              // net return since January 1, one line per year, so years can be compared: as a percentage or as dollars
+  const mode = ['$', 'V'].includes(lsGet(INV_CHART_KEY)) ? lsGet(INV_CHART_KEY) : '%', dollars = mode !== '%', value = mode === 'V', series = [];
   for (const y of years.slice().reverse()) {
     const c = invCompute(pfs, y); if (!c.rows) continue;
-    const pts = [[1, 0]]; for (const r of c.rows) if (r.v !== undefined && r.net !== null) pts.push([doy(r.date), r.net * 100]);
+    const pts = [[1, value ? c.start : 0]]; for (const r of c.rows) if (r.v !== undefined && r.net !== null) pts.push([doy(r.date), value ? r.v : dollars ? r.ytd : r.net * 100]);
     if (pts.length > 1) series.push({ y, pts });
   }
   if (!series.length) return null;
   const W = 640, H = 220, L = 46, R = 12, T = 10, B = 22, NS = 'http://www.w3.org/2000/svg';
-  let lo = 0, hi = 0; for (const s of series) for (const p of s.pts) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
-  if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
+  let lo = value ? Infinity : 0, hi = value ? -Infinity : 0; for (const s of series) for (const p of s.pts) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
+  if (hi - lo < (dollars ? 100 : 1)) { const g = dollars ? 50 : 0.5; hi += g; lo -= g; }
   const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
   const X = v => L + (v - 1) / 365 * (W - L - R), Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
-  const wrap = mk('div', 'invchart'); wrap.appendChild(mk('div', 'boxhead outer', 'Net return since January 1, by year'));
-  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Line chart of net percentage return since January 1 for each year');
+  const wrap = mk('div', 'invchart'), hd = mk('div', 'chhead'); hd.appendChild(mk('div', 'boxhead outer', value ? 'Portfolio value (CAD), by year, including deposits and withdrawals' : dollars ? 'Net change since January 1 (CAD), by year' : 'Net return since January 1, by year'));
+  const tg = mk('span', 'chtog'); for (const [k, t] of [['%', '%'], ['$', '$'], ['V', 'Value']]) { const b = mk('button', mode === k ? 'primary' : '', t); b.type = 'button'; b.setAttribute('aria-label', k === '%' ? 'Show percentages' : k === '$' ? 'Show net change in dollars' : 'Show portfolio value'); b.onclick = () => { lsSet(INV_CHART_KEY, k); render(); }; tg.appendChild(b); }
+  hd.appendChild(tg); wrap.appendChild(hd);
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Line chart of net return since January 1 for each year');
   const el = (n, a, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt !== undefined) e.textContent = txt; svg.appendChild(e); return e; };
+  const tr = n => String(+n.toFixed(2)), axLabel = v => !dollars ? v.toFixed(step < 1 ? 1 : 0) + '%' : Math.abs(v) >= 1e6 ? tr(v / 1e6) + 'M' : Math.abs(v) >= 1e3 ? tr(v / 1e3) + 'K' : String(Math.round(v));
   const step = (() => { const raw = (hi - lo) / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 5, 10].map(m => m * p).find(s => s >= raw); })();
-  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) { el('line', { x1:L, x2:W - R, y1:Y(v), y2:Y(v), class:Math.abs(v) < step / 1000 ? 'ax0' : 'grid' }); el('text', { x:L - 5, y:Y(v) + 4, 'text-anchor':'end', class:'axt' }, (Math.abs(v) < 1e-9 ? 0 : v).toFixed(step < 1 ? 1 : 0) + '%'); }
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) { el('line', { x1:L, x2:W - R, y1:Y(v), y2:Y(v), class:Math.abs(v) < step / 1000 ? 'ax0' : 'grid' }); el('text', { x:L - 5, y:Y(v) + 4, 'text-anchor':'end', class:'axt' }, axLabel(Math.abs(v) < step / 1000 ? 0 : v)); }
   'JFMAMJJASOND'.split('').forEach((m, i) => el('text', { x:X(doy(ymdStr(2026, i + 1, 15))), y:H - 6, 'text-anchor':'middle', class:'axt' }, m));
   series.forEach((s, i) => { const cur = s.y === series[series.length - 1].y, col = INV_COLORS[(series.length - 1 - i) % INV_COLORS.length];
     el('polyline', { points:s.pts.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' '), fill:'none', stroke:col, 'stroke-width':cur ? 2.6 : 1.6, 'stroke-linejoin':'round', opacity:cur ? 1 : .85 }); });
@@ -3192,6 +3198,13 @@ async function setInvStart(p, y) {
   if (t === null) return; const n = parseFloat(t.replace(/[^0-9.\-]/g, ''));
   if (!isFinite(n) || n < 0) { await ask({ alert:1 }, 'Enter the value as a number.'); return; }
   (state.data.invStart[p.id] = state.data.invStart[p.id] || {})[y] = r2(n); changed();
+}
+
+async function deleteInvDay(pid, date) {     // removes the value and any deposit or withdrawal recorded for that day
+  const p = state.data.portfolios.find(x => x.id === pid), e = (state.data.invDays[pid] || {})[date]; if (!e) return false;
+  const bits = []; if (typeof e.v === 'number') bits.push('the value ' + cadFmt(e.v)); if (e.dep) bits.push('the ' + (e.dep > 0 ? 'deposit ' : 'withdrawal ') + cadFmt(Math.abs(e.dep)));
+  if (!await ask({ danger:1, ok:'Delete' }, 'Delete ' + fmtDate(date) + ' from ' + (p ? pfLabel(p) : 'this portfolio') + '? This removes ' + bits.join(' and ') + '.')) return false;
+  setInvDay(pid, date, null); changed(); return true;
 }
 
 /* record dialog */
@@ -3211,7 +3224,7 @@ function loadInvDay() {
 }
 $('iPf').addEventListener('change', loadInvDay); $('iDate').addEventListener('change', loadInvDay);
 $('iCancel').addEventListener('click', () => $('invDlg').close());
-$('iRemove').addEventListener('click', () => { setInvDay($('iPf').value, $('iDate').value, null); $('invDlg').close(); changed(); });
+$('iRemove').addEventListener('click', async () => { if (await deleteInvDay($('iPf').value, $('iDate').value)) $('invDlg').close(); });
 $('invForm').addEventListener('submit', ev => {
   ev.preventDefault();
   const date = $('iDate').value; if (!date) return;

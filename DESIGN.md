@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.78. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.81. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 

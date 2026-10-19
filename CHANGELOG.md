@@ -4,6 +4,15 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 6` since v4.77 (5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.81 (2026-10-19)
+- **Investments chart:** a third choice, **Value**, shows the portfolio's total value in CAD for each year (deposits and withdrawals included, so a deposit shows as a step). The switch is now % / $ / Value.
+
+## 4.80 (2026-10-19)
+- **Investments chart:** a **% / $** switch above the chart. % shows net return since January 1 as before; $ shows the net change in dollars (CAD) since January 1, with deposits and withdrawals left out. The choice is remembered on the device.
+
+## 4.79 (2026-10-19)
+- **Investments:** a **delete** (trash) button on each day row removes a wrongly entered day (its value and any deposit or withdrawal), after a confirmation. On a phone, tap the row and use **Remove day**, which now asks for confirmation too.
+
 ## 4.78 (2026-10-19)
 - **Import your yearly sheets (CSV):** Investments > Manage portfolios > **Import yearly CSV files**. Choose one or more exported sheets (for example *Investments - GS 2024.csv*). The app reads the year from the top left cell, the daily value from the column before Change, deposits and withdrawals from the Deposits column (brackets or a minus sign mean a withdrawal), and the January 1 value from the Forward row. Weekly summary rows, empty days and the "Total deposits" row are skipped. Pick an existing portfolio or create a new one; days already recorded for the same dates are replaced. Extra columns after the deposits column (such as a second person's value) can be imported as their own portfolio.
 - Checked against the 2024 sheet: 240 daily values and 8 deposits or withdrawals (net -26,007.24, the sheet's own total) are read, and the change the app calculates matches the sheet's Change column on all 238 days compared.
