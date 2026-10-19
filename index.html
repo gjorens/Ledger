@@ -88,6 +88,20 @@
   .autostats { display:flex; gap:18px; flex-wrap:wrap; margin:10px 0; }
   .autostats b { display:block; font-size:1.05rem; }
   .autostats span { font-size:.8rem; color:var(--muted); }
+  .invt tr.wk td { font-weight:700; background:var(--card); }
+  .invt tr.fwd td { background:var(--card); font-weight:600; }
+  .invt th { white-space:normal; }
+  .invt .nw { white-space:nowrap; }
+  .phone .invt td, .phone .invt th { padding:5px 3px; font-size:.82rem; }
+  .phone .invt td.num:last-child { width:auto; }
+  .phone .invt td.num:last-child button { display:inline-block; margin:0; }
+  .invchart svg { width:100%; height:auto; display:block; }
+  .invchart .grid { stroke:var(--line); stroke-width:1; }
+  .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
+  .invchart .axt { fill:var(--muted); font-size:11px; }
+  .pfarow { display:grid; grid-template-columns:9em 1fr auto; gap:6px; margin-bottom:6px; }
+  #pfListDlg .vacc { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); }
+  #pfListDlg .sub { display:block; font-size:.78rem; color:var(--muted); }
   .autot { width:100%; min-width:0; border-collapse:collapse; font-size:.92rem; }
   .autot th { text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); padding:3px 6px; border-bottom:2px solid var(--line); }
   .autot td { padding:6px; border-bottom:1px solid var(--line); vertical-align:top; }
@@ -814,6 +828,46 @@
   </form>
 </dialog>
 
+<dialog id="invDlg">
+  <form id="invForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full" id="invTitle">Record portfolio value</h3>
+    <div class="full"><label for="iPf">Portfolio</label><select id="iPf"></select></div>
+    <div><label for="iDate">Date</label><input id="iDate" type="date" required></div>
+    <div><label for="iVal">Portfolio value (CAD)</label><input id="iVal" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="Closing value"></div>
+    <div><label for="iKind">Deposit or withdrawal</label><select id="iKind"><option value="1">Deposit</option><option value="-1">Withdrawal</option></select></div>
+    <div><label for="iDep">Amount (optional)</label><input id="iDep" class="money" type="text" inputmode="numeric" autocomplete="off" placeholder="None"></div>
+    <div class="full"><label for="iNote">Note (optional)</label><input id="iNote" type="text" maxlength="120" autocomplete="off"></div>
+    <p class="small full" style="margin:0">Enter the value of the whole portfolio in CAD. A deposit or withdrawal is kept out of the net performance figures. Recording the same date again replaces that day.</p>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="iRemove" class="danger" style="margin-right:auto" hidden>Remove day</button>
+      <button type="button" id="iCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pfListDlg">
+  <div style="display:flex; align-items:center; gap:8px"><h3 tabindex="-1" autofocus style="flex:1">Portfolios</h3><span id="pfListAdd"></span></div>
+  <p class="small" style="margin:4px 0 8px">Institution, then portfolio, then account. The daily value is recorded per portfolio.</p>
+  <div id="pfListBody" style="max-height:50vh; overflow-y:auto"></div>
+  <div style="margin-top:10px"><label for="iCal" class="lbl">Trading days (for the daily average and the year-end projection)</label><select id="iCal"></select></div>
+  <div style="display:flex; justify-content:flex-end; margin-top:8px"><button type="button" class="primary" id="pfListClose">Close</button></div>
+</dialog>
+
+<dialog id="pfDlg">
+  <form id="pfForm" class="entry" style="margin-top:0">
+    <h3 tabindex="-1" autofocus class="full" id="pfTitle">Add portfolio</h3>
+    <div><label for="pfInst">Institution</label><input id="pfInst" type="text" list="instList" maxlength="40" autocomplete="off" placeholder="e.g. BMO"><datalist id="instList"></datalist></div>
+    <div><label for="pfName">Portfolio name</label><input id="pfName" type="text" maxlength="40" autocomplete="off" required placeholder="e.g. Main portfolio"></div>
+    <div class="full"><div class="lbl">Accounts in this portfolio</div><div id="pfAccts"></div><button type="button" id="pfAddAcct">+ Account</button></div>
+    <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" id="pfRemove" class="danger" style="margin-right:auto" hidden>Remove</button>
+      <button type="button" id="pfCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="vehDlg">
   <form id="vehForm" class="entry" style="margin-top:0">
     <h3 tabindex="-1" autofocus class="full" id="vehTitle">Add vehicle</h3>
@@ -880,7 +934,7 @@ function setTest(on) {                                      // orange stripe + T
   document.title = on ? 'myLedger (test)' : 'myLedger';
 }
 const $ = id => document.getElementById(id);
-const DATA_VERSION = 5;               // 5 adds vehicles, serviceItems and services (Autos page)
+const DATA_VERSION = 6;               // 6 adds portfolios, invDays and invStart (Investments page); 5 added vehicles, serviceItems and services (Autos page)
 const SERVICE_DEFAULTS = ['Air filter (cabin)', 'Air filter (engine)', 'Alignment', 'Battery replacement', 'Brake fluid flush', 'Brake inspection', 'Brake pads and rotors', 'Coolant flush', 'Oil and filter change', 'Safety inspection', 'Seasonal tire swap', 'Spark plugs', 'Tire replacement', 'Tire rotation', 'Transmission service', 'Wheel balance', 'Wiper blades'];
 const ACCT_TYPES = ['Chequing / current', 'Savings', 'Credit card / charge', 'Line of credit', 'Loan', 'Investment', 'Cash', 'Other'];
 const DEFAULT_CATEGORIES = ['Income', 'Housing', 'Utilities', 'Groceries', 'Dining', 'Transport', 'Health', 'Shopping', 'Subscriptions', 'Entertainment', 'Gifts', 'Insurance', 'Other'];
@@ -892,8 +946,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.76';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 10:00';
+const APP_VERSION = '4.77';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-19 16:00';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -1047,7 +1101,7 @@ function anchorOf(a) {
   return { base:cents(last.statementBalance) - inStmt, month:last.month };
 }
 const balanceOf = a => anchorOf(a).base + state.data.records.reduce((s, r) => (r.accountId === a.id && !r.deleted) ? s + cents(r.amount) : s, 0);
-const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[], vehicles:[], serviceItems:SERVICE_DEFAULTS.slice(), services:[] });
+const newData = () => ({ version:DATA_VERSION, createdAt:new Date().toISOString(), savedAt:null, settings:{ horizonMonths:3 }, categories:DEFAULT_CATEGORIES.slice(), accounts:[], recurring:[], reconciliations:{}, records:[], vehicles:[], serviceItems:SERVICE_DEFAULTS.slice(), services:[], portfolios:[], invDays:{}, invStart:{} });
 
 function ensureAccount() {
   const ids = state.data.accounts.map(a => a.id);
@@ -1068,6 +1122,9 @@ function migrate(d) {                 // upgrades older files in memory; saved a
   if (!Array.isArray(d.recurring)) d.recurring = [];
   if (!Array.isArray(d.vehicles)) d.vehicles = [];
   if (!Array.isArray(d.services)) d.services = [];
+  if (!Array.isArray(d.portfolios)) d.portfolios = [];
+  if (!d.invDays || typeof d.invDays !== 'object') d.invDays = {};
+  if (!d.invStart || typeof d.invStart !== 'object') d.invStart = {};
   if (!Array.isArray(d.serviceItems)) d.serviceItems = SERVICE_DEFAULTS.slice();
   { const have = new Set(d.serviceItems.map(x => x.toLowerCase()));
     for (const s of d.services) for (const n of (s.items || [])) if (!have.has(n.toLowerCase())) { d.serviceItems.push(n); have.add(n.toLowerCase()); }
@@ -2145,6 +2202,7 @@ const curView = () => { const v = lsGet(VIEW_KEY); return VIEWS.some(x => x.id =
 function renderViewPage(v) {
   const box = $('viewPage'); box.innerHTML = '';
   if (v.id === 'autos') return renderAutos(box);
+  if (v.id === 'invest') return renderInvest(box);
   const h = document.createElement('h3'); h.textContent = v.label; box.appendChild(h);
   const p = document.createElement('div'); p.className = 'small'; p.textContent = v.blurb; box.appendChild(p);
   const ph = document.createElement('div'); ph.className = 'vplace';
@@ -2854,6 +2912,345 @@ async function cleanUpRules() {
   const ids = new Set(gone.map(u => u.id));
   state.data.recurring = state.data.recurring.filter(u => !ids.has(u.id)); changed();
 }
+
+/* ---------- Investments: portfolios and the daily record ----------
+   Data (file version 6): portfolios[{id,institution,name,accounts[{id,name,type}],deleted}], invDays{portfolioId:{'YYYY-MM-DD':{v,dep,note}}}
+   (v = the portfolio value in CAD that day, dep = deposit (+) or withdrawal (-), note), invStart{portfolioId:{'YYYY':value}} (Jan 1 value, optional).
+   Net figures leave out deposits and withdrawals; gross figures include them. Accounts inside a portfolio are labels for now (a later release
+   adds the share-count true-up per account). */
+const INV_KEY = 'myLedger.invPf', INV_YEAR_KEY = 'myLedger.invYear', INV_ASC_KEY = 'myLedger.invAsc';
+const INV_ACCT_TYPES = ['RRSP', 'RRIF', 'TFSA', 'FHSA', 'RESP', 'LIRA', 'Non-registered', 'Margin', 'Cash', 'Other'];
+const INV_COLORS = ['#0a66d6', '#d97706', '#059669', '#9333ea', '#dc2626', '#0891b2'];
+const dowOf = s => new Date(ymdMs(s)).getUTCDay();
+const pad2 = n => String(n).padStart(2, '0');
+const ymdStr = (y, m, d) => y + '-' + pad2(m) + '-' + pad2(d);
+const r2 = x => Math.round(x * 100) / 100;
+const cadFmt = n => r2(n).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+const fmtDow = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }); };
+const pctFmt = x => (x * 100).toFixed(2) + '%';
+function nthDow(y, m, dow, n) {              // the n-th (or, with n = -1, the last) given weekday (0 = Sunday) of a month
+  if (n > 0) { const first = dowOf(ymdStr(y, m, 1)); return ymdStr(y, m, 1 + ((dow - first + 7) % 7) + (n - 1) * 7); }
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate(); return ymdStr(y, m, last - ((dowOf(ymdStr(y, m, last)) - dow + 7) % 7));
+}
+function easterSunday(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30,
+    i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), t = h + l - 7 * m + 114;
+  return ymdStr(y, Math.floor(t / 31), (t % 31) + 1);
+}
+const holCache = {};
+function holidays(y) {                       // { ca:{date:name}, us:{date:name} } for the TSX and the NYSE/Nasdaq, worked out by rule
+  if (holCache[y]) return holCache[y];
+  const ca = {}, us = {}, gf = addDays(easterSunday(y), -2);
+  const monIfWeekend = s => { const w = dowOf(s); return w === 6 ? addDays(s, 2) : w === 0 ? addDays(s, 1) : s; };
+  const nearWeekday = s => { const w = dowOf(s); return w === 6 ? addDays(s, -1) : w === 0 ? addDays(s, 1) : s; };
+  ca[monIfWeekend(ymdStr(y, 1, 1))] = 'New Year’s Day'; ca[nthDow(y, 2, 1, 3)] = 'Family Day'; ca[gf] = 'Good Friday';
+  ca[addDays(ymdStr(y, 5, 24), -((dowOf(ymdStr(y, 5, 24)) + 6) % 7))] = 'Victoria Day'; ca[monIfWeekend(ymdStr(y, 7, 1))] = 'Canada Day';
+  ca[nthDow(y, 8, 1, 1)] = 'Civic Holiday'; ca[nthDow(y, 9, 1, 1)] = 'Labour Day'; ca[nthDow(y, 10, 1, 2)] = 'Thanksgiving';
+  { const w = dowOf(ymdStr(y, 12, 25));
+    if (w === 6) { ca[ymdStr(y, 12, 27)] = 'Christmas Day'; ca[ymdStr(y, 12, 28)] = 'Boxing Day'; }
+    else if (w === 0) { ca[ymdStr(y, 12, 27)] = 'Christmas Day'; ca[ymdStr(y, 12, 26)] = 'Boxing Day'; }
+    else if (w === 5) { ca[ymdStr(y, 12, 25)] = 'Christmas Day'; ca[ymdStr(y, 12, 28)] = 'Boxing Day'; }
+    else { ca[ymdStr(y, 12, 25)] = 'Christmas Day'; ca[ymdStr(y, 12, 26)] = 'Boxing Day'; } }
+  if (dowOf(ymdStr(y, 1, 1)) !== 6) us[monIfWeekend(ymdStr(y, 1, 1))] = 'New Year’s Day';       // a Saturday New Year is not observed on the Friday
+  us[nthDow(y, 1, 1, 3)] = 'Martin Luther King Jr. Day'; us[nthDow(y, 2, 1, 3)] = 'Presidents Day'; us[gf] = 'Good Friday'; us[nthDow(y, 5, 1, -1)] = 'Memorial Day';
+  if (y >= 2022) us[nearWeekday(ymdStr(y, 6, 19))] = 'Juneteenth'; us[nearWeekday(ymdStr(y, 7, 4))] = 'Independence Day'; us[nthDow(y, 9, 1, 1)] = 'Labor Day';
+  us[nthDow(y, 11, 4, 4)] = 'Thanksgiving'; us[nearWeekday(ymdStr(y, 12, 25))] = 'Christmas Day';
+  return (holCache[y] = { ca, us });
+}
+const INV_CALS = [['either', 'Either market open (TSX or NYSE)'], ['tsx', 'TSX open (Toronto)'], ['nyse', 'NYSE / Nasdaq open (New York)'], ['both', 'Both markets open']];
+const invCal = () => (state.data && state.data.settings.invCal) || 'either';
+function isTradingDay(s) {
+  const w = dowOf(s); if (w === 0 || w === 6) return false;
+  const h = holidays(Number(s.slice(0, 4))), c = !!h.ca[s], u = !!h.us[s], cal = invCal();
+  return cal === 'tsx' ? !c : cal === 'nyse' ? !u : cal === 'both' ? !(c || u) : !(c && u);
+}
+const tdCache = {};
+function tradingDays(y) {                    // all trading days of a year, as an ascending list
+  const k = y + '|' + invCal(); if (tdCache[k]) return tdCache[k];
+  const out = []; for (let s = y + '-01-01'; s <= y + '-12-31'; s = addDays(s, 1)) if (isTradingDay(s)) out.push(s);
+  return (tdCache[k] = out);
+}
+function tdCountTo(y, s) { const l = tradingDays(y); let lo = 0, hi = l.length; while (lo < hi) { const m = (lo + hi) >> 1; if (l[m] <= s) lo = m + 1; else hi = m; } return lo; }
+const weekKey = s => addDays(s, -((dowOf(s) + 6) % 7));      // the Monday of the week
+const doy = s => Math.round((ymdMs(s) - ymdMs(s.slice(0, 4) + '-01-01')) / 864e5) + 1;
+
+function dayNote(date) {                     // weekend or market-holiday label under a date
+  if ([0, 6].includes(dowOf(date))) return 'weekend';
+  const h = holidays(Number(date.slice(0, 4))), a = h.ca[date], b = h.us[date];
+  return a || b ? 'market holiday: ' + [a ? 'TSX closed' : '', b ? 'NYSE closed' : ''].filter(Boolean).join(', ') : '';
+}
+const invPfs = () => state.data ? state.data.portfolios.filter(p => !p.deleted) : [];
+const pfLabel = p => (p.institution ? p.institution + ' · ' : '') + p.name;
+function invStartOf(p, y) {                  // the Jan 1 value: the one the owner set, else the last value entered before the year began
+  const s = state.data.invStart[p.id]; if (s && typeof s[y] === 'number') return s[y];
+  const days = state.data.invDays[p.id] || {}; let best = null;
+  for (const [dt, x] of Object.entries(days)) if (typeof x.v === 'number' && dt < y + '-01-01' && (!best || dt > best)) best = dt;
+  return best ? days[best].v : null;
+}
+function invCompute(pfs, y) {                // rows for one year, for one portfolio or several added together
+  const d = state.data, y0 = y + '-01-01', y1 = y + '-12-31', need = [], per = []; let start = 0;
+  for (const p of pfs) {
+    const days = d.invDays[p.id] || {}, es = Object.keys(days).filter(k => k >= y0 && k <= y1).sort(), st = invStartOf(p, y);
+    if (!es.length && st === null) continue;
+    if (st === null) { need.push(p); continue; }
+    per.push({ p, st, days, es }); start += st;
+  }
+  if (need.length) return { need };
+  if (!per.length) return { empty:true };
+  const dates = [...new Set(per.flatMap(x => x.es))].sort(), carry = per.map(x => x.st), rows = [], tdTotal = tradingDays(y).length;
+  let prevV = start, pending = 0, ytd = 0, depTot = 0;
+  for (const dt of dates) {
+    let hasV = false, dep = 0; const notes = [];
+    per.forEach((x, i) => { const e = x.days[dt]; if (!e) return; if (typeof e.v === 'number') { carry[i] = e.v; hasV = true; } if (typeof e.dep === 'number') dep += e.dep; if (e.note) notes.push(e.note); });
+    pending = r2(pending + dep); depTot = r2(depTot + dep);
+    const row = { date:dt, dep, note:notes.join('; ') };
+    if (hasV) {
+      const v = r2(carry.reduce((a, b) => a + b, 0)); row.v = v; row.change = r2(v - prevV - pending); ytd = r2(ytd + row.change); row.ytd = ytd;
+      row.gross = start > 0 ? (v - start) / start : null; row.net = start > 0 ? ytd / start : null;
+      const n = Math.max(1, tdCountTo(y, dt)); row.avg = ytd / n; row.proj = r2(v + row.avg * Math.max(0, tdTotal - n));
+      prevV = v; pending = 0;
+    }
+    rows.push(row);
+  }
+  const weeks = {};                                           // weekly summaries (Monday to Sunday), measured against the value at the end of the previous week
+  for (const r of rows) if (r.v !== undefined) { const k = weekKey(r.date), w = weeks[k] || (weeks[k] = { key:k, change:0, last:null }); w.change = r2(w.change + r.change); w.last = r; }
+  { let base = start; for (const k of Object.keys(weeks).sort()) { const w = weeks[k]; w.base = base; w.pct = base > 0 ? w.change / base : null; base = w.last.v; } }
+  return { start, rows, weeks, depTot, year:y, tdTotal };
+}
+function invYears(pfs) {
+  const ys = new Set([todayStr().slice(0, 4)]);
+  for (const p of pfs) for (const k of Object.keys(state.data.invDays[p.id] || {})) ys.add(k.slice(0, 4));
+  return [...ys].sort().reverse();
+}
+function invSel() {                          // the portfolio (or all) chosen on the page
+  const pfs = invPfs(), s = lsGet(INV_KEY);
+  if (s === 'all' && pfs.length > 1) return { pfs, single:null };
+  const one = pfs.find(p => p.id === s) || (pfs.length > 1 ? null : pfs[0]);
+  return one ? { pfs:[one], single:one } : { pfs, single:null };
+}
+function setInvDay(pid, date, e) {
+  const m = state.data.invDays[pid] || (state.data.invDays[pid] = {});
+  const has = e && (typeof e.v === 'number' || (typeof e.dep === 'number' && e.dep !== 0));
+  if (!has) { delete m[date]; return; }
+  const o = {}; if (typeof e.v === 'number') o.v = e.v; if (typeof e.dep === 'number' && e.dep !== 0) o.dep = e.dep; if (e.note) o.note = e.note; m[date] = o;
+}
+
+function renderInvest(box) {
+  const d = state.data, h = mk('div', 'autohead'); box.appendChild(h);
+  if (!d) { box.appendChild(mk('div', 'small', 'Open or create a ledger first.')); return; }
+  const pfs = invPfs();
+  if (!pfs.length) {
+    box.appendChild(mk('div', 'small', 'Track the daily value of your investment portfolios, with deposits and withdrawals kept apart from performance. Organise them as institution, then portfolio, then account (for example BMO > Main portfolio > RRSP, TFSA, Cash). You enter one total value per portfolio per day, in CAD.'));
+    const b = mk('button', 'primary', 'Add your first portfolio'); b.type = 'button'; b.onclick = () => openPf(null); box.appendChild(b);
+    const mine = d.accounts.filter(a => a.type === 'Investment');
+    if (mine.length) box.appendChild(mk('div', 'small', 'Your existing accounts of the type Investment (' + mine.map(acctLabel).join(', ') + ') stay on the Accounts page.'));
+    return;
+  }
+  const S = invSel(), years = invYears(S.pfs), cy = todayStr().slice(0, 4);
+  let year = lsGet(INV_YEAR_KEY); if (!years.includes(year)) year = years.includes(cy) ? cy : years[0];
+  const ps = mk('select'); ps.setAttribute('aria-label', 'Portfolio');
+  if (pfs.length > 1) { const o = mk('option', '', 'All portfolios (combined)'); o.value = 'all'; ps.appendChild(o); }
+  for (const p of pfs) { const o = mk('option', '', pfLabel(p)); o.value = p.id; ps.appendChild(o); }
+  ps.value = S.single ? S.single.id : 'all'; ps.onchange = () => { lsSet(INV_KEY, ps.value); render(); }; h.appendChild(ps);
+  const ys = mk('select'); ys.setAttribute('aria-label', 'Year'); ys.style.flex = '0 1 6em';
+  for (const y of invYears(pfs)) { const o = mk('option', '', y); o.value = y; ys.appendChild(o); }
+  ys.value = year; ys.onchange = () => { lsSet(INV_YEAR_KEY, ys.value); render(); }; h.appendChild(ys);
+
+  const bar = mk('div'); bar.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin:6px 0';
+  const add = mk('button', 'primary', '+ Record'); add.type = 'button'; add.onclick = () => openInv(S.single ? S.single.id : null, todayStr()); bar.appendChild(add);
+  const mg = mk('button', '', 'Manage portfolios'); mg.type = 'button'; mg.onclick = openPfList; bar.appendChild(mg);
+  const asc = lsGet(INV_ASC_KEY) === '1';
+  const so = mk('button', '', asc ? 'Oldest first' : 'Newest first'); so.type = 'button'; so.onclick = () => { lsSet(INV_ASC_KEY, asc ? '0' : '1'); render(); }; bar.appendChild(so);
+  box.appendChild(bar);
+  if (S.single && S.single.accounts && S.single.accounts.length) box.appendChild(mk('div', 'small', 'Accounts: ' + S.single.accounts.map(a => a.name + (a.type && a.type !== a.name ? ' (' + a.type + ')' : '')).join(', ')));
+
+  const C = invCompute(S.pfs, year);
+  if (C.need) {
+    box.appendChild(mk('div', 'small', 'To work out ' + year + ' there must be a January 1 value for: ' + C.need.map(pfLabel).join(', ') + '. Choose that portfolio and set it.'));
+    if (S.single) { const b = mk('button', 'primary', 'Set the January 1, ' + year + ' value'); b.type = 'button'; b.onclick = () => setInvStart(S.single, year); box.appendChild(b); }
+    return;
+  }
+  if (C.empty) {
+    box.appendChild(mk('div', 'small', 'No values recorded for ' + year + ' yet. Set the value on January 1 (it is also the base for the year’s percentages), then use + Record each day.'));
+    if (S.single) { const b = mk('button', 'primary', 'Set the January 1, ' + year + ' value'); b.type = 'button'; b.onclick = () => setInvStart(S.single, year); box.appendChild(b); }
+    return;
+  }
+  const vr = C.rows.filter(r => r.v !== undefined), last = vr[vr.length - 1];
+  if (last) {
+    const st = mk('div', 'autostats');
+    const tile = (val, lbl, neg) => { const x = mk('div'); x.appendChild(mk('b', neg ? 'neg' : '', val)); x.appendChild(mk('span', '', lbl)); st.appendChild(x); };
+    tile(cadFmt(last.v), 'Value, ' + fmtShort(last.date));
+    tile(pctFmt(last.net) , 'Net % this year', last.net < 0); tile((last.ytd < 0 ? '' : '+') + cadFmt(last.ytd), 'Net change this year', last.ytd < 0);
+    tile(pctFmt(last.gross), 'Gross % this year (with deposits)', last.gross < 0);
+    tile(cadFmt(last.avg), 'Average per trading day'); tile(cadFmt(last.proj), 'Projected year end');
+    box.appendChild(st);
+  }
+  const ch = invChart(S.pfs, years); if (ch) box.appendChild(ch);
+
+  box.appendChild(mk('div', 'boxhead outer', 'Daily record, ' + year));
+  const w = mk('div'); w.style.overflowX = 'auto'; const t = mk('table', 'autot invt');
+  const cols = PHONE ? ['Date', 'Value', 'Change'] : ['Date', 'Value', 'Change', 'Deposit / (withdrawal)', '% Week', 'YTD net', '% YTD gross', '% YTD net', 'Avg per day', 'Projected year end', ''];
+  const hr = mk('tr'); cols.forEach((c, i) => hr.appendChild(mk('th', i > 0 && c ? 'num' : '', c))); const thead = mk('thead'); thead.appendChild(hr); t.appendChild(thead);
+  const tb = mk('tbody');
+  const seq = [];
+  for (let i = 0; i < C.rows.length; i++) {
+    const r = C.rows[i], nx = C.rows[i + 1]; seq.push({ r });
+    if (!nx || weekKey(nx.date) !== weekKey(r.date)) { const wk = C.weeks[weekKey(r.date)]; if (wk) seq.push({ wk }); }     // the week's summary follows its last day
+  }
+  const colN = cols.length;
+  const cf = PHONE ? (n => Math.round(n).toLocaleString()) : cadFmt;
+  const sgnTxt = n => (n > 0 ? '+' : '') + cf(n), pcls = n => n < 0 ? ' neg' : '';
+  const fwd = mk('tr', 'fwd'), fc = mk('td'); fc.colSpan = PHONE ? colN : colN - 1;
+  fc.appendChild(document.createTextNode('Forward from January 1: ' + cf(C.start)));
+  fwd.appendChild(fc); if (PHONE && S.single) { fwd.onclick = () => setInvStart(S.single, year); fwd.style.cursor = 'pointer'; fc.appendChild(mk('span', 'sub', 'tap to change')); } const fe = mk('td', 'num'); if (S.single && !PHONE) fe.appendChild(iconBtn('edit', 'Set the January 1 value', () => setInvStart(S.single, year))); if (!PHONE) fwd.appendChild(fe);
+  const body = seq.slice(); if (!asc) body.reverse();
+  if (asc) tb.appendChild(fwd);
+  for (const x of body) {
+    const tr = mk('tr');
+    if (x.wk) {
+      tr.className = 'wk'; const k = x.wk, l = k.last;
+      const c0 = mk('td', '', 'Week of ' + fmtShort(k.key)); tr.appendChild(c0);
+      if (PHONE) { tr.appendChild(mk('td', 'num', '')); { const cc = mk('td', 'num' + pcls(k.change), sgnTxt(k.change)); if (k.pct !== null) cc.appendChild(mk('span', 'sub', pctFmt(k.pct) + ' of week')); tr.appendChild(cc); } }
+      else {
+        tr.appendChild(mk('td')); tr.appendChild(mk('td', 'num' + pcls(k.change), sgnTxt(k.change))); tr.appendChild(mk('td'));
+        tr.appendChild(mk('td', 'num' + pcls(k.pct), k.pct === null ? '' : pctFmt(k.pct))); tr.appendChild(mk('td', 'num' + pcls(l.ytd), sgnTxt(l.ytd)));
+        tr.appendChild(mk('td', 'num' + pcls(l.gross), pctFmt(l.gross))); tr.appendChild(mk('td', 'num' + pcls(l.net), pctFmt(l.net))); tr.appendChild(mk('td')); tr.appendChild(mk('td')); tr.appendChild(mk('td'));
+      }
+    } else {
+      const r = x.r, hasV = r.v !== undefined, dep = r.dep || 0;
+      const c0 = mk('td'); c0.appendChild(mk('span', 'nw', fmtDow(r.date))); const dn = dayNote(r.date); if (dn) c0.appendChild(mk('span', 'sub', dn));
+      tr.appendChild(c0);
+      const cv = mk('td', 'num', hasV ? cf(r.v) : '');
+      if (PHONE) { if (hasV) cv.appendChild(mk('span', 'sub', pctFmt(r.net) + ' YTD')); if (dep) cv.appendChild(mk('span', 'sub', (dep > 0 ? 'deposit ' : 'withdrawal ') + cf(Math.abs(dep)))); }
+      tr.appendChild(cv);
+      tr.appendChild(mk('td', 'num' + (hasV ? pcls(r.change) : ''), hasV ? sgnTxt(r.change) : ''));
+      if (!PHONE) {
+        tr.appendChild(mk('td', 'num', dep ? (dep < 0 ? '(' + cf(-dep) + ')' : cf(dep)) : ''));
+        tr.appendChild(mk('td')); tr.appendChild(mk('td', 'num' + (hasV ? pcls(r.ytd) : ''), hasV ? sgnTxt(r.ytd) : '')); tr.appendChild(mk('td', 'num' + (hasV ? pcls(r.gross) : ''), hasV ? pctFmt(r.gross) : ''));
+        tr.appendChild(mk('td', 'num' + (hasV ? pcls(r.net) : ''), hasV ? pctFmt(r.net) : '')); tr.appendChild(mk('td', 'num', hasV ? cf(r.avg) : '')); tr.appendChild(mk('td', 'num', hasV ? cf(r.proj) : ''));
+      }
+      if (PHONE) { if (S.single) { tr.onclick = () => openInv(S.single.id, r.date); tr.style.cursor = 'pointer'; } }       // on a phone a tap on the row edits that day
+      else { const ce = mk('td', 'num'); if (S.single) ce.appendChild(iconBtn('edit', 'Edit this day', () => openInv(S.single.id, r.date))); tr.appendChild(ce); }
+      if (r.note) { tr.title = r.note; c0.appendChild(mk('span', 'sub', r.note)); }
+    }
+    tb.appendChild(tr);
+  }
+  if (!asc) tb.appendChild(fwd);
+  t.appendChild(tb); w.appendChild(t); box.appendChild(w);
+  if (!S.single) box.appendChild(mk('div', 'small', 'This is the combined total of all portfolios. Choose one portfolio to edit its days.'));
+  box.appendChild(mk('div', 'small', 'Net figures leave out deposits and withdrawals; gross figures include them. The average and the projected year end use trading days (Monday to Friday, less market holidays): ' + INV_CALS.find(c => c[0] === invCal())[1].toLowerCase() + '. The exchange index columns will come with automatic prices.'));
+}
+
+function invChart(pfs, years) {              // net % return since January 1, one line per year, so years can be compared
+  const series = [];
+  for (const y of years.slice().reverse()) {
+    const c = invCompute(pfs, y); if (!c.rows) continue;
+    const pts = [[1, 0]]; for (const r of c.rows) if (r.v !== undefined && r.net !== null) pts.push([doy(r.date), r.net * 100]);
+    if (pts.length > 1) series.push({ y, pts });
+  }
+  if (!series.length) return null;
+  const W = 640, H = 220, L = 46, R = 12, T = 10, B = 22, NS = 'http://www.w3.org/2000/svg';
+  let lo = 0, hi = 0; for (const s of series) for (const p of s.pts) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
+  if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
+  const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const X = v => L + (v - 1) / 365 * (W - L - R), Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const wrap = mk('div', 'invchart'); wrap.appendChild(mk('div', 'boxhead outer', 'Net return since January 1, by year'));
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Line chart of net percentage return since January 1 for each year');
+  const el = (n, a, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt !== undefined) e.textContent = txt; svg.appendChild(e); return e; };
+  const step = (() => { const raw = (hi - lo) / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 5, 10].map(m => m * p).find(s => s >= raw); })();
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) { el('line', { x1:L, x2:W - R, y1:Y(v), y2:Y(v), class:Math.abs(v) < step / 1000 ? 'ax0' : 'grid' }); el('text', { x:L - 5, y:Y(v) + 4, 'text-anchor':'end', class:'axt' }, (Math.abs(v) < 1e-9 ? 0 : v).toFixed(step < 1 ? 1 : 0) + '%'); }
+  'JFMAMJJASOND'.split('').forEach((m, i) => el('text', { x:X(doy(ymdStr(2026, i + 1, 15))), y:H - 6, 'text-anchor':'middle', class:'axt' }, m));
+  series.forEach((s, i) => { const cur = s.y === series[series.length - 1].y, col = INV_COLORS[(series.length - 1 - i) % INV_COLORS.length];
+    el('polyline', { points:s.pts.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' '), fill:'none', stroke:col, 'stroke-width':cur ? 2.6 : 1.6, 'stroke-linejoin':'round', opacity:cur ? 1 : .85 }); });
+  wrap.appendChild(svg);
+  const lg = mk('div', 'small'); lg.style.cssText = 'display:flex; gap:12px; flex-wrap:wrap';
+  series.slice().reverse().forEach((s, i) => { const sp = mk('span'); const sw = mk('span'); sw.style.cssText = 'display:inline-block; width:12px; height:3px; background:' + INV_COLORS[i % INV_COLORS.length] + '; margin-right:4px; vertical-align:middle'; sp.appendChild(sw); sp.appendChild(document.createTextNode(s.y)); lg.appendChild(sp); });
+  wrap.appendChild(lg); return wrap;
+}
+
+async function setInvStart(p, y) {
+  const cur = invStartOf(p, y), t = await askText({}, 'Value of ' + pfLabel(p) + ' on January 1, ' + y + ' (CAD). Normally this is the closing value of last year; change it here to correct it against your year-end statement.', cur === null ? '' : String(cur));
+  if (t === null) return; const n = parseFloat(t.replace(/[^0-9.\-]/g, ''));
+  if (!isFinite(n) || n < 0) { await ask({ alert:1 }, 'Enter the value as a number.'); return; }
+  (state.data.invStart[p.id] = state.data.invStart[p.id] || {})[y] = r2(n); changed();
+}
+
+/* record dialog */
+function openInv(pid, date) {
+  const sel = $('iPf'); sel.innerHTML = '';
+  for (const p of invPfs()) { const o = mk('option', '', pfLabel(p)); o.value = p.id; sel.appendChild(o); }
+  sel.value = pid || (invSel().single ? invSel().single.id : invPfs()[0].id);
+  $('iDate').value = date || todayStr(); noNeg($('iVal'), true); noNeg($('iDep'), true);
+  loadInvDay(); $('invDlg').showModal(); noAutoKeyboard();
+}
+function loadInvDay() {
+  const e = ((state.data.invDays[$('iPf').value] || {})[$('iDate').value]) || {};
+  setMoney($('iVal'), typeof e.v === 'number' ? e.v : ''); setMoney($('iDep'), typeof e.dep === 'number' ? Math.abs(e.dep) : '');
+  $('iKind').value = typeof e.dep === 'number' && e.dep < 0 ? '-1' : '1'; $('iNote').value = e.note || '';
+  const ex = typeof e.v === 'number' || typeof e.dep === 'number';
+  $('invTitle').textContent = ex ? 'Edit this day' : 'Record portfolio value'; $('iRemove').hidden = !ex;
+}
+$('iPf').addEventListener('change', loadInvDay); $('iDate').addEventListener('change', loadInvDay);
+$('iCancel').addEventListener('click', () => $('invDlg').close());
+$('iRemove').addEventListener('click', () => { setInvDay($('iPf').value, $('iDate').value, null); $('invDlg').close(); changed(); });
+$('invForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const date = $('iDate').value; if (!date) return;
+  const vv = parseFloat($('iVal').value), dv = parseFloat($('iDep').value);
+  const e = { note:$('iNote').value.trim() };
+  if (isFinite(vv)) e.v = r2(vv); if (isFinite(dv) && dv > 0) e.dep = r2(dv * Number($('iKind').value));
+  if (e.v === undefined && e.dep === undefined) { ask({ alert:1 }, 'Enter the portfolio value, a deposit or withdrawal, or both.'); return; }
+  setInvDay($('iPf').value, date, e); lsSet(INV_KEY, lsGet(INV_KEY) === 'all' ? 'all' : $('iPf').value); lsSet(INV_YEAR_KEY, date.slice(0, 4));
+  $('invDlg').close(); changed();
+});
+
+/* portfolios: list and edit */
+function openPfList() { drawPfList(); const sc = $('iCal'); if (!sc.options.length) INV_CALS.forEach(([v, t]) => { const o = mk('option', '', t); o.value = v; sc.appendChild(o); }); sc.value = invCal(); const a = $('pfListAdd'); if (!a.firstChild) a.appendChild(iconBtn('plus', 'Add a portfolio', () => openPf(null))); $('pfListDlg').showModal(); noAutoKeyboard(); }
+function drawPfList() {
+  const b = $('pfListBody'); b.innerHTML = '';
+  const pfs = invPfs(); if (!pfs.length) { b.appendChild(mk('div', 'small', 'No portfolios yet. Use + to add one.')); return; }
+  const inst = [...new Set(pfs.map(p => p.institution || ''))].sort(aCmp);
+  for (const i of inst) {
+    b.appendChild(mk('div', 'boxhead outer', i || 'No institution'));
+    for (const p of pfs.filter(x => (x.institution || '') === i).sort((a, c) => aCmp(a.name, c.name))) {
+      const r = mk('div', 'vacc'), n = mk('span'); n.appendChild(document.createTextNode(p.name)); n.appendChild(mk('span', 'sub', (p.accounts || []).map(a => a.name).join(', ') || 'no accounts listed'));
+      r.appendChild(n); r.appendChild(miniBtn('Edit', () => openPf(p))); b.appendChild(r);
+    }
+  }
+}
+$('pfListClose').addEventListener('click', () => $('pfListDlg').close());
+$('iCal').addEventListener('change', () => { state.data.settings.invCal = $('iCal').value; changed(); });
+function pfAcctRow(a) {
+  const r = mk('div', 'pfarow'), ty = mk('select'); ty.setAttribute('aria-label', 'Account type');
+  const types = INV_ACCT_TYPES.slice(); if (a.type && !types.includes(a.type)) types.push(a.type);
+  for (const t of types) { const o = mk('option', '', t); o.value = t; ty.appendChild(o); } ty.value = a.type || 'Other';
+  const nm = mk('input'); nm.type = 'text'; nm.maxLength = 40; nm.autocomplete = 'off'; nm.placeholder = 'Account name'; nm.value = a.name || ''; nm.setAttribute('aria-label', 'Account name'); nm.dataset.id = a.id || '';
+  const rm = iconBtn('trash', 'Remove this account', () => r.remove(), 'danger'); r.append(ty, nm, rm); return r;
+}
+function openPf(p) {
+  state.pfEdit = p ? p.id : null; $('pfTitle').textContent = p ? 'Edit portfolio' : 'Add portfolio';
+  $('pfInst').value = p ? p.institution || '' : (invSel().single ? invSel().single.institution || '' : ''); $('pfName').value = p ? p.name : '';
+  const dl = $('instList'); dl.innerHTML = ''; for (const i of new Set(invPfs().map(x => x.institution).filter(Boolean))) { const o = mk('option'); o.value = i; dl.appendChild(o); }
+  const g = $('pfAccts'); g.innerHTML = ''; for (const a of (p ? p.accounts || [] : [])) g.appendChild(pfAcctRow(a));
+  $('pfRemove').hidden = !p; $('pfDlg').showModal(); noAutoKeyboard();
+}
+$('pfAddAcct').addEventListener('click', () => { const r = pfAcctRow({ type:'RRSP', name:'' }); $('pfAccts').appendChild(r); r.querySelector('input').focus(); });
+$('pfCancel').addEventListener('click', () => $('pfDlg').close());
+$('pfRemove').addEventListener('click', async () => {
+  const p = state.data.portfolios.find(x => x.id === state.pfEdit); if (!p) return;
+  const n = Object.keys(state.data.invDays[p.id] || {}).length;
+  if (!await ask({ danger:1, ok:'Remove' }, 'Remove ' + pfLabel(p) + ' from the Investments page?' + (n ? ' Its ' + n + ' recorded days stay in the file.' : ''))) return;
+  p.deleted = true; $('pfDlg').close(); changed(); if ($('pfListDlg').open) drawPfList();
+});
+$('pfForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const name = $('pfName').value.trim(); if (!name) return;
+  const accts = [...$('pfAccts').querySelectorAll('.pfarow')].map(r => ({ id:r.querySelector('input').dataset.id || uid(), name:r.querySelector('input').value.trim(), type:r.querySelector('select').value })).filter(a => a.name);
+  let p = state.pfEdit && state.data.portfolios.find(x => x.id === state.pfEdit);
+  if (!p) { p = { id:uid(), createdAt:new Date().toISOString() }; state.data.portfolios.push(p); }
+  Object.assign(p, { institution:$('pfInst').value.trim(), name, accounts:accts }); lsSet(INV_KEY, p.id);
+  $('pfDlg').close(); changed(); if ($('pfListDlg').open) drawPfList();
+});
 
 /* ---------- Monthly reconciliation (per account) ---------- */
 function reconItems() {               // unreconciled, live entries up to the end of the chosen month (earlier leftovers carry over)

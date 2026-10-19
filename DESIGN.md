@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.76. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.77. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -25,9 +25,10 @@ Design constraints that explain most decisions:
 | `ROADMAP.md` | Planned work (multiple ledgers, investments, app lock, native iOS). |
 | `PATTERNS.md` | Reuse guide for other projects. |
 | `DESIGN.md` | This file. |
-| `ledger-test.json` | Sample data for testing. |
+| `ledger-test.json` | Sample data for testing (includes two vehicles and two sample portfolios). |
+| `price-test.html` | One-off test page that checks which price sources a browser can reach (not part of the app). |
 
-## 3. Data model (file format version 5)
+## 3. Data model (file format version 6)
 
 ```
 { version, createdAt, savedAt,
@@ -190,6 +191,15 @@ Written from general knowledge on 2026-10-12; cells marked (verify) are unchecke
 **Common to phones and tablets:** no automatic dated backups; the app cannot see where a shared file went (section 6, share-sheet saving); one app, tab or icon should be used consistently because storage is not shared between them.
 
 **To verify when time permits:** (1) can Brave on Mac enable the file-system API in a setting, and does it offer Install app; (2) can Safari on macOS add the site to the Dock and does it keep a folder; (3) which iOS browsers offer Add to Home Screen; (4) whether data in the Safari tab and the Home Screen app are separate on the current iOS; (5) whether stored drafts survive about a week of non-use in a Safari tab versus the Home Screen app. Update both tables with what you find and remove the "(verify)" marks.
+
+## Investments (v4.77)
+
+- **Data (format 6):** `portfolios[{id, institution, name, accounts[{id,name,type}], deleted?}]` (the institution is a text label on the portfolio and the page groups by it), `invDays{portfolioId:{'YYYY-MM-DD':{v?, dep?, note?}}}` (`v` = portfolio value in CAD, `dep` = deposit (+) or withdrawal (-)), `invStart{portfolioId:{'YYYY': value}}` (optional January 1 override). Setting `settings.invCal`: `either` (default), `tsx`, `nyse`, `both`.
+- **Net vs gross.** Change on a day = value - previous value - deposits since that value (a deposit-only day carries into the next value day). Gross YTD % = (value - Jan 1 value) / Jan 1 value; net YTD % = cumulative net change / Jan 1 value. % week = the week's net change / the value at the end of the previous week (or the Jan 1 value). Average per day = YTD net change / trading days so far; projected year end = value + average x remaining trading days. These reproduce the owner's sheet.
+- **January 1 value:** `invStart` if set, otherwise the last value entered before January 1; each year therefore carries forward, and the owner can correct it against the year-end statement.
+- **Combined view:** the portfolios' values are added (each carried forward from its last entry), so the daily change is the sum; a deposit in one portfolio is kept out of the combined change.
+- **Trading days:** `holidays(year)` returns TSX and US closures by rule (Family Day, Good Friday, Victoria Day, Canada Day, Civic Holiday, Labour Day, Thanksgiving, Christmas and Boxing Day with Monday/Tuesday observance; MLK, Presidents, Memorial, Juneteenth, Independence Day, Labor Day, Thanksgiving, Christmas with Friday/Monday observance; a Saturday New Year is not observed by the NYSE). Special one-off closures are not modelled.
+- **Not built yet:** prices, index columns, holdings and share-count true-ups, dividend projection, transfers to bank accounts (see ROADMAP).
 
 ## 12. Testing
 
