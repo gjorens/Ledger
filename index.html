@@ -102,6 +102,11 @@
   .invchart .grid { stroke:var(--line); stroke-width:1; }
   .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
   .invchart .axt { fill:var(--muted); font-size:11px; }
+  .sub.stale { color:#b45309; font-weight:600; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sub.stale { color:#f59e0b; } }
+  :root[data-theme="dark"] .sub.stale { color:#f59e0b; }
+  #dvMonths label { display:flex; align-items:center; gap:6px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; margin:0; }
+  #dvMonths input { width:auto; margin:0; }
   .invtabs { display:flex; gap:6px; margin:6px 0; flex-wrap:wrap; }
   .invtabs button { font-weight:600; }
   .invt tr.sect td { background:var(--card); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
@@ -892,7 +897,7 @@
     <h3 tabindex="-1" autofocus class="full" id="dvTitle">Dividends</h3>
     <p class="small full" id="dvInfo" style="margin:0"></p>
     <div class="full"><label for="dvAmt">Dividend or distribution per share, per year (in the position’s own currency)</label><input id="dvAmt" type="text" inputmode="decimal" autocomplete="off"></div>
-    <div class="full"><div class="lbl">Months in which it is paid</div><div id="dvMonths" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px 8px"></div></div>
+    <div class="full"><div style="display:flex; align-items:center; gap:8px"><div class="lbl" style="margin-right:auto">Months in which it is paid</div><button type="button" id="dvAll">Select all</button><button type="button" id="dvNone">Select none</button></div><div id="dvMonths" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px 10px; margin-top:6px"></div></div>
     <div class="full" style="display:flex; gap:8px; justify-content:flex-end">
       <button type="button" id="dvReset" class="danger" style="margin-right:auto" hidden>Back to the defaults</button>
       <button type="button" id="dvCancel">Cancel</button>
@@ -1010,7 +1015,7 @@ const state = {
 };
 let saving = false;
 const APP_VERSION = '4.82';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-19 22:40';
+const APP_BUILD = '2026-10-19 23:10';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -3398,7 +3403,7 @@ $('impForm').addEventListener('submit', async ev => {
 
 /* ---------- Holdings: accounts, positions, true-up by import, and projected dividends ----------
    Data (file version 7): portfolios[].accounts[{id,name,type,number}], holdings[{id,accountId,symbol,shares,avgCost,cost,cur}],
-   instruments{symbol:{name,cur,price,priceDate,yld,sector,cls,perShare?,months?}}, settings.usdcad (+ usdcadAsOf), portfolios[].cash{amount,asOf}.
+   instruments{symbol:{name,cur,price,priceDate,yld,sector,cls,perShare?,months?,divAsOf?}}, settings.usdcad (+ usdcadAsOf), portfolios[].cash{amount,asOf}.
    Positions are trued up by importing the broker's Portfolio Details CSV: accounts are matched by account number, so a position is set to the
    share count in the file instead of recording each trade. Values are in CAD (USD positions use the exchange rate saved from the file). */
 const ALL12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -3415,6 +3420,12 @@ function divInfo(sym) {                  // dividend parameters: yearly amount p
   const perYear = typeof i.perShare === 'number' ? i.perShare : (i.price || 0) * (i.yld || 0) / 100;
   if (!months) { if (DIV_KNOWN[symBase(sym)]) { months = DIV_KNOWN[symBase(sym)]; src = 'from your sheet'; } else { const fund = i.cls !== 'Equity' || /\b(ETF|FUND|INDEX|COVERED CALL|CLL)\b/i.test(i.name || '') || i.sector === 'Equity Funds'; months = fund ? ALL12 : [1, 4, 7, 10]; src = fund ? 'assumed monthly' : 'assumed quarterly'; } }
   return { months, perYear, perPay:months.length ? perYear / months.length : 0, src };
+}
+function divNote(sym) {          // text under the symbol on the Dividends tab, and whether the entry is out of date
+  const i = instOf(sym), di = divInfo(sym);
+  if (!i.divAsOf) return { text:di.src, stale:false };
+  const dt = i.divAsOf.slice(0, 4) === todayStr().slice(0, 4) ? fmtShort(i.divAsOf) : fmtDate(i.divAsOf), age = Math.round((ymdMs(todayStr()) - ymdMs(i.divAsOf)) / 86400000), limit = Math.round(365 / di.months.length) + 21;
+  return age > limit ? { text:'entered ' + dt + ' \u00b7 check', stale:true } : { text:'entered ' + dt, stale:false };
 }
 const holdIncome = h => h.shares * divInfo(h.symbol).perYear * curRate(h.cur);              // yearly, in CAD
 function acctByNumber(num, pfId) {            // with pfId, only that portfolio is searched (the import applies to the chosen portfolio)
@@ -3591,8 +3602,8 @@ function renderDividends(box, S) {
   const t = mk('table', 'autot invt divt'), hr = mk('tr'); ['Symbol', 'Per year'].concat(MONTH_ABBR).forEach((c, i) => hr.appendChild(mk('th', i > 0 ? 'num' : '', c))); const th = mk('thead'); th.appendChild(hr); t.appendChild(th);
   const tb = mk('tbody'), grand = new Array(12).fill(0); let grandY = 0;
   const monthsOf = h => { const di = divInfo(h.symbol), m = new Array(12).fill(0), pay = h.shares * di.perPay * curRate(h.cur); for (const mo of di.months) m[mo - 1] += pay; return m; };
-  const line = (cls, label, sub, arr, onclick) => {
-    const tr = mk('tr', cls), c0 = mk('td'); c0.appendChild(mk('span', 'nw', label + (onclick ? ' \u270E' : ''))); if (sub) c0.appendChild(mk('span', 'sub', sub)); tr.appendChild(c0);
+  const line = (cls, label, sub, arr, onclick, stale) => {
+    const tr = mk('tr', cls), c0 = mk('td'); c0.appendChild(mk('span', 'nw', label + (onclick ? ' \u270E' : ''))); if (sub) c0.appendChild(mk('span', 'sub' + (stale ? ' stale' : ''), sub)); tr.appendChild(c0);
     tr.appendChild(mk('td', 'num', cf(arr.reduce((a, b) => a + b, 0)))); arr.forEach(x => tr.appendChild(mk('td', 'num', x ? cf(x) : ''))); if (onclick) { tr.onclick = onclick; tr.style.cursor = 'pointer'; } tb.appendChild(tr);
   };
   for (const sec of sections) {
@@ -3600,7 +3611,7 @@ function renderDividends(box, S) {
     for (const { a, hs } of sec.accts) {
       const hd = mk('tr', 'sect'), hc = mk('td', '', (S.single ? '' : pfLabel(sec.p) + ' · ') + a.name); hc.colSpan = 14; hd.appendChild(hc); tb.appendChild(hd);
       const at = new Array(12).fill(0);
-      for (const h of hs.slice().sort((x, y) => aCmp(symBase(x.symbol), symBase(y.symbol)))) { const m = monthsOf(h), di = divInfo(h.symbol); m.forEach((x, i) => { at[i] += x; }); line('', symBase(h.symbol), di.src === 'set by you' ? '' : di.src, m, () => openDivSet(h.symbol)); }
+      for (const h of hs.slice().sort((x, y) => aCmp(symBase(x.symbol), symBase(y.symbol)))) { const m = monthsOf(h), di = divInfo(h.symbol); m.forEach((x, i) => { at[i] += x; }); const nt = divNote(h.symbol); line('', symBase(h.symbol), nt.text, m, () => openDivSet(h.symbol), nt.stale); }
       line('wk', 'Account total', '', at); at.forEach((x, i) => { pt[i] += x; });
     }
     if (sections.length > 1 || sec.accts.length > 1) line('wk grandrow', (S.single ? 'Portfolio total' : pfLabel(sec.p) + ' total'), '', pt);
@@ -3614,18 +3625,21 @@ function renderDividends(box, S) {
 function openDivSet(sym) {
   state.divSym = sym; const i = instOf(sym), di = divInfo(sym);
   $('dvTitle').textContent = symBase(sym) + (i.name ? ' · ' + i.name : '');
-  $('dvInfo').textContent = 'Price ' + (i.price ? cadFmt(i.price) + ' ' + (i.cur || '') : 'unknown') + (i.yld ? ', yield ' + i.yld + '% in your broker’s file' : '') + '. Months are ' + (di.src || 'set by you') + '.';
+  $('dvInfo').textContent = 'Price ' + (i.price ? cadFmt(i.price) + ' ' + (i.cur || '') : 'unknown') + (i.yld ? ', yield ' + i.yld + '% in your broker’s file' : '') + '. Months are ' + (di.src || 'set by you') + '. ' + (i.divAsOf ? 'Last entered ' + fmtDate(i.divAsOf) + '. ' : '') + 'This applies to this symbol in every account, portfolio and institution.';
   $('dvAmt').value = di.perYear ? di.perYear.toFixed(4) : '0'; const g = $('dvMonths'); g.innerHTML = '';
   for (let m = 1; m <= 12; m++) { const l = mk('label', 'chk'); const c = mk('input'); c.type = 'checkbox'; c.value = String(m); c.checked = di.months.includes(m); l.appendChild(c); l.appendChild(document.createTextNode(' ' + MONTH_ABBR[m - 1])); g.appendChild(l); }
   $('dvReset').hidden = !(typeof i.perShare === 'number' || (i.months && i.months.length));
   $('divDlg').showModal(); noAutoKeyboard();
 }
+$('dvAll').addEventListener('click', () => $('dvMonths').querySelectorAll('input').forEach(c => { c.checked = true; }));
+$('dvNone').addEventListener('click', () => $('dvMonths').querySelectorAll('input').forEach(c => { c.checked = false; }));
 $('dvCancel').addEventListener('click', () => $('divDlg').close());
-$('dvReset').addEventListener('click', () => { const i = state.data.instruments[state.divSym]; if (i) { delete i.perShare; delete i.months; } $('divDlg').close(); changed(); });
+$('dvReset').addEventListener('click', () => { const i = state.data.instruments[state.divSym]; if (i) { delete i.perShare; delete i.months; delete i.divAsOf; } $('divDlg').close(); changed(); });
 $('divForm').addEventListener('submit', ev => {
   ev.preventDefault(); const i = state.data.instruments[state.divSym] || (state.data.instruments[state.divSym] = {});
   const a = parseFloat($('dvAmt').value), months = [...$('dvMonths').querySelectorAll('input')].filter(c => c.checked).map(c => Number(c.value));
-  if (isFinite(a) && a >= 0) i.perShare = a; if (months.length) i.months = months; $('divDlg').close(); changed();
+  if (!months.length) { ask({ alert:1 }, 'Choose at least one month.'); return; }
+  if (isFinite(a) && a >= 0) i.perShare = a; i.months = months; i.divAsOf = todayStr(); $('divDlg').close(); changed();
 });
 
 async function removeAcctHoldingsAsk(ids) { return ids.reduce((n, id) => n + state.data.holdings.filter(h => h.accountId === id).length, 0); }

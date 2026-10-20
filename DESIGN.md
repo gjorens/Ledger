@@ -16,7 +16,7 @@ Design constraints that explain most decisions:
 
 | File | Role |
 |---|---|
-| `index.html` | The whole app. Version and build time are constants `APP_VERSION` / `APP_BUILD`, shown beside the app name and in Settings > About. |
+| `index.html` | The whole app. Version and build time are constants `APP_VERSION` / `APP_BUILD`; the header shows the version and the build time is in Settings > About. |
 | `sw.js` | Service worker (offline use, see section 11). |
 | `manifest.webmanifest`, `*.png` icons | PWA install information. |
 | `install-mac.command` | Optional Mac installer: creates the iCloud `myLedger` folder and a small `myLedger.app` launcher that opens the site in its own window and falls back to an offline copy. |
@@ -249,4 +249,4 @@ Written from general knowledge on 2026-10-12; cells marked (verify) are unchecke
 
 
 ## Holdings, true-up and dividends (v4.82)
-Data v7: `holdings[{id,accountId,symbol,shares,cur,avgCost,cost}]` and `instruments{symbol:{name,cur,cls,sector,price,priceDate,yld,perShare?,months?}}`; accounts may carry `number`. `parseHoldCsv` reads the broker file (header row starting "Account #"). `holdPlan` / `holdApply` match accounts by number only inside the chosen portfolio (a same number elsewhere is left alone), create missing accounts, set share counts, optionally remove missing positions and update instruments and `settings.usdcad`. `divInfo(symbol)` gives yearly per-share amount (override `perShare`, else price x yield%) and payment months (override, `DIV_KNOWN`, else assumed). Dividend lookup from a free web source is not built; `price-test.html` probes Alpha Vantage DIVIDENDS.
+Data v7: `holdings[{id,accountId,symbol,shares,cur,avgCost,cost}]` and `instruments{symbol:{name,cur,cls,sector,price,priceDate,yld,perShare?,months?}}`; accounts may carry `number`. `parseHoldCsv` reads the broker file (header row starting "Account #"). `holdPlan` / `holdApply` match accounts by number only inside the chosen portfolio (a same number elsewhere is left alone), create missing accounts, set share counts, optionally remove missing positions and update instruments and `settings.usdcad`. `divInfo(symbol)` gives yearly per-share amount (override `perShare`, else price x yield%) and payment months (override, `DIV_KNOWN`, else assumed). Dividend settings are per symbol (global: every account, portfolio and institution shares them). Saving stamps `divAsOf`; `divNote` flags an entry as stale when its age exceeds 365 / payments-per-year days plus 21 days. Dividend lookup from a free web source is not built; `price-test.html` probes Alpha Vantage DIVIDENDS.

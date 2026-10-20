@@ -9,6 +9,7 @@ Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before
 - **Account number** field on each account in Manage portfolios.
 - **Dividends tab:** projected income per symbol, account, portfolio, by month (Jan–Dec), from shares x yield. Payment months come from the owner's sheet where known (ENB, BMO, FTS, TXF, ZWU, DKL, FLVC, TRP), otherwise assumed (quarterly for stocks, monthly for funds); tap a symbol to override the yearly amount or months.
 - Data format 7 (`holdings`, `instruments`).
+- **Dividend form:** the months are laid out 3 across and 4 down (Jan-Mar, Apr-Jun, ...), with **Select all** and **Select none** buttons. Saving records the date of entry, shown under the symbol on the Dividends tab. When that entry is older than the payment interval plus three weeks (about 7 weeks for a monthly payer, 15 weeks for quarterly, 28 weeks for semi-annual), the note turns amber with "check". Settings are kept per symbol, so they apply in every account, portfolio and institution. At least one month is required.
 - Full account numbers are no longer shown in the Holdings and Dividends lists or the import preview (last four digits only); the full number is on the account edit page.
 - Dividends tab: symbols that can be edited are marked with a pencil and the hint says to tap them.
 
