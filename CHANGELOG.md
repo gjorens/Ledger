@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.84 (2026-10-19)
+- **Dividend form:** a choice of how to enter the amount: one payment per share, or a **yearly rate in %** of the price (for cash funds such as a HISA, which pay interest every month at a yearly rate). The rate is stored, so the income follows the price and the number of months paid. Cash and fund types that are not equities open in the rate mode.
+
 ## 4.83 (2026-10-19)
 - **Dividend form:** enter the amount of one payment per share, as announced; the app multiplies by the number of months ticked and shows "x 4 payments a year = ..." as you type. Entries made earlier as a yearly amount keep working and show as one payment when opened.
 
