@@ -1,6 +1,6 @@
 # myLedger design document
 
-How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.84. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
+How myLedger is built and why. Written for the owner, for future work with Claude, and as a reference for other projects (see also `PATTERNS.md`, which has reusable code patterns, and `ROADMAP.md`, which lists planned work). Describes version 4.85. Keep this file updated when behaviour changes (the CHANGELOG records *what* changed; this file records *how it works now*).
 
 ## 1. Purpose and constraints
 
@@ -250,3 +250,7 @@ Written from general knowledge on 2026-10-12; cells marked (verify) are unchecke
 
 ## Holdings, true-up and dividends (v4.82)
 Data v7: `holdings[{id,accountId,symbol,shares,cur,avgCost,cost}]` and `instruments{symbol:{name,cur,cls,sector,price,priceDate,yld,perShare?,months?}}`; accounts may carry `number`. `parseHoldCsv` reads the broker file (header row starting "Account #"). `holdPlan` / `holdApply` match accounts by number only inside the chosen portfolio (a same number elsewhere is left alone), create missing accounts, set share counts, optionally remove missing positions and update instruments and `settings.usdcad`. `divInfo(symbol)` gives yearly per-share amount (override `perShare`, else price x yield%) and payment months (override, `DIV_KNOWN`, else assumed). Dividend settings are per symbol (global: every account, portfolio and institution shares them). The yearly amount is the price x `rate`% (cash funds), else `perPay` x months paid (older entries kept a yearly `perShare`). Saving stamps `divAsOf`; `divNote` flags an entry as stale when its age exceeds 365 / payments-per-year days plus 21 days. Dividend lookup from a free web source is not built; `price-test.html` probes Alpha Vantage DIVIDENDS.
+
+
+## Privacy lock (v4.85)
+`settings.pin = {salt, hash, tabs[]}` in the data file (PBKDF2-SHA-256 hash, 60,000 rounds, per-file salt; a simple fallback hash where Web Crypto is unavailable). VIEWS entries with `lockable:true` (Investments, Survivor Data) can be covered. `renderViewPage` shows `renderLock` while `isLocked(id)`; unlocked tabs are kept in `state.unlocked` (memory only) and cleared when leaving the tab, when the page is hidden (unless a dialog is open) and after 5 minutes without input. Five wrong PINs add a 30-second wait. It hides the page from casual viewing; it is not encryption, and Investment-type accounts on the Accounts page are not covered. Recovery for a forgotten PIN: delete `settings.pin` from the JSON file.

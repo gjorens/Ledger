@@ -455,6 +455,18 @@
   </details>
 
   <details class="sset">
+    <summary>Privacy lock</summary>
+    <p class="small" style="margin:8px 0 0">A PIN that hides chosen tabs from anyone looking over your shoulder or using your open device. The tab locks again when you leave it, when the app goes into the background, and after 5 minutes without use. It keeps the page out of sight; it does not encrypt the data in your file.</p>
+    <div class="small" id="pinState" style="margin:6px 0"></div>
+    <div id="pinCurRow"><label class="lbl" for="pinCur">Current PIN</label><input id="pinCur" type="password" autocomplete="off" maxlength="40"></div>
+    <label class="lbl" for="pinNew" id="pinNewLbl">Choose a PIN</label><input id="pinNew" type="password" autocomplete="off" maxlength="40">
+    <label class="lbl" for="pinNew2">Type it again</label><input id="pinNew2" type="password" autocomplete="off" maxlength="40">
+    <div class="boxhead" style="margin-top:8px">Tabs to lock</div><div id="pinTabs"></div>
+    <div class="filebar" style="margin:8px 0 0"><button type="button" class="primary" id="pinSave">Turn on the lock</button><button type="button" id="pinOffBtn" class="danger">Turn the lock off</button></div>
+    <div class="small" id="pinMsg" style="margin-top:6px"></div>
+  </details>
+
+  <details class="sset">
     <summary>Categories</summary>
     <div class="boxhead" style="margin-top:8px">Dropdown order</div>
     <select id="sCatSort">
@@ -1015,8 +1027,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.84';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-20 00:20';
+const APP_VERSION = '4.85';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-21 14:30';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2136,7 +2148,7 @@ function fillFile() {
   $('sManualText').textContent = 'This browser cannot remember a folder, so the folder is chosen each time: Open a file picks your ledger from the Files app, and ' + SAVE_LABEL + ' lets you choose where it goes (for example iCloud Drive, Dropbox or OneDrive) and replace the old copy. The file name used is ' + PFILE + '. For automatic saving into a folder, use Chrome or Edge on a Mac.';
 }
 function fillSettings() {
-  renderCatSettings();
+  renderCatSettings(); renderPinSettings();
   $('sShowDel').checked = !!(state.data && state.data.settings.showDeleted);
   $('sTheme').value = lsGet(THEME_KEY) === 'light' || lsGet(THEME_KEY) === 'dark' ? lsGet(THEME_KEY) : '';
   $('aboutVer').textContent = 'version ' + APP_VERSION + ' \u00b7 built ' + APP_BUILD;
@@ -2261,10 +2273,12 @@ function render() {
    between any two of them; a page just presents the accounts of its types and adds its own tools. */
 const VIEWS = [
   { id:'accounts', label:'Accounts' },
-  { id:'invest', label:'Investments', types:['Investment'], blurb:'Holdings, prices, daily and intraday performance, dividends and contributions for your investment accounts.',
+  { id:'invest', label:'Investments', lockable:true, types:['Investment'], blurb:'Holdings, prices, daily and intraday performance, dividends and contributions for your investment accounts.',
     planned:['Positions and cost, with today\u2019s change and total return', 'Intraday and daily price charts', 'Dividends and distributions (dates and amounts)', 'Contributions and room for registered accounts such as a TFSA', 'Buys and sells; transfers to and from your bank accounts'] },
   { id:'loans', label:'Loans and mortgages', types:['Loan', 'Line of credit'], blurb:'Balances, payments and interest for loans, lines of credit and mortgages, with interest-rate trends.',
     planned:['Rate, term and renewal date for each loan or mortgage', 'Payment schedule: principal and interest split, payoff date', 'Interest-rate trend and what a rate change does to your payment', 'Extra payments and how much interest they save', 'Payments transferred from your bank accounts'] },
+  { id:'survivor', label:'Survivor Data', lockable:true, blurb:'What a spouse or executor would need to find: where everything is and who to call.',
+    planned:['Accounts and institutions: what exists and where', 'Key contacts: lawyer, accountant, advisor, insurer', 'Insurance policies and pension details', 'Where documents and the will are kept', 'Wishes and instructions'] },
   { id:'autos', label:'Autos', blurb:'Each vehicle at a glance: what was serviced and when, and what is due next.',
     planned:['Fuel, insurance and registration dates', 'Costs per vehicle by year', 'Reminders'] }
 ];
@@ -2272,6 +2286,7 @@ const VIEW_KEY = 'myLedger.view';
 const curView = () => { const v = lsGet(VIEW_KEY); return VIEWS.some(x => x.id === v) ? v : 'accounts'; };
 function renderViewPage(v) {
   const box = $('viewPage'); box.innerHTML = '';
+  if (isLocked(v.id)) return renderLock(box, v);
   if (v.id === 'autos') return renderAutos(box);
   if (v.id === 'invest') return renderInvest(box);
   const h = document.createElement('h3'); h.textContent = v.label; box.appendChild(h);
@@ -2295,9 +2310,67 @@ function renderViewPage(v) {
     tn.textContent = 'These stay normal accounts: you can already transfer between them and your other accounts with + New item > Transfer.'; box.appendChild(tn);
   }
 }
+/* ---------- Privacy lock (a PIN that hides chosen tabs from casual viewing) ----------
+   settings.pin = { salt, hash, tabs:[view ids] } in the data file, so it is the same on every device. This only keeps the page from being
+   looked at: the data in the file itself is not encrypted. Forgot the PIN? Remove the "pin" entry from settings in the JSON file. */
+state.unlocked = new Set(); state.lastView = null; state.lastAct = Date.now(); state.pinFails = 0; state.pinUntil = 0;
+const PIN_ITER = 60000;
+async function pinHash(pin, salt) {
+  if (window.crypto && crypto.subtle) {
+    const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+    const b = await crypto.subtle.deriveBits({ name:'PBKDF2', hash:'SHA-256', salt:new TextEncoder().encode(salt), iterations:PIN_ITER }, k, 256);
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+  let h = 2166136261; const t = salt + '|' + pin; for (let r = 0; r < 2000; r++) for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return 'f' + h.toString(16);
+}
+const pinCfg = () => state.data && state.data.settings && state.data.settings.pin && Array.isArray(state.data.settings.pin.tabs) ? state.data.settings.pin : null;
+const isLocked = id => { const c = pinCfg(); return !!(c && c.tabs.includes(id) && !state.unlocked.has(id)); };
+async function pinOk(pin) { const c = pinCfg(); return !!c && await pinHash(pin, c.salt) === c.hash; }
+function renderLock(box, v) {
+  const w = mk('div', 'lockbox'); w.style.cssText = 'max-width:320px; margin:28px auto; text-align:center';
+  w.appendChild(mk('h3', '', v.label)); w.appendChild(mk('div', 'small', 'This page is locked. Enter your PIN to open it.'));
+  const f = mk('form'), i = mk('input'); i.type = 'password'; i.autocomplete = 'off'; i.maxLength = 40; i.style.cssText = 'margin:12px 0 8px; text-align:center'; i.setAttribute('aria-label', 'PIN');
+  const b = mk('button', 'primary', 'Unlock'); b.type = 'submit'; const m = mk('div', 'small neg'); m.style.minHeight = '1.4em';
+  f.append(i, b, m); w.appendChild(f); box.appendChild(w);
+  f.addEventListener('submit', async ev => {
+    ev.preventDefault(); const wait = state.pinUntil - Date.now(); if (wait > 0) { m.textContent = 'Too many tries. Wait ' + Math.ceil(wait / 1000) + ' seconds.'; return; }
+    if (await pinOk(i.value)) { state.pinFails = 0; state.unlocked.add(v.id); state.lastAct = Date.now(); render(); return; }
+    state.pinFails++; i.value = ''; if (state.pinFails >= 5) { state.pinFails = 0; state.pinUntil = Date.now() + 30000; m.textContent = 'Too many tries. Wait 30 seconds.'; } else m.textContent = 'That PIN is not right.';
+  });
+  if (!TOUCH) setTimeout(() => i.focus(), 50);
+}
+function relockAll() { if (!state.unlocked.size) return; state.unlocked.clear(); if (state.data && isLocked(curView())) render(); }
+['pointerdown', 'keydown'].forEach(e => document.addEventListener(e, () => { state.lastAct = Date.now(); }, true));
+setInterval(() => { if (state.unlocked.size && Date.now() - state.lastAct > 5 * 60000 && !document.querySelector('dialog[open]')) relockAll(); }, 20000);
+document.addEventListener('visibilitychange', () => { if (document.hidden && !document.querySelector('dialog[open]')) relockAll(); });
+
+/* settings: choose the PIN and the tabs it covers */
+function renderPinSettings() {
+  const c = pinCfg(), box = $('pinTabs'); box.innerHTML = '';
+  for (const v of VIEWS.filter(x => x.lockable)) { const l = mk('label', 'chk'); l.style.cssText = 'display:flex; gap:8px; align-items:center; margin:4px 0'; const k = mk('input'); k.type = 'checkbox'; k.value = v.id; k.style.cssText = 'width:auto; margin:0'; k.checked = c ? c.tabs.includes(v.id) : true; l.append(k, document.createTextNode(v.label)); box.appendChild(l); }
+  $('pinCurRow').hidden = !c; $('pinOffBtn').hidden = !c; $('pinSave').textContent = c ? 'Save changes' : 'Turn on the lock';
+  $('pinState').textContent = c ? 'The lock is on for: ' + c.tabs.map(id => VIEWS.find(v => v.id === id)?.label || id).join(', ') + '.' : 'The lock is off.';
+  ['pinCur', 'pinNew', 'pinNew2'].forEach(id => { $(id).value = ''; }); $('pinMsg').textContent = ''; $('pinNewLbl').textContent = c ? 'New PIN (leave empty to keep the current one)' : 'Choose a PIN (4 or more characters)';
+}
+$('pinSave').addEventListener('click', async () => {
+  const c = pinCfg(), m = $('pinMsg'), np = $('pinNew').value, tabs = [...$('pinTabs').querySelectorAll('input')].filter(x => x.checked).map(x => x.value); m.className = 'small neg';
+  if (c && !await pinOk($('pinCur').value)) { m.textContent = 'The current PIN is not right.'; return; }
+  if ((!c || np) && np.length < 4) { m.textContent = 'The PIN needs at least 4 characters.'; return; }
+  if (np && np !== $('pinNew2').value) { m.textContent = 'The two new PINs are different.'; return; }
+  if (!tabs.length) { m.textContent = 'Tick at least one tab to lock, or turn the lock off.'; return; }
+  const salt = np || !c ? uid() : c.salt, hash = np || !c ? await pinHash(np, salt) : c.hash;
+  state.data.settings.pin = { salt, hash, tabs }; state.unlocked = new Set(VIEWS.filter(v => tabs.includes(v.id) && v.id === curView()).map(v => v.id)); changed(); renderPinSettings(); $('pinMsg').className = 'small'; $('pinMsg').textContent = 'Saved.';
+});
+$('pinOffBtn').addEventListener('click', async () => {
+  const m = $('pinMsg'); if (!await pinOk($('pinCur').value)) { m.className = 'small neg'; m.textContent = 'Enter the current PIN to turn the lock off.'; return; }
+  delete state.data.settings.pin; state.unlocked.clear(); changed(); renderPinSettings(); $('pinMsg').className = 'small'; $('pinMsg').textContent = 'The lock is off.';
+});
+
 function setView(id) { lsSet(VIEW_KEY, id); render(); }
 function applyView() {
   const id = curView(), v = VIEWS.find(x => x.id === id), acc = id === 'accounts';
+  if (state.lastView && state.lastView !== id) state.unlocked.delete(state.lastView);          // leaving a locked tab locks it again
+  state.lastView = id;
   const sel = $('viewSel');
   if (!sel.options.length) for (const x of VIEWS) { const o = document.createElement('option'); o.value = x.id; o.textContent = x.label; sel.appendChild(o); }
   sel.value = id;

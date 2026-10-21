@@ -4,6 +4,10 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.85 (2026-10-21)
+- **Privacy lock:** Settings > Privacy lock sets a PIN (4 or more characters) and the tabs it covers. A locked tab shows a PIN box instead of its contents. It locks again when you leave the tab, when the app goes into the background, and after 5 minutes without use; five wrong tries make you wait 30 seconds. The PIN is stored (as a salted hash, not the PIN itself) in the data file's settings, so it is the same on every device. It hides the page only: the data in the file is not encrypted. If the PIN is forgotten, remove the `pin` entry from `settings` in the JSON file.
+- **New placeholder tab: Survivor Data** (what a spouse or executor would need to find). Both Investments and Survivor Data are lockable and ticked by default.
+
 ## 4.84 (2026-10-19)
 - **Dividend form:** a choice of how to enter the amount: one payment per share, or a **yearly rate in %** of the price (for cash funds such as a HISA, which pay interest every month at a yearly rate). The rate is stored, so the income follows the price and the number of months paid. Cash and fund types that are not equities open in the rate mode.
 
