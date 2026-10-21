@@ -1028,8 +1028,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.87';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-21 15:20';
+const APP_VERSION = '4.88';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-21 15:50';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2279,7 +2279,12 @@ const VIEWS = [
   { id:'loans', label:'Loans and mortgages', types:['Loan', 'Line of credit'], blurb:'Balances, payments and interest for loans, lines of credit and mortgages, with interest-rate trends.',
     planned:['Rate, term and renewal date for each loan or mortgage', 'Payment schedule: principal and interest split, payoff date', 'Interest-rate trend and what a rate change does to your payment', 'Extra payments and how much interest they save', 'Payments transferred from your bank accounts'] },
   { id:'survivor', label:'Survivor Data', lockable:true, blurb:'What a spouse or executor would need to find: where everything is and who to call.',
-    planned:['Accounts and institutions: what exists and where', 'Key contacts: lawyer, accountant, advisor, insurer', 'Insurance policies and pension details', 'Where documents and the will are kept', 'Wishes and instructions'] },
+    planned:[],
+    sections:[
+      { t:'Day-to-day money', items:['Paying utility bills: who each bill is from, which account pays it, how and when', 'Transferring money: which accounts to move money between, how, and usual amounts', 'Investment upkeep: what is held, who to ask, when to review, how to true up the holdings in myLedger'] },
+      { t:'Home and vehicles', items:['Car maintenance: each vehicle, when it was last serviced and what is due (ties in with the Autos page)', 'House maintenance: furnace, roof, appliances and other regular jobs, with the usual contractors'] },
+      { t:'People and papers', items:['Key contacts: lawyer, accountant, advisor, insurer', 'Insurance policies and pension details', 'Where documents and the will are kept', 'Wishes and instructions'] }
+    ] },
   { id:'autos', label:'Autos', blurb:'Each vehicle at a glance: what was serviced and when, and what is due next.',
     planned:['Fuel, insurance and registration dates', 'Costs per vehicle by year', 'Reminders'] }
 ];
@@ -2294,7 +2299,7 @@ function renderViewPage(v) {
   const p = document.createElement('div'); p.className = 'small'; p.textContent = v.blurb; box.appendChild(p);
   const ph = document.createElement('div'); ph.className = 'vplace';
   const t = document.createElement('b'); t.textContent = 'Placeholder page: not built yet'; ph.appendChild(t);
-  const ul = document.createElement('ul'); for (const x of v.planned) { const li = document.createElement('li'); li.textContent = x; ul.appendChild(li); } ph.appendChild(ul);
+  for (const sec of v.sections || [{ t:'', items:v.planned }]) { if (sec.t) { const hh = document.createElement('div'); hh.className = 'boxhead'; hh.textContent = sec.t; ph.appendChild(hh); } const ul = document.createElement('ul'); for (const x of sec.items) { const li = document.createElement('li'); li.textContent = x; ul.appendChild(li); } ph.appendChild(ul); }
   box.appendChild(ph);
   if (v.types) {                                   // the accounts this page will present: real accounts from the file
     const mine = state.data.accounts.filter(a => v.types.includes(a.type));

@@ -4,6 +4,9 @@ The version number and build time are shown next to the app name at the top of t
 
 Data file format: `version: 7` since v4.82 (6 from v4.77, 5 from v4.67, 4 before; older files are upgraded when opened). Files from a newer format than the app understands are refused; older files are upgraded when opened.
 
+## 4.88 (2026-10-21)
+- **Survivor Data (placeholder):** the planned content is now grouped in three sections. *Day-to-day money*: paying utility bills, transferring money, investment upkeep. *Home and vehicles*: car maintenance, house maintenance. *People and papers*: key contacts, insurance and pension, where documents and the will are kept, wishes and instructions.
+
 ## 4.87 (2026-10-21)
 - **Privacy lock:** the PIN boxes now show dots in every browser (Brave did not honour the earlier dot styling). The dots are drawn by the app itself, and the browser still sees an ordinary text box, so there is no "Save password?" prompt.
 

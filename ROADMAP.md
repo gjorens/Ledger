@@ -105,3 +105,15 @@ Status: the drop-down and page registry exist. **Autos is built (v4.67)**: vehic
 - **Dated file names option** for the share-sheet path (for example `ledger-2026-10-11-2010.json` each time) so nothing can ever be replaced by mistake, at the cost of clutter; the newest file would be the one to open.
 - Apply the same "did you save it?" confirmation to the archive export, which also uses the share sheet.
 - Show on open which device and time last saved the file (`savedAt` plus a device name), to make a stale copy easier to spot.
+
+## Dividend lookup test (2026-10-19)
+Alpha Vantage DIVIDENDS from the browser: works for US symbols (JEPQ: 53 payments with dates and amounts); returns empty data for Canadian `.TRT` symbols (HDIV, ENB, TXF, ZEB). So free automatic lookup covers US-listed positions only. Canadian dividends stay forecast from broker yield % and editable months/amounts; a way to record or import actual dividends received (from broker activity) is the likely next step.
+
+## Price history test (2026-10-19)
+Alpha Vantage TIME_SERIES_WEEKLY_ADJUSTED returned an empty object for every symbol, including US JEPQ, so it is not available on the free key. Total return per instrument (price change + dividends over a period, divided by the starting price) will be built from the owner's own records: price snapshots saved with every holdings import, year-start prices entered or imported once, and dividends recorded.
+
+## Shelved (2026-10-19): per-instrument total return
+Owner has no automated source for dividends received or year-start prices, so manual entry would be required. Idea shelved until the requirements can be matched to these limits. Nothing to build now. v4.82 (holdings true-up, forecast dividends) stays as delivered.
+
+## Survivor Data tab (placeholder since v4.85, sections in v4.88)
+Locked with the PIN. Planned sections: Day-to-day money (paying utility bills, transferring money, investment upkeep); Home and vehicles (car maintenance, house maintenance); People and papers (key contacts, insurance and pension, where documents and the will are kept, wishes and instructions). Not built: no data is stored yet. Passwords themselves should not be kept here, only where they are kept.
