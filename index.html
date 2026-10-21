@@ -102,6 +102,7 @@
   .invchart .grid { stroke:var(--line); stroke-width:1; }
   .invchart .ax0 { stroke:var(--muted); stroke-width:1.2; }
   .invchart .axt { fill:var(--muted); font-size:11px; }
+  .pinbox { -webkit-text-security:disc; text-security:disc; }
   .sub.stale { color:#b45309; font-weight:600; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sub.stale { color:#f59e0b; } }
   :root[data-theme="dark"] .sub.stale { color:#f59e0b; }
@@ -458,9 +459,9 @@
     <summary>Privacy lock</summary>
     <p class="small" style="margin:8px 0 0">A PIN that hides chosen tabs from anyone looking over your shoulder or using your open device. The tab locks again when you leave it, when the app goes into the background, and after 5 minutes without use. It keeps the page out of sight; it does not encrypt the data in your file.</p>
     <div class="small" id="pinState" style="margin:6px 0"></div>
-    <div id="pinCurRow"><label class="lbl" for="pinCur">Current PIN</label><input id="pinCur" type="password" autocomplete="off" maxlength="40"></div>
-    <label class="lbl" for="pinNew" id="pinNewLbl">Choose a PIN</label><input id="pinNew" type="password" autocomplete="off" maxlength="40">
-    <label class="lbl" for="pinNew2">Type it again</label><input id="pinNew2" type="password" autocomplete="off" maxlength="40">
+    <div id="pinCurRow"><label class="lbl" for="pinCur">Current PIN</label><input id="pinCur" type="text" class="pinbox" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore maxlength="40"></div>
+    <label class="lbl" for="pinNew" id="pinNewLbl">Choose a PIN</label><input id="pinNew" type="text" class="pinbox" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore maxlength="40">
+    <label class="lbl" for="pinNew2">Type it again</label><input id="pinNew2" type="text" class="pinbox" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore maxlength="40">
     <div class="boxhead" style="margin-top:8px">Tabs to lock</div><div id="pinTabs"></div>
     <div class="filebar" style="margin:8px 0 0"><button type="button" class="primary" id="pinSave">Turn on the lock</button><button type="button" id="pinOffBtn" class="danger">Turn the lock off</button></div>
     <div class="small" id="pinMsg" style="margin-top:6px"></div>
@@ -1027,8 +1028,8 @@ const state = {
   rep:{ period:'thisMonth', from:'', to:'', scope:'one', view:'cat' }
 };
 let saving = false;
-const APP_VERSION = '4.85';            // bump this and APP_BUILD each time the file changes
-const APP_BUILD = '2026-10-21 14:30';
+const APP_VERSION = '4.86';            // bump this and APP_BUILD each time the file changes
+const APP_BUILD = '2026-10-21 14:50';
 $('ver').textContent = 'v' + APP_VERSION; $('ver').title = 'built ' + APP_BUILD + ' (full details in Settings > About)';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2329,7 +2330,7 @@ async function pinOk(pin) { const c = pinCfg(); return !!c && await pinHash(pin,
 function renderLock(box, v) {
   const w = mk('div', 'lockbox'); w.style.cssText = 'max-width:320px; margin:28px auto; text-align:center';
   w.appendChild(mk('h3', '', v.label)); w.appendChild(mk('div', 'small', 'This page is locked. Enter your PIN to open it.'));
-  const f = mk('form'), i = mk('input'); i.type = 'password'; i.autocomplete = 'off'; i.maxLength = 40; i.style.cssText = 'margin:12px 0 8px; text-align:center'; i.setAttribute('aria-label', 'PIN');
+  const f = mk('form'), i = mk('input'); i.type = 'text'; i.className = 'pinbox'; i.autocomplete = 'off'; i.setAttribute('autocapitalize', 'off'); i.setAttribute('autocorrect', 'off'); i.spellcheck = false; i.setAttribute('data-lpignore', 'true'); i.setAttribute('data-1p-ignore', ''); i.maxLength = 40; i.style.cssText = 'margin:12px 0 8px; text-align:center'; i.setAttribute('aria-label', 'PIN');
   const b = mk('button', 'primary', 'Unlock'); b.type = 'submit'; const m = mk('div', 'small neg'); m.style.minHeight = '1.4em';
   f.append(i, b, m); w.appendChild(f); box.appendChild(w);
   f.addEventListener('submit', async ev => {
